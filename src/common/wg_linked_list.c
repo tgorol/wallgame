@@ -249,4 +249,18 @@ dlist_to_array(List_head *head, void **array, wg_int offset)
     return index;
 }
 
+/**
+ * @brief Get and remove first element of the list
+ *
+ * @param head   head of the list
+ * @param offest numbers of bytes from start of the object structure to the List_head structure.
+ *
+ * @return pinter to the element or NULL if empty
+ */
+void *
+dlist_pop_first(List_head *head, wg_int offset)
+{
+    return NULL;
+}
+
 /*! @} */
