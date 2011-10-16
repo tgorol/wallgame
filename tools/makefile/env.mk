@@ -1,7 +1,10 @@
-OUT_DIR?=build/lib/
+OUT_DIR?=$(CURDIR)/build/lib/
 CPU_ARCH?=i386
 C_STD?=c99
-OUT_NAME=$(OUT_DIR)/lib.a
+
+ifndef OUT_NAME
+OUT_NAME=lib
+endif
 
 ifndef VERSION
 	VERSION="N/A"

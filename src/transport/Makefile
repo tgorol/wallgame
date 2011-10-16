@@ -1,17 +1,15 @@
-include $(BUILD_PATH)/env.mk
-
 MODULE_NAMES=unix_socket
+
+include $(BUILD_PATH)/env.mk
 
 .PHONY: $(MODULE_NAMES) lib cleanall
 
-all: clean module
+all: clean lib
 	
-module: mkdir $(MODULE_NAMES)
+lib: $(MODULE_NAMES)
 
-unix_socket:
-	make -C $@ 
-	@echo "Copy $@ to output directory"
-	cp $@/build/lib/*.o $(OUT_DIR)/
+unix_socket: mkdir
+	make OUT_DIR=$(OUT_DIR) OUT_NAME=$(OUT_NAME) -C $@ lib
 
 clean: cleanall
 

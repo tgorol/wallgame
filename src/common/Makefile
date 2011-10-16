@@ -6,6 +6,9 @@ SOURCE= wg_iterator.c      \
 
 INCLUDE=./include 
 
+OUT_NAME=common
+
+EXTRA_CFLAGS=-D_REENTRANT
 
 include $(BUILD_PATH)/env.mk
 

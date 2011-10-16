@@ -7,7 +7,6 @@ SOURCE=gpm.c          \
 	   gpm_hooks.c             \
 
 INCLUDE=./include/
-	
 
 EXTRA_CFLAGS+=-D_GNU_SOURCE
 

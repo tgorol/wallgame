@@ -1,42 +1,33 @@
 OUT_DIR=$(CURDIR)/build/
 APP_NAME=wall_game
+MAIN_C=main/main.c
+OUT_NAME=libwg
 
 LIB=$(OUT_DIR)
 
-EXTRA_CFLAGS+=
+EXTRA_CFLAGS+=-L$(OUT_DIR)/
+
+LIBLIST+=$(OUT_NAME)
 
 include $(BUILD_PATH)/env.mk
 
-MODULE_NAMES=main gameplay config common transport
+MODULE_NAMES=gameplay config common transport
 
 .PHONY: $(MODULE_NAMES) app
 
 all: clean mkdir $(MODULE_NAMES) app
 	
 gameplay:
-	make -C $@ 
-	@echo "Copy $@ to output directory"
-	cp $@/build/lib/*.o $(OUT_DIR)/
+	make OUT_DIR=$(OUT_DIR) OUT_NAME=$(OUT_NAME) -C $@ lib
 
 config:
-	make -C $@ 
-	@echo "Copy $@ to output directory"
-	@cp $@/build/lib/*.o $(OUT_DIR)/
+	make OUT_DIR=$(OUT_DIR) OUT_NAME=$(OUT_NAME) -C $@ lib
 
 common:
-	make -C $@ 
-	@echo "Copy $@ to output directory"
-	@cp $@/build/lib/*.o $(OUT_DIR)/
-
-main:
-	make -C $@ 
-	@echo "Copy $@ to output directory"
-	@cp $@/build/lib/*.o $(OUT_DIR)/
+	make OUT_DIR=$(OUT_DIR) OUT_NAME=$(OUT_NAME) -C $@ lib
 
 transport:
-	make -C $@ 
-	@echo "Copy $@ to output directory"
-	@cp $@/build/lib/*.o $(OUT_DIR)/
+	make OUT_DIR=$(OUT_DIR) OUT_NAME=$(OUT_NAME) -C $@ lib
 
 clean: cleanall
 

@@ -2,7 +2,6 @@
 SOURCE=trans.c
 
 INCLUDE=./include/
-	
 
 EXTRA_CFLAGS+=
 
