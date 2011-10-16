@@ -10,13 +10,14 @@ typedef struct Ut_stats{
 #define STRINGIFY(str) #str
 
 #define UT_DEFINE(name)                                                   \
-    void name(Ut_stats *stats){                                           
+    void name(Ut_stats *stats){                                           \
+        stats->status = WG_SUCCESS;
 
 
 #define UT_END                                                            \
     return; }
 
-#define PASS_ON(cond)                                                     \
+#define UT_PASS_ON(cond)                                                  \
     if (cond){                                                            \
         fprintf(stdout, "PASS:line %d --> %s\n", __LINE__,                \
                 STRINGIFY(cond));                                         \
@@ -41,7 +42,9 @@ typedef struct Ut_stats{
                "Failed Tests : %d\n"                                      \
                "Test %s %s\n",                                            \
                 stats.passed, stats.failed,                               \
-                STRINGIFY(test), (stats.status ? "SUCCESS" : "FAILURE")); \
+                STRINGIFY(test), (stats.status == WG_SUCCESS              \
+                    ? "SUCCESS"                                           \
+                    : "FAILURE"));                                        \
     }while (0)
 
 

@@ -88,7 +88,7 @@ dlist_empty(List_head *head)
 
     h = head;
 
-    return h->next == h->prev;
+    return h->next == h;
 }
 
 /*! \brief Returns number of object in the list.
@@ -260,7 +260,14 @@ dlist_to_array(List_head *head, void **array, wg_int offset)
 void *
 dlist_pop_first(List_head *head, wg_int offset)
 {
-    return NULL;
+    register List_head *h;
+
+    h = head->prev;
+
+    h->prev->next = h->next;
+    h->next->prev = h->prev;
+
+    return h != head ? GET_CONTAINER(h, offset) : NULL;
 }
 
 /*! @} */
