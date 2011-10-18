@@ -14,7 +14,20 @@
 #include <wg_string.h>
 #include <wg_trans.h>
 
+/*! \defgroup  unix_transport Unix socket transport
+ */
 
+/*! @{ */
+
+/**
+ * @brief Create a unix transport
+ *
+ * @param trans    memory to store a transport
+ * @param address  address of the unix socket
+ *
+ * @retval WG_SUCCESS
+ * @retval WG_FAILURE
+ */
 wg_status
 trans_unix_new(Transport *trans, wg_char *address)
 {
@@ -54,6 +67,14 @@ trans_unix_new(Transport *trans, wg_char *address)
     return status;
 }
 
+/**
+ * @brief Connect
+ *
+ * @param trans transport 
+ *
+ * @retval WG_SUCCESS
+ * @retval WG_FAILURE
+ */
 wg_status
 trans_unix_connect(Transport *trans)
 {
@@ -80,6 +101,16 @@ trans_unix_connect(Transport *trans)
     return WG_SUCCESS;
 }
 
+/**
+ * @brief Send data 
+ *
+ * @param trans  transport
+ * @param buffer data fuffer to send
+ * @param size   size of the buffer
+ *
+ * @retval WG_SUCCESS
+ * @retval WG_FAILURE
+ */
 wg_status
 trans_unix_send(Transport *trans, wg_uchar *buffer, wg_size size)
 {
@@ -107,6 +138,14 @@ trans_unix_send(Transport *trans, wg_uchar *buffer, wg_size size)
 }
 
 
+/**
+ * @brief Close transport
+ *
+ * @param trans transport to close
+ *
+ * @retval WG_SUCCESS
+ * @retval WG_FAILURE
+ */
 wg_status
 trans_unix_close(Transport *trans)
 {
@@ -121,3 +160,25 @@ trans_unix_close(Transport *trans)
     return WG_SUCCESS;
 }
 
+/**
+ * @brief Get transport address
+ *
+ * @param trans   transport
+ * @param address memory to store a pointer to the address
+ *
+ * @retval WG_SUCCESS
+ * @retval WG_FAILURE
+ */
+wg_status
+trans_unix_get_address(Transport *trans, const wg_char** address)
+{
+    CHECK_FOR_NULL(trans);
+    CHECK_FOR_NULL(address);
+
+    *address = trans->address;
+
+    return WG_SUCCESS;
+
+}
+
+/*! @} */

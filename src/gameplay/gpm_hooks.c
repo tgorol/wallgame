@@ -95,9 +95,9 @@ cb_send(wg_int argc, wg_char *args[], void *private_data)
 {
     Transport trans = {0};
     wg_status status = WG_FAILURE;
-    wg_uchar test_msg[] = "Test message";
+    wg_char *test_msg = "50 50 20 50 10 30";
 
-    status = trans_unix_new(&trans, "/tmp/demosocket");
+    status = trans_unix_new(&trans, "/tmp/unix_socket.sock");
     CHECK_FOR_FAILURE(status);
 
     status = trans_unix_connect(&trans);
@@ -106,7 +106,7 @@ cb_send(wg_int argc, wg_char *args[], void *private_data)
         return WG_SUCCESS;
     }
 
-    status = trans_unix_send(&trans, test_msg, sizeof (test_msg) - 1);
+    status = trans_unix_send(&trans, (wg_uchar*)test_msg, strlen(test_msg));
     if (WG_FAILURE == status){
         trans_unix_close(&trans);
         return WG_SUCCESS;

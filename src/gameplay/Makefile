@@ -5,6 +5,7 @@ SOURCE=gpm.c          \
 	   gpm_console.c  \
 	   gpm_console_parser.c    \
 	   gpm_hooks.c             \
+	   gpm_game.c
 
 INCLUDE=./include/
 
