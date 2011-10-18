@@ -4,6 +4,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Collections;
 import java.util.ArrayList;
+import java.util.Random;
 
 import javax.swing.SwingUtilities;
 import javax.swing.JFrame;
@@ -156,7 +157,7 @@ public class TestGame implements Runnable {
                     System.out.println("X = " + x);
                     y = Integer.valueOf(list[index + 1]);
                     System.out.println("Y = " + y);
-                    hits.add(new Hit(x, y, Color.BLUE));
+                    hits.add(new Hit(x, y, ColorFactory.getRandom()));
                 }
                 display.repaint();
 
@@ -186,4 +187,35 @@ class HitReader {
 
         return sock;
     }
+}
+
+class ColorFactory {
+    static Random random = null;
+
+    static Color getRandom(){
+        if (random == null){
+            random = new Random();
+        }
+
+        return new Color(
+                random.nextInt(255),
+                random.nextInt(255),
+                random.nextInt(255),
+                255);
+    }
+
+    static Color getRandom(int alfa){
+        if (random == null){
+            random = new Random();
+        }
+
+        return new Color(
+                random.nextInt(255),
+                random.nextInt(255),
+                random.nextInt(255),
+                alfa);
+    }
+
+
+
 }
