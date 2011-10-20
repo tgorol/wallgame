@@ -35,4 +35,8 @@ wg_ini_field_iterator_next(Field_iterator *itr, const
 WG_PUBLIC wg_status
 gpm_ini_get_field_iterator(Field_iterator *itr, const Config_section *section);
 
+wg_status
+gpm_ini_get_field_by_id(const Config_section *section, wg_uint id,
+        const Config_field **config_field);
+
 #endif

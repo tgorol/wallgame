@@ -232,4 +232,36 @@ gpm_ini_get_game_by_name(wg_char *name, const Config_section **game,
     return (compare_status == 0) ? WG_SUCCESS : WG_FAILURE;
 }
 
+/**
+ * @brief Get a field of the section by its id
+ *
+ * @param section   section 
+ * @param id        id of the field
+ * @param config_field  memory to store a pointer to the field
+ *
+ * @retval WG_SUCCESS
+ * @retval WG_FAILURE
+ */
+wg_status
+gpm_ini_get_field_by_id(const Config_section *section, wg_uint id,
+        const Config_field **config_field)
+{
+    const Config_field *cf = NULL; 
+    wg_status status = WG_FAILURE;
+
+    CHECK_FOR_NULL(section);
+    CHECK_FOR_NULL(config_field);
+
+    CHECK_FOR_RANGE_GE(id, CONFIG_MAX_FIELDS_NUM);
+
+    cf = &(section->field[id]);
+
+    if (cf->type != CONFIG_FIELD_INVALID){
+        *config_field = cf;
+        status = WG_SUCCESS;
+    }
+
+    return status;
+}
+
 /*! @} */
