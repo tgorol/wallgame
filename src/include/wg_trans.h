@@ -18,5 +18,8 @@ trans_unix_send(Transport *trans, wg_uchar *buffer, wg_size size);
 wg_status
 trans_unix_close(Transport *trans);
 
+wg_status
+trans_unix_disconnect(Transport *trans);
+
 #endif
 

@@ -19,6 +19,8 @@
 
 /*! @{ */
 
+#define TRANS_UNIX_DISCONNECTED  (-1)
+
 /**
  * @brief Create a unix transport
  *
@@ -118,6 +120,12 @@ trans_unix_send(Transport *trans, wg_uchar *buffer, wg_size size)
 
     CHECK_FOR_NULL(trans);
     CHECK_FOR_NULL(buffer);
+    
+
+    /* TODO Add input parameter to store an error code */
+    if (trans->out_fd == TRANS_UNIX_DISCONNECTED){
+        return WG_FAILURE;
+    }
 
     errno = 0;
     while ((size != 0) && (written = write(trans->out_fd, buffer, size)) != 0){
@@ -137,6 +145,27 @@ trans_unix_send(Transport *trans, wg_uchar *buffer, wg_size size)
     return WG_SUCCESS;
 }
 
+/**
+ * @brief Disconnect from a transport
+ *
+ * @param trans transport to disconnect from
+ *
+ * @retval WG_SUCCESS
+ * @retval WG_FAILURE
+ */
+wg_status
+trans_unix_disconnect(Transport *trans)
+{
+    CHECK_FOR_NULL(trans);
+
+    if (trans->out_fd != TRANS_UNIX_DISCONNECTED){
+        close(trans->out_fd);
+        trans->out_fd = TRANS_UNIX_DISCONNECTED;
+    }
+
+    return WG_SUCCESS;
+}
+
 
 /**
  * @brief Close transport
@@ -151,7 +180,7 @@ trans_unix_close(Transport *trans)
 {
     CHECK_FOR_NULL(trans);
 
-    close(trans->out_fd);
+    trans_unix_disconnect(trans);
 
     WG_FREE(trans->address);
 
