@@ -62,7 +62,7 @@ parse(wg_char **pos, List_head *head, SCOPE scope)
                         status = allocate_token(&token);
                         CHECK_FOR_FAILURE(status);
 
-                        fill_token(token, TOK_STRING, start - 1, text + 1);
+                        fill_token(token, TOK_STRING, start, text);
                         if (WG_FAILURE == status){
                             release_token(&token);
                             return WG_FAILURE;
@@ -70,7 +70,8 @@ parse(wg_char **pos, List_head *head, SCOPE scope)
 
                         dlist_add(head, &token->head);
 
-                        *pos = token->end;
+                        /* skip closing quoute */
+                        *pos = token->end + 1;
 
                         return WG_SUCCESS;
                         break;

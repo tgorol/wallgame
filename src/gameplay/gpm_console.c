@@ -39,6 +39,11 @@ typedef struct Cmd_info {
 WG_PRIVATE wg_status 
 def_cb_help(wg_uint argc, wg_char *argv[], void *private_data);
 
+#ifdef WGDEBUG
+WG_PRIVATE wg_status 
+debug_cb_print(wg_uint argc, wg_char *argv[], void *private_data);
+#endif
+
 WG_PRIVATE wg_char *prompt = NULL;
 WG_PRIVATE wg_status release_prompt(void);
 WG_PRIVATE wg_status set_prompt(wg_char *new_prompt);
@@ -65,6 +70,16 @@ Cmd_info def_cmd_info[] = {
         .flags        = HOOK_SYNC             ,
         .private_data = NULL             
     }
+
+#ifdef WGDEBUG
+    ,{
+        .name         = "print"                ,
+        .description  = "DBG: print arguments" ,
+        .cb_hook      = debug_cb_print         ,
+        .flags        = HOOK_SYNC              ,
+        .private_data = NULL             
+    }
+#endif
 };
 
 
@@ -565,5 +580,19 @@ print_detail_lines(wg_char *lines[])
 
     return WG_SUCCESS;
 }
+
+#ifdef WGDEBUG
+
+WG_PRIVATE wg_status 
+debug_cb_print(wg_uint argc, wg_char *argv[], void *private_data)
+{
+    while (*argv != NULL){
+        printf("%s\n", *argv++);
+    }
+
+    return WG_SUCCESS;
+}
+
+#endif
 
 /*! @} */
