@@ -8,6 +8,7 @@
 
 #include <wg_linked_list.h>
 #include <wg_workqueue.h>
+#include <wg_string.h>
 
 #include <ut_tools.h>
 
@@ -55,11 +56,63 @@ UT_DEFINE(workqueue_test_1)
 
 UT_END
 
+UT_DEFINE(string_test_1)
+    wg_char *string = NULL;
+    UT_PASS_ON(
+            wg_substitute("Tomasz Gorol", '%',"s", "SUB", &string) == WG_SUCCESS
+            )
+
+    printf("%s\n", string);
+    WG_FREE(string);
+
+    UT_PASS_ON(
+            wg_substitute("Tomasz %%%% Gorol", '%',"s", "SUB", &string) == WG_SUCCESS
+            )
+
+    printf("%s\n", string);
+    WG_FREE(string);
+
+    UT_PASS_ON(
+            wg_substitute("Tomasz %s Gorol", '%',"s", "SUB", &string) == WG_SUCCESS
+            )
+
+    printf("%s\n", string);
+    WG_FREE(string);
+
+    UT_PASS_ON(
+            wg_substitute("Tomasz %{s} Gorol", '%',"s", "SUB", &string) == WG_SUCCESS
+            )
+
+    printf("%s\n", string);
+    WG_FREE(string);
+
+    UT_PASS_ON(
+            wg_substitute("Tomasz %s %%Gorol", '%',"s", "SUB", &string) == WG_SUCCESS
+            )
+
+    printf("%s\n", string);
+    WG_FREE(string);
+
+    UT_PASS_ON(
+            wg_substitute("Tomasz %sGorol", '%',"s", "SUB", &string) == WG_SUCCESS
+            )
+
+    printf("%s\n", string);
+    WG_FREE(string);
+
+    UT_PASS_ON(
+            wg_substitute("Tomasz %%{s}Gorol", '%',"s", "SUB", &string) == WG_SUCCESS
+            )
+
+    printf("%s\n", string);
+    WG_FREE(string);
+UT_END
 
 int
 main(int argc, char *argv[])
 {
     UT_RUN_TEST(workqueue_test_1);
+    UT_RUN_TEST(string_test_1);
 
     return 0;
 }

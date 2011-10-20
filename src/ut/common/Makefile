@@ -1,5 +1,5 @@
 APP_NAME=unit_test
-SOURCE=wg_workqueue.c
+SOURCE=wg_common.c
 OUT_NAME=libut
 
 INCLUDE=$(ROOT_DIR)/src/ut/include/
