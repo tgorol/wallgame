@@ -50,8 +50,8 @@ OBJ=$(foreach file, $(SOURCE), $(basename $(file)).o)
 # Add archiceture
 CFLAGS+=-march=$(CPU_ARCH) -std=$(C_STD) -DAUTHOR=$(AUTHOR) -DVERSION=$(VERSION)
 
-ifeq (BUILD_TYPE, RELEASE)
-	CFLAGS+=-O2
+ifeq ($(BUILD_TYPE),  RELEASE)
+	CFLAGS+=-O2 -pedantic -Wall -Werror
 else
 	CFLAGS+=-g -pedantic -Wall -Werror
 endif

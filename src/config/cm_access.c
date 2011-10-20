@@ -307,20 +307,22 @@ read_game_section(ini_fd_t *ini_fd, char *game_name, Config_section *section)
             CONFIG_MAX_FIELD_NAME_SIZE);
 
     /* locate a game path key and read */
-    status = ini_locateKey(ini_fd, GAME_PATH_KEY);
-    CHECK_FOR_INI_ERROR(status);
     config_field = &(field[GAME_PATH]);
-    status = ini_readString(ini_fd, 
-            config_field->value.string, 
-            CONFIG_MAX_STRING_SIZE);
-    CHECK_FOR_INI_ERROR(status);
-    config_field->type = CONFIG_FIELD_STRING;
-    save_field_name(GAME_PATH_KEY, config_field);
+    status = ini_locateKey(ini_fd, GAME_PATH_KEY);
+    if (INI_ERROR != status){
+        status = ini_readString(ini_fd, 
+                config_field->value.string, 
+                CONFIG_MAX_STRING_SIZE);
+        save_field_name(GAME_PATH_KEY, config_field);
+    }
+    config_field->type = (status != INI_ERROR) ?
+        CONFIG_FIELD_STRING   :
+        CONFIG_FIELD_INVALID;
 
     /* locate a game arguments key and read */
+    config_field = &(field[GAME_ARGUMENTS]);
     status = ini_locateKey(ini_fd, GAME_ARGUMENTS_KEY);
     if (INI_ERROR != status){
-        config_field = &(field[GAME_ARGUMENTS]);
         status = ini_readString(ini_fd, 
                 config_field->value.string, 
                 CONFIG_MAX_STRING_SIZE);

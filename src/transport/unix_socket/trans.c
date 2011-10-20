@@ -33,7 +33,6 @@
 wg_status
 trans_unix_new(Transport *trans, wg_char *address)
 {
-    int sfd = 0;
     wg_status status = WG_FAILURE;
 
     CHECK_FOR_NULL(trans);
@@ -44,27 +43,11 @@ trans_unix_new(Transport *trans, wg_char *address)
         return WG_FAILURE;
     }
 
-    /* create a new unix socket */
-    errno = 0;
-    sfd = socket(PF_UNIX, SOCK_STREAM, 0);
-    if (-1 == sfd){
-        WG_LOG("%s\n", strerror(errno));
-        return WG_FAILURE;
-    }
-
-    WG_DEBUG("Unix socket created : %d\n", sfd);
-
     memset(trans, '\0', sizeof (Transport));
 
     /* save address as part of transaction */
     status = wg_strdup(address, &trans->address);
-    if (WG_FAILURE == status){
-        close(sfd);
-        return WG_FAILURE;
-    }
-
-    /* save socket as part of transaction */
-    trans->out_fd = sfd;
+    CHECK_FOR_FAILURE(status);
 
     return status;
 }
@@ -81,9 +64,22 @@ wg_status
 trans_unix_connect(Transport *trans)
 {
     int status = 0;
+    int sfd = TRANS_UNIX_DISCONNECTED;
     struct sockaddr_un address;
 
     CHECK_FOR_NULL(trans);
+
+    /* create a new unix socket */
+    errno = 0;
+    sfd = socket(PF_UNIX, SOCK_STREAM, 0);
+    if (-1 == sfd){
+        WG_LOG("%s\n", strerror(errno));
+        return WG_FAILURE;
+    }
+
+    trans->out_fd = sfd;
+
+    WG_DEBUG("Unix socket created : %d\n", sfd);
 
     address.sun_family = AF_UNIX;
 
@@ -99,6 +95,8 @@ trans_unix_connect(Transport *trans)
     }
 
     WG_DEBUG("Unix socket connected to %s\n", trans->address);
+
+    trans->is_connected = WG_TRUE;
 
     return WG_SUCCESS;
 }
@@ -120,7 +118,6 @@ trans_unix_send(Transport *trans, wg_uchar *buffer, wg_size size)
 
     CHECK_FOR_NULL(trans);
     CHECK_FOR_NULL(buffer);
-    
 
     /* TODO Add input parameter to store an error code */
     if (trans->out_fd == TRANS_UNIX_DISCONNECTED){
@@ -141,7 +138,7 @@ trans_unix_send(Transport *trans, wg_uchar *buffer, wg_size size)
 
         WG_DEBUG("Unix socket written %d bytes\n", written);
     }
-    
+
     return WG_SUCCESS;
 }
 
@@ -181,6 +178,8 @@ trans_unix_close(Transport *trans)
     CHECK_FOR_NULL(trans);
 
     trans_unix_disconnect(trans);
+
+    close(trans->out_fd);
 
     WG_FREE(trans->address);
 

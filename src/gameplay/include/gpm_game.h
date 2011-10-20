@@ -3,18 +3,23 @@
 
 #define MAX_PATH_LENGTH   512
 
-typedef struct Game{
-    Transport transport;
-    pid_t process_id;
-}Game;
 
 WG_PUBLIC wg_status
-gpm_game_run(wg_char *argv[], wg_uint address_index, Game *game);
+gpm_game_run(wg_char *argv[], wg_char * address_index);
 
 WG_PUBLIC wg_status
-gpm_game_send_ln(Game *game, wg_char *line);
+gpm_game_send(wg_uchar *line, wg_size size);
 
 WG_PUBLIC wg_status
-gpm_game_kill(Game *game);
+gpm_game_kill(void);
+
+WG_PUBLIC wg_boolean
+gpm_game_is_running(void);
+
+WG_PUBLIC wg_status
+gpm_game_get_id(wg_uint *id);
+
+WG_PUBLIC wg_status
+gpm_game_set_id(wg_uint id);
 
 #endif

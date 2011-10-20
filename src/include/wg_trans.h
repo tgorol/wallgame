@@ -4,6 +4,7 @@
 typedef struct Transport{
     int out_fd;
     wg_char *address;
+    wg_boolean is_connected;
 }Transport;
 
 WG_PUBLIC wg_status

@@ -55,7 +55,5 @@ gpm_console_add_hook_flags(Console_hook *hook, HOOK_FLAG flags);
 void
 gpm_console_hook_release(Console_hook *hook);
 
-wg_status
-gpm_console_remove_args(wg_char **arg_vector);
 
 #endif

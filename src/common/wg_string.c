@@ -7,15 +7,15 @@
 #include <wg_string.h>
 
 WG_PRIVATE wg_status
-count_subs(wg_char *string, wg_char subsym, wg_char *subsymtext,
+count_subs(const wg_char *string, wg_char subsym, const wg_char *subsymtext,
         wg_int *short_count, wg_int *long_count, wg_int *esc_count);
 
 WG_PRIVATE wg_status
-substitute(wg_char *string, wg_char subsym, wg_char *subsymtext, wg_char *text,
-        wg_char *outstr);
+substitute(const wg_char *string, wg_char subsym, const wg_char *subsymtext, 
+        const wg_char *text, wg_char *outstr);
 
 wg_size
-wg_strlen(wg_char *string)
+wg_strlen(const wg_char *string)
 {
     return strlen(string);
 }
@@ -45,8 +45,8 @@ wg_strdup(wg_char *string, wg_char **copied)
 }
 
 wg_status
-wg_substitute(wg_char *string, wg_char subsym, wg_char *subsymtext, 
-        wg_char *subtext, wg_char **new_string)
+wg_substitute(const wg_char *string, wg_char subsym, const wg_char *subsymtext, 
+        const wg_char *subtext, wg_char **new_string)
 {
     wg_char *new_str = NULL;
     wg_int short_subcount = 0;
@@ -77,7 +77,8 @@ wg_substitute(wg_char *string, wg_char subsym, wg_char *subsymtext,
 }
 
 wg_boolean
-wg_strncmp(wg_char *str1, wg_char *str2, wg_size len, wg_char **last)
+wg_strncmp(const wg_char *str1, const wg_char *str2, 
+        wg_size len, const wg_char **last)
 {
     wg_boolean status = WG_FALSE;
 
@@ -92,7 +93,7 @@ wg_strncmp(wg_char *str1, wg_char *str2, wg_size len, wg_char **last)
 }
 
 wg_boolean
-wg_strcmpchar(wg_char *string, wg_char c, wg_char **last)
+wg_strcmpchar(const wg_char *string, wg_char c, const wg_char **last)
 {
     wg_boolean status = WG_FALSE;
 
@@ -107,12 +108,12 @@ wg_strcmpchar(wg_char *string, wg_char c, wg_char **last)
 }
 
 WG_PRIVATE wg_status
-substitute(wg_char *string, wg_char subsym, wg_char *subsymtext, wg_char *text,
-        wg_char *outstr)
+substitute(const wg_char *string, wg_char subsym, const wg_char *subsymtext, 
+        const wg_char *text, wg_char *outstr)
 {
     wg_int str_text_len = 0;
     wg_int str_symtext_len = 0;
-    wg_char *last = NULL;
+    const wg_char *last = NULL;
 
     CHECK_FOR_NULL(string);
     CHECK_FOR_NULL(subsymtext);
@@ -148,11 +149,11 @@ substitute(wg_char *string, wg_char subsym, wg_char *subsymtext, wg_char *text,
     return WG_SUCCESS;
 }
 WG_PRIVATE wg_status
-count_subs(wg_char *string, wg_char subsym, wg_char *subsymtext, 
+count_subs(const wg_char *string, wg_char subsym, const wg_char *subsymtext, 
         wg_int *short_count, wg_int *long_count, wg_int *esc_count)
 {
     wg_int str_symtext_len = 0;
-    wg_char *last = NULL;
+    const wg_char *last = NULL;
 
     CHECK_FOR_NULL(string);
     CHECK_FOR_NULL(subsymtext);

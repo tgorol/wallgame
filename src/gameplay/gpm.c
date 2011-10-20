@@ -41,6 +41,15 @@ Cmd_info cmd_info[] = {
     }
     ,
     {
+        .name         = "connect"           ,
+        .description  = "Connect to the game"   ,
+        .cb_hook      = cb_connect       ,
+        .flags        = HOOK_SYNC | HOOK_EXIT   ,
+        .private_data = NULL             ,
+        .detail_lines = NULL
+    }
+    ,
+    {
         .name         = "version"        ,
         .description  = "Print version"  ,
         .cb_hook      = cb_info          ,
@@ -84,7 +93,7 @@ Cmd_info cmd_info[] = {
     ,
     {
         .name         = "send"            ,
-        .description  = "List available games"    ,
+        .description  = "Send data to the game"    ,
         .cb_hook      = cb_send           ,
         .flags        = HOOK_SYNC        ,
         .private_data = NULL             ,      

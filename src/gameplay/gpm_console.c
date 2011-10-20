@@ -200,16 +200,13 @@ wg_status
 gpm_console_start(void)
 {
     wg_char *line = NULL;
-    wg_char **line_parsed = NULL;
+    wg_char **argv = NULL;
     wg_status status = WG_FAILURE;
     List_head tok_list = {0};
-    wg_size cmd_size = 0;
-    Iterator itr = {0};
-    Token *token = NULL;
-    wg_int index = 0;
+    wg_int argc = 0;
 
     do{
-        line_parsed = NULL;
+        argv = NULL;
         line = NULL;
 
         line = readline((prompt != NULL) ? prompt : "");
@@ -227,30 +224,15 @@ gpm_console_start(void)
 
         WG_FREE(line);
 
-        cmd_size = list_size(&tok_list);
-        line_parsed = WG_CALLOC(cmd_size, sizeof (wg_char*));
-        if (NULL == line_parsed){
-            gpm_console_remove_token_list(&tok_list);
-            return WG_FAILURE;
-        }
+        status = gpm_console_tokens_to_array(&tok_list, &argv);
 
-        iterator_list_init(&itr, &tok_list, GET_OFFSET(Token, head));
-
-        index = 0;
-        while (((token = iterator_list_next(&itr)) != NULL) &&
-                (token->type != TOK_END)){
-            status = wg_strdup(token->string, &(line_parsed[index++]));
-            if (WG_FAILURE == status){
-                gpm_console_remove_token_list(&tok_list);
-                gpm_console_remove_args(line_parsed);
-                return WG_FAILURE;
-            }
-        }
-        line_parsed[index] = NULL;
+        argc = list_size(&tok_list) - 1;
 
         gpm_console_remove_token_list(&tok_list);
 
-    } while (execute_command(index, line_parsed) == WG_FALSE);
+        CHECK_FOR_FAILURE(status);
+
+    } while (execute_command(argc, argv) == WG_FALSE);
 
     return WG_SUCCESS;
 }
@@ -382,33 +364,6 @@ gpm_console_hook_release(Console_hook *hook)
     return;
 }
 
-/**
- * @brief Remove array of arguments
- *
- * This function must be called from every hook callback
- * before return.
- *
- * @param arg_vector array with arguments
- *
- * @retval WG_SUCCESS
- * @retval WG_FAILURE
- */
-wg_status
-gpm_console_remove_args(wg_char **arg_vector)
-{
-    wg_char **copy_arg_vector = NULL;
-    CHECK_FOR_NULL(arg_vector);
-
-    copy_arg_vector = arg_vector;
-
-    while (*arg_vector != NULL){
-        WG_FREE(*arg_vector++);
-    }
-
-    WG_FREE(copy_arg_vector);
-
-    return WG_SUCCESS;
-}
 
 WG_PRIVATE wg_boolean
 execute_command(wg_uint argc, char *command[])

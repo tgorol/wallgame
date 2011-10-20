@@ -48,4 +48,10 @@ gpm_console_parse(wg_char *pos, List_head *head);
 WG_PUBLIC wg_status
 gpm_console_remove_token_list(List_head *tok_list);
 
+WG_PUBLIC wg_status
+gpm_console_remove_args(wg_char **arg_vector);
+
+WG_PUBLIC wg_status
+gpm_console_tokens_to_array(List_head *tok_list, wg_char ***array);
+
 #endif

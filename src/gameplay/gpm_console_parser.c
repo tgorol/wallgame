@@ -9,6 +9,7 @@
 
 #include <wg_linked_list.h>
 #include <wg_iterator.h>
+#include <wg_string.h>
 
 #include "include/gpm_console_parser.h"
 
@@ -38,6 +39,80 @@ gpm_console_parse(wg_char *pos, List_head *head)
     text = pos;
 
     return  parse(&text, head, 0);
+}
+
+/**
+ * @brief Convert list of tokens into an array of strings
+ *
+ * @param tok_list list of tokens
+ * @param array  memory used to store an array
+ *
+ * @retval WG_SUCCESS
+ * @retval WG_FAILURE
+ */
+wg_status
+gpm_console_tokens_to_array(List_head *tok_list, wg_char ***array)
+{
+    wg_char **line_parsed = NULL;
+    wg_int index = 0;
+    wg_size cmd_size = 0;
+    Token *token = NULL;
+    wg_status status = WG_FAILURE;
+    Iterator itr = {0};
+
+    CHECK_FOR_NULL(tok_list);
+    CHECK_FOR_NULL(array);
+
+    cmd_size = list_size(tok_list);
+    line_parsed = WG_CALLOC(cmd_size, sizeof (wg_char*));
+    if (NULL == line_parsed){
+        return WG_FAILURE;
+    }
+
+    iterator_list_init(&itr, tok_list, GET_OFFSET(Token, head));
+
+    index = 0;
+    while (((token = iterator_list_next(&itr)) != NULL) &&
+            (token->type != TOK_END)){
+        status = wg_strdup(token->string, &(line_parsed[index++]));
+        if (WG_FAILURE == status){
+            gpm_console_remove_args(line_parsed);
+            return WG_FAILURE;
+        }
+    }
+    line_parsed[index] = NULL;
+
+    *array = line_parsed;
+
+    return WG_SUCCESS;
+}
+
+/**
+ * @brief Remove array of arguments
+ *
+ * This function must be called from every hook callback
+ * before return.
+ *
+ * @param arg_vector array with arguments
+ *
+ * @retval WG_SUCCESS
+ * @retval WG_FAILURE
+ */
+wg_status
+gpm_console_remove_args(wg_char **arg_vector)
+{
+    wg_char **copy_arg_vector = NULL;
+    CHECK_FOR_NULL(arg_vector);
+
+    copy_arg_vector = arg_vector;
+
+    while (*arg_vector != NULL){
+        WG_FREE(*arg_vector++);
+    }
+
+    WG_FREE(copy_arg_vector);
+
+    return WG_SUCCESS;
 }
 
 WG_PRIVATE wg_status
@@ -93,11 +168,11 @@ parse(wg_char **pos, List_head *head, SCOPE scope)
                 } else if (*text == DQUOTE_CHAR){
                     ++text;
                     status = parse(&text, head, IN_STRING);
-                } else if (isalpha(*text) || (*text == '_')){
-                    status = parse(&text, head, IN_IDENTIFIER);
                 } else if (*text == END_STREAM){
                     status = parse(&text, head, IN_END_STREAM);
                     end_of_stream = WG_YES;
+                } else if (!isblank(*text)){
+                    status = parse(&text, head, IN_IDENTIFIER);
                 } else if (isblank(*text)){
                     status = parse(&text, head, IN_BLANK);
                 } else {
@@ -128,7 +203,7 @@ parse(wg_char **pos, List_head *head, SCOPE scope)
                 ++text;
                 break;
             case IN_IDENTIFIER:
-                if (!isalpha(*text) && !isdigit(*text) && (*text != '_')){
+                if(isblank(*text) || (*text == '\0')){
                     status = allocate_token(&token);
                     CHECK_FOR_FAILURE(status);
 
