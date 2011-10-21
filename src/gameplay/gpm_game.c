@@ -14,9 +14,10 @@
 #include <wg_trans.h>
 #include <wg_linked_list.h>
 #include <wg_workqueue.h>
+#include <wg_slab.h>
 
-#include "include/gpm_game.h"
 #include "include/gpm_msg.h"
+#include "include/gpm_game.h"
 
 /*! \defgroup gpm_game Gameplay Game Control 
  */
@@ -24,6 +25,8 @@
 /*! @{ */
 
 enum {THREAD_PROD = 0, THREAD_CONS, THREAD_NUM}; 
+
+#define MSG_QUEUE_MAX   1024
 
 /**
  * @brief Game Instance Structure
@@ -40,6 +43,7 @@ typedef struct Game{
 WG_PRIVATE Game running_game;
 WG_PRIVATE pthread_t threads[THREAD_NUM];
 WG_PRIVATE WorkQ msg_queue;
+WG_PRIVATE Wg_slab  msg_slab;
 
 
 WG_PRIVATE void * msg_from_sensor(void *queue);
@@ -70,7 +74,6 @@ gpm_game_run(wg_char *argv[], wg_char *address)
         WG_LOG("Game is running\n");
         return WG_FAILURE;
     }
-
     switch (game_pid = fork()){
         case 0:
             execvp(argv[0], argv);
@@ -95,10 +98,12 @@ gpm_game_run(wg_char *argv[], wg_char *address)
 
             WG_DEBUG("Transaction created at %s\n", address);
 
+            wg_workq_init(&msg_queue, GET_OFFSET(Wg_message, list));
+
+            wg_slab_init(sizeof (Wg_message), MSG_QUEUE_MAX, &msg_slab);
+
             create_pipe_threads(msg_from_sensor, msg_to_game, &msg_queue,
                     threads);
-
-
 
             running_game = game;
 
@@ -108,6 +113,27 @@ gpm_game_run(wg_char *argv[], wg_char *address)
     return WG_SUCCESS;
 }
 
+wg_status
+gpm_game_add_message(Msg_type type, ...)
+{
+    wg_status status = WG_FAILURE;
+    Wg_message *message = NULL;
+
+    status = wg_slab_alloc(&msg_slab, (void**)&message);
+    CHECK_FOR_FAILURE(status);
+
+    message->type = type;
+
+    status = wg_workq_add(&msg_queue, &message->list);
+    if (WG_FAILURE == status){
+        wg_slab_free(&msg_slab, message);
+        return WG_FAILURE;
+    }
+
+    return WG_SUCCESS;
+}
+
+
 /**
  * @brief Send data to running game
  *
@@ -116,6 +142,8 @@ gpm_game_run(wg_char *argv[], wg_char *address)
  *
  * @retval WG_SUCCESS
  * @retval WG_FAILURE
+ *
+ * TODO Make it static
  */
 wg_status
 gpm_game_send(wg_uchar *data, wg_size size)
@@ -263,7 +291,6 @@ msg_from_sensor(void *queue)
 {
 
     for (;;){
-        printf("posdro from msg_from_sensor\n");
         sleep(3);
     }
     return queue;
@@ -272,9 +299,12 @@ msg_from_sensor(void *queue)
 WG_PRIVATE void *
 msg_to_game(void *queue)
 {
+    Wg_message *msg = NULL;
     for (;;){
-        printf("posdro from msg_to_game\n");
-        sleep(10);
+        printf("\n%s: Waiting for a message\n", __PRETTY_FUNCTION__);
+        wg_workq_get((WorkQ*)queue, (void**)&msg);
+        printf("Received msg type = %d\n", msg->type);
+        wg_slab_free(&msg_slab, msg);
     }
 
      return queue;

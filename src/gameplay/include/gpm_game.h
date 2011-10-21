@@ -22,4 +22,7 @@ gpm_game_get_id(wg_uint *id);
 WG_PUBLIC wg_status
 gpm_game_set_id(wg_uint id);
 
+WG_PUBLIC wg_status
+gpm_game_add_message(Msg_type type, ...);
+
 #endif

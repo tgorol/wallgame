@@ -10,6 +10,7 @@
 #include <wg_trans.h>
 #include <wg_linked_list.h>
 
+#include "include/gpm_msg.h"
 #include "include/gpm_console.h"
 #include "include/gpm_console_parser.h"
 #include "include/gpm_ini.h"
@@ -203,7 +204,7 @@ cb_send(wg_int argc, wg_char *args[], void *private_data)
 
     while (*args != NULL){
         WG_DEBUG("Sending : \"%s\"\n", *args);
-        status = gpm_game_send((wg_uchar*)*args, strlen(*args));
+        status = gpm_game_add_message(MSG_STRING);
         if (WG_FAILURE == status){
             WG_LOG("Sending error\n");
             return WG_FAILURE;
