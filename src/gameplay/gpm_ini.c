@@ -13,7 +13,7 @@
 #include "include/gpm.h"
 #include "include/gpm_ini.h"
 
-/*! \addtogroup  Gameplay
+/*! \defgroup  Gameplay_ini Gameplay Config
  */
 
 /*! @{ */

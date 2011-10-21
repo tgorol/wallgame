@@ -18,12 +18,12 @@ typedef double         wg_double    ;
 
 typedef size_t         wg_size      ;
 
-typedef enum wg_boolean {
+typedef enum WG_BOOLEAN {
     WG_FALSE = (1 == 0), 
     WG_TRUE  = (1 == 1)
 } wg_boolean;
 
-typedef enum wg_status {
+typedef enum WG_STATUS {
     WG_SUCCESS  = 0  , 
     WG_FAILURE       ,
     WG_NO       = 0  ,

@@ -8,7 +8,7 @@
 #include <wg_linked_list.h>
 #include <wg_iterator.h>
 
-/** @defgroup Iterator Linked list iterator
+/** @defgroup Iterator Linked List Iterator
  */
 
 /*! @{ */

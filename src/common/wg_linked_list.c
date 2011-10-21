@@ -6,7 +6,7 @@
 #include <wg_linked_list.h>
 #include <wg_iterator.h>
 
-/*! \defgroup List Linked list implementation.
+/*! \defgroup List Linked List Implementation.
  */
 
 /*! @{ */

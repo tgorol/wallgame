@@ -10,7 +10,7 @@
 #include <wg_iterator.h>
 #include <wg_workqueue.h>
 
-/*! \defgroup squeue Pthread synchronized queue implementation.
+/*! \defgroup squeue Synchronized Queue Implementation.
  */
 
 /*! @{ */

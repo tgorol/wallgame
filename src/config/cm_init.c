@@ -7,7 +7,7 @@
 
 #include "include/cm.h"
 
-/*! \defgroup Ini Ini file manipulation
+/*! \defgroup Ini Ini File Manipulation
  */
 
 /*! @{ */

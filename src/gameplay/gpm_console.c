@@ -17,7 +17,7 @@
 #include "include/gpm_console.h"
 #include "include/gpm_console_parser.h"
 
-/*! \addtogroup  Gameplay
+/*! \defgroup  Gameplay_console Gameplay Console
  */
 
 /*! @{ */
@@ -209,8 +209,10 @@ gpm_console_start(void)
         argv = NULL;
         line = NULL;
 
-        line = readline((prompt != NULL) ? prompt : "");
-        if ((NULL != line) && ('\0' != *line)){
+        do{
+            line = readline((prompt != NULL) ? prompt : "");
+        }while (line == NULL);
+        if ('\0' != *line){
             add_history(line);
         }
 

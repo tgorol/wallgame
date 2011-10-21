@@ -13,6 +13,11 @@
 
 #include "include/gpm_console_parser.h"
 
+/*! \defgroup  Gameplay_console_parser Gameplay Console Parser
+ */
+
+/*! @{ */
+
 #define DQUOTE_CHAR     '\"'
 #define ESC_CHAR        '\\'
 #define END_STREAM      '\0'
@@ -347,3 +352,5 @@ allocate_token(Token **token)
 
     return WG_SUCCESS;
 }
+
+/*! @} */

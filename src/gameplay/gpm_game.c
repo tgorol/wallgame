@@ -14,21 +14,27 @@
 
 #include "include/gpm_game.h"
 
-/*! \defgroup gpm_game Gameplay game control 
+/*! \defgroup gpm_game Gameplay Game Control 
  */
 
 /*! @{ */
 
+/**
+ * @brief Game Instance Structure
+ */
 typedef struct Game{
-    Transport transport;
-    pid_t process_id;
-    wg_uint game_id;
+    Transport transport;  /*!< transport connected to the game */
+    pid_t process_id;     /*!< process id of the game          */
+    wg_uint game_id;      /*!< user defined id                 */
 }Game;
 
+/**
+ * @brief Running game instance;
+ */
 WG_PRIVATE Game running_game;
 
 /**
- * @brief Start a process described by arguments
+ * @brief Start a game
  *
  * @param argv[]    arguments
  * @param address_index  address to use to communicate with a game
@@ -145,7 +151,19 @@ gpm_game_kill(void)
 wg_boolean
 gpm_game_is_running(void)
 {
-    return running_game.process_id != 0 ? WG_TRUE : WG_FALSE;
+    wg_boolean is_running = WG_FALSE;
+
+    if (running_game.process_id != 0){
+        if (0 == waitpid(running_game.process_id, NULL, WNOHANG)){
+            is_running = WG_TRUE;
+        }else{
+            is_running = WG_FALSE;
+            trans_unix_close(&running_game.transport);
+            memset(&running_game, '\0', sizeof (Game));
+        }
+    }
+
+    return is_running;
 }
 
 /**

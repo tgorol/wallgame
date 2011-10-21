@@ -131,6 +131,7 @@ cb_start(wg_int argc, wg_char *args[], void *private_data)
         return WG_FAILURE;
     }
 
+    gpm_console_remove_args(argv);
     gpm_game_set_id(game_id);
 
     WG_LOG("Game Started !\n");

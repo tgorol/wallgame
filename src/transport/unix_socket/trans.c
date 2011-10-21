@@ -14,7 +14,7 @@
 #include <wg_string.h>
 #include <wg_trans.h>
 
-/*! \defgroup  unix_transport Unix socket transport
+/*! \defgroup  unix_transport Unix Socket Transport
  */
 
 /*! @{ */
@@ -44,6 +44,8 @@ trans_unix_new(Transport *trans, wg_char *address)
     }
 
     memset(trans, '\0', sizeof (Transport));
+
+    trans->out_fd = TRANS_UNIX_DISCONNECTED;
 
     /* save address as part of transaction */
     status = wg_strdup(address, &trans->address);
@@ -178,8 +180,6 @@ trans_unix_close(Transport *trans)
     CHECK_FOR_NULL(trans);
 
     trans_unix_disconnect(trans);
-
-    close(trans->out_fd);
 
     WG_FREE(trans->address);
 
