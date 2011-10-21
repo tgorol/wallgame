@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
+#include <pthread.h>
 #include <sys/wait.h>
 #include <sys/types.h>
 
@@ -11,13 +12,18 @@
 #include <wgmacros.h>
 
 #include <wg_trans.h>
+#include <wg_linked_list.h>
+#include <wg_workqueue.h>
 
 #include "include/gpm_game.h"
+#include "include/gpm_msg.h"
 
 /*! \defgroup gpm_game Gameplay Game Control 
  */
 
 /*! @{ */
+
+enum {THREAD_PROD = 0, THREAD_CONS, THREAD_NUM}; 
 
 /**
  * @brief Game Instance Structure
@@ -32,6 +38,15 @@ typedef struct Game{
  * @brief Running game instance;
  */
 WG_PRIVATE Game running_game;
+WG_PRIVATE pthread_t threads[THREAD_NUM];
+WG_PRIVATE WorkQ msg_queue;
+
+
+WG_PRIVATE void * msg_from_sensor(void *queue);
+WG_PRIVATE void * msg_to_game(void *queue);
+WG_PRIVATE wg_status
+create_pipe_threads(void* (*producer)(void*), void* (*consumer)(void *),
+        WorkQ *queue, pthread_t thread[THREAD_NUM]);
 
 /**
  * @brief Start a game
@@ -79,6 +94,11 @@ gpm_game_run(wg_char *argv[], wg_char *address)
             }
 
             WG_DEBUG("Transaction created at %s\n", address);
+
+            create_pipe_threads(msg_from_sensor, msg_to_game, &msg_queue,
+                    threads);
+
+
 
             running_game = game;
 
@@ -212,4 +232,51 @@ gpm_game_get_id(wg_uint *id)
     return status;
 }
 
+WG_PRIVATE wg_status
+create_pipe_threads(void* (*producer)(void*), void* (*consumer)(void *),
+        WorkQ *queue, pthread_t thread[THREAD_NUM])
+{
+   pthread_t thread_prod = 0;
+   pthread_t thread_cons = 0;
+   int rc = 0;
+
+   rc = pthread_create(&thread_prod, NULL, producer, (void*)queue);
+   if (0 != rc){
+       WG_LOG("Threads creation failed: %d\n", rc);
+       return WG_FAILURE;
+   }
+
+   rc = pthread_create(&thread_cons, NULL, consumer, (void*)queue);
+   if (0 != rc){
+       WG_LOG("Threads creation failed: %d\n", rc);
+       return WG_FAILURE;
+   }
+
+   thread[THREAD_PROD] = thread_prod;
+   thread[THREAD_CONS] = thread_cons;
+
+   return WG_SUCCESS;
+}
+
+WG_PRIVATE void *
+msg_from_sensor(void *queue)
+{
+
+    for (;;){
+        printf("posdro from msg_from_sensor\n");
+        sleep(3);
+    }
+    return queue;
+}
+
+WG_PRIVATE void *
+msg_to_game(void *queue)
+{
+    for (;;){
+        printf("posdro from msg_to_game\n");
+        sleep(10);
+    }
+
+     return queue;
+}
 /*! @} */

@@ -48,6 +48,7 @@ wg_workq_init(WorkQ *queue, wg_int offset)
     if (0 != status){
         pthread_mutex_destroy(&queue->lock);
         pthread_mutexattr_destroy(&queue->attr);
+        return WG_FAILURE;
     }
 
     queue->offset = offset;
@@ -174,7 +175,7 @@ wg_workq_get(WorkQ *queue, void **elem)
 {
     pthread_mutex_lock(&queue->lock);
 
-    while (dlist_empty(&queue->head) == WG_TRUE){
+    while (list_empty(&queue->head) == WG_TRUE){
         pthread_cond_wait(&queue->not_empty, &queue->lock);
     }
 
