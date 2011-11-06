@@ -11,7 +11,7 @@ LIBLIST+=$(OUT_NAME)
 
 include $(BUILD_PATH)/env.mk
 
-MODULE_NAMES=gameplay config common transport
+MODULE_NAMES=gameplay config common transport sensor plugins
 
 .PHONY: $(MODULE_NAMES) app
 
@@ -28,6 +28,13 @@ common:
 
 transport:
 	make OUT_DIR=$(OUT_DIR) OUT_NAME=$(OUT_NAME) -C $@ lib
+
+sensor:
+	make OUT_DIR=$(OUT_DIR) OUT_NAME=$(OUT_NAME) -C $@ lib
+
+plugins:
+	make OUT_DIR=$(OUT_DIR) -C $@
+
 
 clean: cleanall
 

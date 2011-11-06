@@ -18,6 +18,10 @@ typedef double         wg_double    ;
 
 typedef size_t         wg_size      ;
 
+typedef long int       wg_long      ;
+
+typedef void (*fvoid)(void)         ;
+
 typedef enum WG_BOOLEAN {
     WG_FALSE = (1 == 0), 
     WG_TRUE  = (1 == 1)

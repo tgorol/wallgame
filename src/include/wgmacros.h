@@ -22,14 +22,16 @@
     fprintf(stdout, __VA_ARGS__)                      
 #endif
 
-#ifdef RELEASE
-#define CHECK_FOR_NULL(param)                    
-#else
 #define CHECK_FOR_NULL(param)                    \
     if (NULL == (param)){                        \
         WG_ERROR("NULL parameter: " #param"\n"); \
         return WG_FAILURE;                       \
     }
+
+#ifdef RELEASE
+#define CHECK_FOR_NULL_PARAM(param) CHECK_FOR_NULL(param)
+#else
+#define CHECK_FOR_NULL_PARAM(param)                    
 #endif
 
 
@@ -120,5 +122,18 @@
 #define ELEMNUM(array)                                    \
     (sizeof (array) / sizeof (array[0]))
 
+inline WG_STATIC void
+char_2_hex(wg_char c, wg_char *ret)
+{
+    static char hex_table[] = {
+        '0', '1', '2', '3', '4', '5' ,'6', '7', 
+        '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'
+    };
+
+    ret[0] = hex_table[(c & 0xf0) >> 4];
+    ret[1] = hex_table[c & 0x0f];
+
+    return;
+}
 
 #endif

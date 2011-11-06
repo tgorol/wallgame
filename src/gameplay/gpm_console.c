@@ -52,8 +52,6 @@ WG_PRIVATE ght_hash_table_t *cmd_directory = NULL;
 
 WG_PRIVATE List_head async_cmd;
 
-WG_PRIVATE void fn_ptr_2_string(Console_hook_cb ptr, wg_char *cstr);
-
 WG_PRIVATE wg_status add_default_hooks(void);
 
 WG_PRIVATE wg_status get_hook(wg_char *cmd, Console_hook **hook);
@@ -173,14 +171,15 @@ wg_status
 gpm_console_register_hook(Console_hook *hook)
 {
     int status = 0;
-    char cptr[(sizeof (Console_hook_cb) * 2) + 1];
+    DECLARE_FUNC_STR_BUFFER(cptr);
 
     CHECK_FOR_NULL(hook);
     CHECK_FOR_NULL(hook->name);
     CHECK_FOR_NULL(hook->cb_hook);
 
 
-    fn_ptr_2_string(hook->cb_hook, cptr);
+    wg_fptr_2_str((fvoid)hook->cb_hook, cptr);
+
 
     WG_DEBUG("New command hook: %s 0x%s %p\n", (char*)hook->name, 
             cptr, hook->private_data);
@@ -460,42 +459,6 @@ release_prompt(void)
     return WG_SUCCESS;
 }
 
-WG_STATIC void
-char_2_hex(wg_char c, wg_char *ret)
-{
-    static char hex_table[] = {
-        '0', '1', '2', '3', '4', '5' ,'6', '7', 
-        '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'
-    };
-
-    ret[0] = hex_table[(c & 0xf0) >> 4];
-    ret[1] = hex_table[c & 0x0f];
-
-    return;
-}
-
-WG_PRIVATE void
-fn_ptr_2_string(Console_hook_cb ptr, wg_char *cstr)
-{
-    wg_int i = 0;
-    wg_char *c = (char*)&ptr;
-
-#ifdef LITTLE_ENDIAN
-    for (i = sizeof (ptr) - 1; i >= 0; --i){
-        char_2_hex(c[i], cstr);
-        cstr += 2;
-    }
-#else
-    for (i = 0; i < sizeof (ptr); ++i){
-        char_2_hex(c[i], cstr);
-        cstr += 2;
-    }
-#endif
-
-    *cstr = '\0';
-
-    return;
-}
 
 WG_PRIVATE wg_status 
 def_cb_help(wg_uint argc, wg_char *argv[], void *private_data)

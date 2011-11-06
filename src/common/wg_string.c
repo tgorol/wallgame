@@ -44,6 +44,38 @@ wg_strdup(wg_char *string, wg_char **copied)
     return WG_SUCCESS;
 }
 
+/**
+ * @brief Convert function pointer to string
+ *
+ * This function is needed cause ISO forbids casting function pointers
+ * to void*
+ *
+ * @param ptr pointer
+ * @param cstr buffer
+ */
+void
+wg_fptr_2_str(fvoid ptr, wg_char *cstr)
+{
+    wg_int i = 0;
+    wg_char *c = (char*)&ptr;
+
+#ifdef LITTLE_ENDIAN
+    for (i = sizeof (ptr) - 1; i >= 0; --i){
+        char_2_hex(c[i], cstr);
+        cstr += 2;
+    }
+#else
+    for (i = 0; i < sizeof (ptr); ++i){
+        char_2_hex(c[i], cstr);
+        cstr += 2;
+    }
+#endif
+
+    *cstr = '\0';
+
+    return;
+}
+
 wg_status
 wg_substitute(const wg_char *string, wg_char subsym, const wg_char *subsymtext, 
         const wg_char *subtext, wg_char **new_string)

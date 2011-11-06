@@ -24,7 +24,8 @@ LIB+= /opt/lib/      \
 LIBLIST+= ini      \
 		  readline \
 		  ghthash  \
-		  pthread  
+		  pthread  \
+		  dl
 
 ifneq "$(strip $(INCLUDE))" ""
 	INC_PATH=$(foreach inc, $(INCLUDE), -I$(inc))
@@ -51,7 +52,7 @@ OBJ=$(foreach file, $(SOURCE), $(basename $(file)).o)
 CFLAGS+=-march=$(CPU_ARCH) -std=$(C_STD) -DAUTHOR=$(AUTHOR) -DVERSION=$(VERSION)
 
 ifeq ($(BUILD_TYPE),  RELEASE)
-	CFLAGS+=-O2 -pedantic -Wall -Werror
+	CFLAGS+=-O2  -Wall -Werror
 else
-	CFLAGS+=-g -pedantic -Wall -Werror
+	CFLAGS+=-g  -Wall -Werror
 endif
