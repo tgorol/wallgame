@@ -5,7 +5,8 @@
 
 
 WG_PUBLIC wg_status
-gpm_game_run(wg_char *argv[], wg_char * address_index);
+gpm_game_run(wg_char *argv[], wg_char * address_index, 
+        const wg_char *plugin_name);
 
 WG_PUBLIC wg_status
 gpm_game_send(wg_uchar *line, wg_size size);

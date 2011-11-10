@@ -161,7 +161,6 @@ gpm_console_set_prompt(wg_char *new_prompt)
 /**
  * @brief Add a hook for a command.
  *
- * @param command_name command to call a hook
  * @param hook a function to call when the command enterd
  *
  * @retval WG_SUCCESS
@@ -315,6 +314,7 @@ gpm_console_add_hook_flags(Console_hook *hook, HOOK_FLAG flags)
  *
  * @param hook  hook instance
  * @param desc  description
+ * @param details  get detailed description of the command
  *
  * @return 
  */

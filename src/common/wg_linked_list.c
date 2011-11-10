@@ -53,7 +53,7 @@ dlist_remove(List_head *object)
 /*! \brief Add an object to the list.
  *
  * \param[in] head a head of the list.
- * \param[in] objest an object to add.
+ * \param[in] object an object to add.
  * \return void.
  */
 
@@ -78,7 +78,7 @@ dlist_add(List_head *head, List_head *object)
  *
  * \param[in] head a head of the list.
  * \retval WG_TRUE list empty.
- * \ratval WG_FALSE list not empty.
+ * \retval WG_FALSE list not empty.
  */
 
 wg_boolean
@@ -117,8 +117,9 @@ dlist_size(List_head *head)
  *
  * \param[in] head a head of the list.
  * \param[in] f callback function.
- * \param[in] offest numbers of bytes from start of the object structure to the List_head structure.
- * \raturn void.
+ * \param[in] user_data user data passed to each callback
+ * \param[in] offset numbers of bytes from start of the object structure to the List_head structure.
+ * \return void.
  */
 
 void
@@ -143,8 +144,9 @@ dlist_forall(List_head *head, void (*f)(void*, void*),
  *
  * \param[in] head a head of the list.
  * \param[in] f callback function.
- * \param[in] offest numbers of bytes from start of the object structure to the List_head structure.
- * \raturn void.
+ * \param[in] user_data user data passed to each callback
+ * \param[in] offset numbers of bytes from start of the object structure to the List_head structure.
+ * \return void.
  */
 
 void
@@ -171,7 +173,7 @@ dlist_forall_safe(List_head *head, void (*f)(void*, void*),
  *
  * \param[in] head a head of the list.
  * \param[in] n index of the element to get.
- * \param[in] offest numbers of bytes from start of the object structure to the List_head structure.
+ * \param[in] offset numbers of bytes from start of the object structure to the List_head structure.
  * \return object pointer or NULL if error. Error occurs only if index out of bound of the list.
  */
 
@@ -192,7 +194,7 @@ dlist_get(List_head *head, wg_uint n, wg_int offset)
 /*! \brief Get last element from the list.
  *
  * \param[in] head a head of the list.
- * \param[in] offest numbers of bytes from start of the object structure to the List_head structure.
+ * \param[in] offset numbers of bytes from start of the object structure to the List_head structure.
  * \return object pointer or NULL if list empty.
  */
 
@@ -209,7 +211,7 @@ dlist_get_last(List_head *head, wg_int offset)
 /*! \brief Get first element from the list.
  *
  * \param[in] head a head of the list.
- * \param[in] offest numbers of bytes from start of the object structure to the List_head structure.
+ * \param[in] offset numbers of bytes from start of the object structure to the List_head structure.
  * \return object pointer or NULL if list empty.
  */
 
@@ -229,7 +231,7 @@ dlist_get_first(List_head *head, wg_int offset)
  *
  * @param head   a head of the list
  * @param array  array to store data in
- * @param[in] offest numbers of bytes from start of the object structure to the List_head structure.
+ * @param[in] offset numbers of bytes from start of the object structure to the List_head structure.
  *
  * @return 
  */
@@ -253,7 +255,7 @@ dlist_to_array(List_head *head, void **array, wg_int offset)
  * @brief Get and remove first element of the list
  *
  * @param head   head of the list
- * @param offest numbers of bytes from start of the object structure to the List_head structure.
+ * @param offset numbers of bytes from start of the object structure to the List_head structure.
  *
  * @return pinter to the element or NULL if empty
  */

@@ -27,7 +27,8 @@ typedef enum CONFIG_SERVER_SECTION {
 typedef enum CONFIG_GAME_SECTION{
     GAME_PATH       =  0        , 
     GAME_ARGUMENTS              ,
-    CONFIG_GAME_SECTION_SIZE    
+    CONFIG_GAME_SECTION_SIZE    ,
+    GAME_PLUGIN_NAME        
 }CONFIG_GAME_SECTION;
 
 /**

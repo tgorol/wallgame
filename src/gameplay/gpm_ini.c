@@ -161,6 +161,7 @@ gpm_ini_get_field_iterator(Field_iterator *itr, const Config_section *section)
  * @brief Get next field from the iterator
  *
  * @param itr Iterator
+ * @param config_field Config field to get iterator for
  *
  * @return Field element or NULL if end of list
  */

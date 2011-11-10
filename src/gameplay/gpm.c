@@ -118,7 +118,6 @@ wg_start(int argc, char *argv[])
 {
     wg_status status = WG_FAILURE;
     wg_int exit_code = WG_EXIT_SUCCESS;
-    Wgp_plugin plugin;
     App_options options;
 
     set_default_options(&options);
@@ -142,14 +141,6 @@ wg_start(int argc, char *argv[])
     if (WG_SUCCESS != status){
         return WG_EXIT_ERROR;
     }
-
-    memset(&plugin, '\0', sizeof (Wgp_plugin));
-    status = wgp_load("build/libdummy.so.1.0", &plugin);
-    if (WG_SUCCESS != status){
-        return WG_EXIT_ERROR;
-    }
-
-    wgp_unload(&plugin);
 
     /* start receiving input from the user */
     status = gpm_console_start();

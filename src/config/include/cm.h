@@ -6,6 +6,7 @@
 
 #define GAME_PATH_KEY         "path"
 #define GAME_ARGUMENTS_KEY    "arguments"
+#define GAME_PLUGIN_NAME_KEY  "plugin"
 
 #define SERVER_PIPE_PATH_KEY  "socket"
 #define SERVER_PLAYER_DB_KEY  "playersDBPath"

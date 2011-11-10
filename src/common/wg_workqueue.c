@@ -19,7 +19,7 @@
  * @brief Initialize the queue
  *
  * @param queue  pointer to the queue 
- * @param offest numbers of bytes from start of the object structure to the List_head structure.
+ * @param offset numbers of bytes from start of the object structure to the List_head structure.
  *
  * @retval WG_SUCCESS
  * @retval WG_FAILURE

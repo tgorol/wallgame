@@ -14,6 +14,12 @@
 
 #include "include/sensor_plugin.h"
 
+/*! \defgroup Plugin Sensor Plugin Interface
+ */
+
+/*! @{ */
+
+
 WG_STATIC wg_status
 get_function_address(void *lib, wg_char *func_name, void **address);
 
@@ -26,11 +32,15 @@ get_function_address(void *lib, wg_char *func_name, void **address);
  * @return 
  */
 wg_status
-wgp_load(wg_char *name, Wgp_plugin *plugin)
+wgp_load(const wg_char *name, Wgp_plugin *plugin)
 {
     void *lib = NULL;
     wg_status status = WG_FAILURE;
 
+    CHECK_FOR_NULL_PARAM(name);
+    CHECK_FOR_NULL_PARAM(plugin);
+
+    /* open plugin                        */
     lib = dlopen(name, RTLD_LAZY);
     if (NULL == lib){
         return WG_FAILURE; 
@@ -39,19 +49,67 @@ wgp_load(wg_char *name, Wgp_plugin *plugin)
     plugin->lib = lib;
    
     do {
-        status = get_function_address(plugin->lib, "init", (void**)&plugin->init);
+        /* get pointer to 'init' function              */
+        status = get_function_address(plugin->lib, "init", 
+                (void**)&plugin->init);
         if (WG_FAILURE == status){break;}
 
+        /* initialize plugin                           */
         status = plugin->init(&plugin->info);
         if (WG_FAILURE == status){break;}
 
-        status = get_function_address(plugin->lib, "read", (void**)&plugin->read);
+        /* get pointer to 'read' function              */
+        status = get_function_address(plugin->lib, "read", 
+                (void**)&plugin->read);
+
         if (WG_FAILURE == status){break;}
     }while (0);
     if (WG_FAILURE == status){
         dlclose(lib);
         return WG_FAILURE;
     }
+
+    return WG_SUCCESS;
+}
+
+
+/**
+ * @brief Call read function from the plugin
+ *
+ * @param plugin plugin to call
+ * @param buffer
+ * @param readed
+ * @param size
+ *
+ * @return see plugin read function
+ */
+wg_int
+wgp_read(Wgp_plugin *plugin, wg_char *buffer, wg_int **readed, wg_size size)
+{
+    CHECK_FOR_NULL_PARAM(plugin);
+    CHECK_FOR_NULL_PARAM(readed);
+    CHECK_FOR_NULL_PARAM(buffer);
+
+    CHECK_FOR_NULL(plugin->read);
+
+    return plugin->read(buffer, readed, size);
+}
+
+/**
+ * @brief Get plugin info
+ *
+ * @param plugin
+ * @param info   memory to store apointer to plugin info
+ *
+ * @retval WG_SUCCESS
+ * @retval WG_FAILURE
+ */
+wg_status
+wgp_info(Wgp_plugin *plugin, const Wgp_info **info)
+{
+    CHECK_FOR_NULL_PARAM(plugin);
+
+    *info = &(plugin->info);
 
     return WG_SUCCESS;
 }
@@ -66,7 +124,7 @@ wgp_load(wg_char *name, Wgp_plugin *plugin)
 wg_status
 wgp_unload(Wgp_plugin *plugin)
 {
-    CHECK_FOR_NULL(plugin);
+    CHECK_FOR_NULL_PARAM(plugin);
 
     dlclose(plugin->lib);
 
@@ -75,6 +133,15 @@ wgp_unload(Wgp_plugin *plugin)
     return WG_SUCCESS;
 }
 
+/** @brief Get function address from the library
+ *
+ * @param lib   library handle
+ * @param[in] func_name name of the function
+ * @param[out] address memmory to store address of the function
+ *
+ * @retval WG_SUCCESS
+ * @retval WG_FAILURE
+ */
 WG_STATIC wg_status
 get_function_address(void *lib, wg_char *func_name, void **address)
 {
@@ -100,3 +167,5 @@ get_function_address(void *lib, wg_char *func_name, void **address)
 
     return WG_SUCCESS;
 }
+
+/*! @} */

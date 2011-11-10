@@ -19,10 +19,16 @@ typedef struct Wgp_plugin{
 }Wgp_plugin;
 
 WG_PUBLIC wg_status
-wgp_load(wg_char *name, Wgp_plugin *plugin);
+wgp_load(const wg_char *name, Wgp_plugin *plugin);
 
 WG_PUBLIC wg_status
 wgp_unload(Wgp_plugin *plugin);
+
+WG_PUBLIC wg_int
+wgp_read(Wgp_plugin *plugin, wg_char *buffer, wg_int **readed, wg_size size);
+
+WG_PUBLIC wg_status
+wgp_info(Wgp_plugin *plugin, const Wgp_info **info);
 
 #endif
 

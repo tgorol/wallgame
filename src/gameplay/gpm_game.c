@@ -15,6 +15,7 @@
 #include <wg_linked_list.h>
 #include <wg_workqueue.h>
 #include <wg_slab.h>
+#include <wgp.h>
 
 #include "include/gpm_msg.h"
 #include "include/gpm_game.h"
@@ -44,6 +45,7 @@ WG_PRIVATE Game running_game;
 WG_PRIVATE pthread_t threads[THREAD_NUM];
 WG_PRIVATE WorkQ msg_queue;
 WG_PRIVATE Wg_slab  msg_slab;
+WG_PRIVATE Wgp_plugin plugin;
 
 
 WG_PRIVATE void * msg_from_sensor(void *queue);
@@ -52,21 +54,26 @@ WG_PRIVATE wg_status
 create_pipe_threads(void* (*producer)(void*), void* (*consumer)(void *),
         WorkQ *queue, pthread_t thread[THREAD_NUM]);
 
+WG_PRIVATE wg_status
+kill_pipe_threads(pthread_t thread[THREAD_NUM], int ret_status[THREAD_NUM]);
+
 /**
  * @brief Start a game
  *
  * @param argv[]    arguments
- * @param address_index  address to use to communicate with a game
+ * @param address  address to use to communicate with a game
+ * @param plugin_name  name of the plugin to use with the game
  *
  * @retval WG_SUCCESS
  * @retval WG_FAILURE
  */
 wg_status
-gpm_game_run(wg_char *argv[], wg_char *address)
+gpm_game_run(wg_char *argv[], wg_char *address, const wg_char *plugin_name)
 {
     pid_t game_pid = 0;
     wg_status status = WG_FAILURE;
     Game game ;
+    const Wgp_info *plug_info = NULL;
 
     CHECK_FOR_NULL(argv);
 
@@ -88,24 +95,63 @@ gpm_game_run(wg_char *argv[], wg_char *address)
             game.process_id = game_pid;
             WG_DEBUG("Process started with $$=%ld\n", (long)game_pid);
 
-            /* Create a connection to a game */
-            status = trans_unix_new(&game.transport, address);
+            do {
+                /* Create a connection to a game */
+                status = trans_unix_new(&game.transport, address);
+                if (WG_FAILURE == status){
+                    break;
+                }
+
+                WG_DEBUG("Transaction created at %s\n", address);
+
+                /* TODO Add error checking */
+
+                status = wg_workq_init(&msg_queue, 
+                        GET_OFFSET(Wg_message, list));
+                if (WG_FAILURE == status){
+                    trans_unix_close(&game.transport);
+                    break;
+                }
+
+                status = wg_slab_init(sizeof (Wg_message), 
+                        MSG_QUEUE_MAX, &msg_slab);
+                if (WG_FAILURE == status){
+                    wg_workq_cleanup(&msg_queue);
+                    trans_unix_close(&game.transport);
+                    break;
+                }
+
+                /* load plugin               */
+                memset(&plugin, '\0', sizeof (Wgp_plugin));
+                status = wgp_load(plugin_name, &plugin);
+                if (WG_FAILURE == status){
+                    wg_slab_cleanup(&msg_slab);
+                    wg_workq_cleanup(&msg_queue);
+                    trans_unix_close(&game.transport);
+                    break;
+                }
+
+                wgp_info(&plugin, &plug_info);
+
+                WG_LOG("Plugin loaded : %s\n", plug_info->name);
+
+                status = create_pipe_threads(msg_from_sensor, 
+                        msg_to_game, &msg_queue, threads);
+                if (WG_FAILURE == status){
+                    wgp_unload(&plugin);
+                    wg_slab_cleanup(&msg_slab);
+                    wg_workq_cleanup(&msg_queue);
+                    trans_unix_close(&game.transport);
+                    break;
+                }
+
+                running_game = game;
+            } while (0);
             if (WG_FAILURE == status){
                 kill(game.process_id, SIGTERM);
                 waitpid(game.process_id, NULL, WNOHANG);
                 return WG_FAILURE;
             }
-
-            WG_DEBUG("Transaction created at %s\n", address);
-
-            wg_workq_init(&msg_queue, GET_OFFSET(Wg_message, list));
-
-            wg_slab_init(sizeof (Wg_message), MSG_QUEUE_MAX, &msg_slab);
-
-            create_pipe_threads(msg_from_sensor, msg_to_game, &msg_queue,
-                    threads);
-
-            running_game = game;
 
             break;
     }
@@ -143,7 +189,7 @@ gpm_game_add_message(Msg_type type, ...)
  * @retval WG_SUCCESS
  * @retval WG_FAILURE
  *
- * TODO Make it static
+ * @todo Make it static
  */
 wg_status
 gpm_game_send(wg_uchar *data, wg_size size)
@@ -177,12 +223,22 @@ gpm_game_send(wg_uchar *data, wg_size size)
 wg_status
 gpm_game_kill(void)
 {
+    int ret_status[THREAD_NUM] = {0};
+
     if (gpm_game_is_running() == WG_TRUE){
+        kill_pipe_threads(threads,  ret_status);
+
         trans_unix_close(&running_game.transport);
 
         kill(running_game.process_id, SIGTERM);
         waitpid(running_game.process_id, NULL, WNOHANG);
         WG_DEBUG("Game closed. $$=%ld\n", (long)running_game.process_id);
+
+        wg_slab_cleanup(&msg_slab);
+
+        wgp_unload(&plugin);
+
+        /* TODO Clean a workq */
 
         memset(&running_game, '\0', sizeof (Game));
     }
@@ -261,6 +317,20 @@ gpm_game_get_id(wg_uint *id)
 }
 
 WG_PRIVATE wg_status
+kill_pipe_threads(pthread_t thread[THREAD_NUM], int ret_status[THREAD_NUM])
+{
+    CHECK_FOR_NULL_PARAM(thread);
+    CHECK_FOR_NULL_PARAM(ret_status);
+
+    ret_status[THREAD_PROD] = pthread_cancel(thread[THREAD_PROD]);
+    ret_status[THREAD_CONS] = pthread_cancel(thread[THREAD_CONS]);
+
+    return (ret_status[THREAD_CONS] == 0 && ret_status[THREAD_PROD] == 0) ?
+        WG_SUCCESS   :
+        WG_FAILURE;
+}
+
+WG_PRIVATE wg_status
 create_pipe_threads(void* (*producer)(void*), void* (*consumer)(void *),
         WorkQ *queue, pthread_t thread[THREAD_NUM])
 {
@@ -300,6 +370,7 @@ WG_PRIVATE void *
 msg_to_game(void *queue)
 {
     Wg_message *msg = NULL;
+
     for (;;){
         printf("\n%s: Waiting for a message\n", __PRETTY_FUNCTION__);
         wg_workq_get((WorkQ*)queue, (void**)&msg);
@@ -309,4 +380,5 @@ msg_to_game(void *queue)
 
      return queue;
 }
+
 /*! @} */

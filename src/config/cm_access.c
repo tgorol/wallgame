@@ -319,6 +319,19 @@ read_game_section(ini_fd_t *ini_fd, char *game_name, Config_section *section)
         CONFIG_FIELD_STRING   :
         CONFIG_FIELD_INVALID;
 
+    /* locate a plugin name key and read */
+    config_field = &(field[GAME_PLUGIN_NAME]);
+    status = ini_locateKey(ini_fd, GAME_PLUGIN_NAME_KEY);
+    if (INI_ERROR != status){
+        status = ini_readString(ini_fd, 
+                config_field->value.string, 
+                CONFIG_MAX_STRING_SIZE);
+        save_field_name(GAME_PLUGIN_NAME_KEY, config_field);
+    }
+    config_field->type = (status != INI_ERROR) ?
+        CONFIG_FIELD_STRING   :
+        CONFIG_FIELD_INVALID;
+
     /* locate a game arguments key and read */
     config_field = &(field[GAME_ARGUMENTS]);
     status = ini_locateKey(ini_fd, GAME_ARGUMENTS_KEY);
