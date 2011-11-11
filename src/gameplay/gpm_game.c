@@ -3,7 +3,6 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
-#include <pthread.h>
 #include <sys/wait.h>
 #include <sys/types.h>
 
@@ -16,6 +15,7 @@
 #include <wg_workqueue.h>
 #include <wg_slab.h>
 #include <wgp.h>
+#include <wg_msgpipe.h>
 
 #include "include/gpm_msg.h"
 #include "include/gpm_game.h"
@@ -25,7 +25,6 @@
 
 /*! @{ */
 
-enum {THREAD_PROD = 0, THREAD_CONS, THREAD_NUM}; 
 
 #define MSG_QUEUE_MAX   1024
 
@@ -42,20 +41,13 @@ typedef struct Game{
  * @brief Running game instance;
  */
 WG_PRIVATE Game running_game;
-WG_PRIVATE pthread_t threads[THREAD_NUM];
+WG_PRIVATE Msgpipe msgpipe;
 WG_PRIVATE WorkQ msg_queue;
 WG_PRIVATE Wg_slab  msg_slab;
 WG_PRIVATE Wgp_plugin plugin;
 
-
-WG_PRIVATE void * msg_from_sensor(void *queue);
-WG_PRIVATE void * msg_to_game(void *queue);
-WG_PRIVATE wg_status
-create_pipe_threads(void* (*producer)(void*), void* (*consumer)(void *),
-        WorkQ *queue, pthread_t thread[THREAD_NUM]);
-
-WG_PRIVATE wg_status
-kill_pipe_threads(pthread_t thread[THREAD_NUM], int ret_status[THREAD_NUM]);
+WG_PRIVATE void * msg_from_sensor(Msgpipe_param *queue);
+WG_PRIVATE void * msg_to_game(Msgpipe_param *queue);
 
 /**
  * @brief Start a game
@@ -135,8 +127,9 @@ gpm_game_run(wg_char *argv[], wg_char *address, const wg_char *plugin_name)
 
                 WG_LOG("Plugin loaded : %s\n", plug_info->name);
 
-                status = create_pipe_threads(msg_from_sensor, 
-                        msg_to_game, &msg_queue, threads);
+                status = wg_msgpipe_create(
+                        msg_from_sensor, msg_to_game, &msg_queue, &msgpipe,
+                        NULL);
                 if (WG_FAILURE == status){
                     wgp_unload(&plugin);
                     wg_slab_cleanup(&msg_slab);
@@ -223,20 +216,25 @@ gpm_game_send(wg_uchar *data, wg_size size)
 wg_status
 gpm_game_kill(void)
 {
-    int ret_status[THREAD_NUM] = {0};
+    wg_status status = WG_FAILURE;
 
     if (gpm_game_is_running() == WG_TRUE){
-        kill_pipe_threads(threads,  ret_status);
+        status = wg_msgpipe_kill(&msgpipe);
+        if (WG_FAILURE == status){
+            WG_LOG("Msgpipe exit error\n");
+        }
 
         trans_unix_close(&running_game.transport);
 
         kill(running_game.process_id, SIGTERM);
-        waitpid(running_game.process_id, NULL, WNOHANG);
+        waitpid(running_game.process_id, NULL, 0);
+
         WG_DEBUG("Game closed. $$=%ld\n", (long)running_game.process_id);
 
         wg_slab_cleanup(&msg_slab);
 
         wgp_unload(&plugin);
+        WG_DEBUG("Plugin unloaded\n");
 
         /* TODO Clean a workq */
 
@@ -316,69 +314,40 @@ gpm_game_get_id(wg_uint *id)
     return status;
 }
 
-WG_PRIVATE wg_status
-kill_pipe_threads(pthread_t thread[THREAD_NUM], int ret_status[THREAD_NUM])
-{
-    CHECK_FOR_NULL_PARAM(thread);
-    CHECK_FOR_NULL_PARAM(ret_status);
-
-    ret_status[THREAD_PROD] = pthread_cancel(thread[THREAD_PROD]);
-    ret_status[THREAD_CONS] = pthread_cancel(thread[THREAD_CONS]);
-
-    return (ret_status[THREAD_CONS] == 0 && ret_status[THREAD_PROD] == 0) ?
-        WG_SUCCESS   :
-        WG_FAILURE;
-}
-
-WG_PRIVATE wg_status
-create_pipe_threads(void* (*producer)(void*), void* (*consumer)(void *),
-        WorkQ *queue, pthread_t thread[THREAD_NUM])
-{
-   pthread_t thread_prod = 0;
-   pthread_t thread_cons = 0;
-   int rc = 0;
-
-   rc = pthread_create(&thread_prod, NULL, producer, (void*)queue);
-   if (0 != rc){
-       WG_LOG("Threads creation failed: %d\n", rc);
-       return WG_FAILURE;
-   }
-
-   rc = pthread_create(&thread_cons, NULL, consumer, (void*)queue);
-   if (0 != rc){
-       WG_LOG("Threads creation failed: %d\n", rc);
-       return WG_FAILURE;
-   }
-
-   thread[THREAD_PROD] = thread_prod;
-   thread[THREAD_CONS] = thread_cons;
-
-   return WG_SUCCESS;
-}
 
 WG_PRIVATE void *
-msg_from_sensor(void *queue)
+msg_from_sensor(Msgpipe_param *param)
 {
 
     for (;;){
+        printf("msg_from_sensor\n");
         sleep(3);
     }
-    return queue;
+    return param;
 }
 
 WG_PRIVATE void *
-msg_to_game(void *queue)
+msg_to_game(Msgpipe_param *param)
 {
+#if 0
     Wg_message *msg = NULL;
+#endif
 
     for (;;){
+        printf("msg_to_game\n");
+        sleep(3);
+    }
+
+#if 0
+    for (;;){
         printf("\n%s: Waiting for a message\n", __PRETTY_FUNCTION__);
-        wg_workq_get((WorkQ*)queue, (void**)&msg);
+        wg_workq_get(param->queue, (void**)&msg);
         printf("Received msg type = %d\n", msg->type);
         wg_slab_free(&msg_slab, msg);
     }
+#endif
 
-     return queue;
+     return param;
 }
 
 /*! @} */
