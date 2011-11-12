@@ -41,9 +41,25 @@ typedef struct Game{
  * @brief Running game instance;
  */
 WG_PRIVATE Game running_game;
+
+/**
+ * @brief Message pipe
+ */
 WG_PRIVATE Msgpipe msgpipe;
+
+/**
+ * @brief Message queue
+ */
 WG_PRIVATE WorkQ msg_queue;
+
+/**
+ * @brief Message slab
+ */
 WG_PRIVATE Wg_slab  msg_slab;
+
+/**
+ * @brief Loaded plugin
+ */
 WG_PRIVATE Wgp_plugin plugin;
 
 WG_PRIVATE void * msg_from_sensor(Msgpipe_param *queue);
@@ -152,6 +168,17 @@ gpm_game_run(wg_char *argv[], wg_char *address, const wg_char *plugin_name)
     return WG_SUCCESS;
 }
 
+/**
+ * @brief 
+ *
+ * @param type type of the message
+ * @param ...  variable argument list
+ *
+ * @return WG_SUCCESS
+ * @return WG_FAILURE
+ *
+ * @todo finish this function
+ */
 wg_status
 gpm_game_add_message(Msg_type type, ...)
 {
@@ -315,6 +342,15 @@ gpm_game_get_id(wg_uint *id)
 }
 
 
+/**
+ * @brief Read data from sensor and write to message queue
+ *
+ * This function is called in a thread context.
+ *
+ * @param param paramaters
+ *
+ * @return NULL
+ */
 WG_PRIVATE void *
 msg_from_sensor(Msgpipe_param *param)
 {
@@ -326,6 +362,15 @@ msg_from_sensor(Msgpipe_param *param)
     return param;
 }
 
+/**
+ * @brief Read message from queue and pass to a game
+ *
+ * This function is called in a thread context.
+ *
+ * @param param paramaters
+ *
+ * @return NULL
+ */
 WG_PRIVATE void *
 msg_to_game(Msgpipe_param *param)
 {

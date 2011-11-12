@@ -85,6 +85,7 @@ wg_msgpipe_get_exit_codes(Msgpipe *msgpipe,
  * @param consumer
  * @param queue     queue to use as pipe
  * @param msgpipe   memory to store message pipe instance
+ * @param user_data user specified data
  *
  * @retval WG_SUCCESS
  * @retval WG_FAILURE
@@ -133,6 +134,16 @@ wg_msgpipe_create(void* (*producer)(Msgpipe_param *),
    return WG_SUCCESS;
 }
 
+/**
+ * @brief Producer thread prolog function.
+ *
+ * This function setup a producer thread and then calls user define 
+ * function.
+ *
+ * @param data   pointer to Msgpipe structute
+ *
+ * @return user defined value
+ */
 WG_PRIVATE void *
 wg_msgpipe_producer(void *data)
 {
@@ -141,19 +152,36 @@ wg_msgpipe_producer(void *data)
     int old_type = 0;
     Msgpipe_param param = {0};
 
+    CHECK_FOR_NULL_PARAM(data);
 
     msgpipe = (Msgpipe *)data;
 
+    CHECK_FOR_NULL_PARAM(msgpipe->producer);
+
+    /* enable thread cancelation    */
     pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_state);
 
+    /* make cancellation only when thread fell asleep */
     pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, &old_type);
 
+    /* create data passed to the user define function */
     param.queue     = msgpipe->queue;
     param.user_data = msgpipe->user_data;
 
+    /* call producer function */
     return msgpipe->producer(&param);
 }
 
+/**
+ * @brief Consumer thread prolog function.
+ *
+ * This function setup a consumer thread and then calls user define 
+ * function.
+ *
+ * @param data   pointer to Msgpipe structute
+ *
+ * @return user defined value
+ */
 WG_PRIVATE void *
 wg_msgpipe_consumer(void *data)
 {
@@ -162,15 +190,23 @@ wg_msgpipe_consumer(void *data)
     int old_type = 0;
     Msgpipe_param param = {0};
 
+    CHECK_FOR_NULL_PARAM(data);
+
     msgpipe = (Msgpipe *)data;
 
+    CHECK_FOR_NULL_PARAM(msgpipe->consumer);
+
+    /* enable thread cancelation    */
     pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_state);
 
+    /* make cancellation only when thread fell asleep */
     pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, &old_type);
 
+    /* create data passed to the user define function */
     param.queue     = msgpipe->queue;
     param.user_data = msgpipe->user_data;
 
+    /* call consumer function */
     return msgpipe->consumer(&param);
 }
 

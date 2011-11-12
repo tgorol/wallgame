@@ -18,8 +18,21 @@
 
 /*! @{ */
 
+/**
+ * @brief Server section
+ */
+
 WG_PRIVATE Config_section config_server = {.type = SERVER_SECTION};
+
+/**
+ * @brief GameList section
+ */
 WG_PRIVATE Config_section config_games_list = {.type = GAMES_LIST_SECTION};
+
+
+/**
+ * @brief List of Game sections
+ */
 WG_PRIVATE Config_section config_game[CONFIG_MAX_GAMES_NUM];
 
 /**

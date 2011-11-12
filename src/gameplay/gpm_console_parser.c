@@ -18,8 +18,19 @@
 
 /*! @{ */
 
+/** 
+ * @brief Double quote
+ * */  
 #define DQUOTE_CHAR     '\"'
+
+/** 
+ * @brief Esacape chacacter
+ * */  
 #define ESC_CHAR        '\\'
+
+/** 
+ * @brief End of stream
+ * */  
 #define END_STREAM      '\0'
 
 WG_PRIVATE wg_status
@@ -34,6 +45,15 @@ release_token(Token **token);
 WG_PRIVATE wg_status
 fill_token(Token *token, TOKEN_TYPE type, wg_char *start, wg_char *end);
 
+/**
+ * @brief Parse command
+ *
+ * @param pos    command to parse
+ * @param head   list for tokes
+ *
+ * @retval WG_SUCCESS
+ * @retval WG_FAILURE
+ */
 wg_status
 gpm_console_parse(wg_char *pos, List_head *head)
 {
@@ -120,6 +140,16 @@ gpm_console_remove_args(wg_char **arg_vector)
     return WG_SUCCESS;
 }
 
+/**
+ * @brief Parse token
+ *
+ * @param pos    start pointer
+ * @param head   token list
+ * @param scope  selected scope
+ *
+ * @retval WG_SUCCESS
+ * @retval WG_FAILURE
+ */
 WG_PRIVATE wg_status
 parse(wg_char **pos, List_head *head, SCOPE scope)
 {
@@ -271,6 +301,14 @@ parse(wg_char **pos, List_head *head, SCOPE scope)
     return WG_SUCCESS;
 }
 
+/**
+ * @brief Release resources allocated for token list
+ *
+ * @param tok_list token tlist to release
+ *
+ * @retval WG_SUCCESS
+ * @retval WG_FAILURE
+ */
 wg_status
 gpm_console_remove_token_list(List_head *tok_list)
 {
@@ -286,6 +324,18 @@ gpm_console_remove_token_list(List_head *tok_list)
     return WG_SUCCESS;
 }
 
+/**
+ * @brief Initialise token
+ *
+ * the end param pints to the first character after token.
+ *
+ * @param token token to initialize
+ * @param type  type ot the token
+ * @param start start pointer
+ * @param end   end pointer
+ *
+ * @return 
+ */
 WG_PRIVATE wg_status
 fill_token(Token *token, TOKEN_TYPE type, wg_char *start, wg_char *end)
 {
@@ -327,20 +377,36 @@ fill_token(Token *token, TOKEN_TYPE type, wg_char *start, wg_char *end)
     return status;
 }
 
+/**
+ * @brief Release resources allocated for token
+ *
+ * @param token token to release
+ *
+ * @return WG_SUCCESS
+ * @return WG_SUCCESS
+ */
 WG_PRIVATE wg_status
 release_token(Token **token){
-    CHECK_FOR_NULL(token);
+    CHECK_FOR_NULL_PARAM(token);
 
     WG_FREE(*token);
 
     return WG_SUCCESS;
 }
 
+/**
+ * @brief Allocate memory for token
+ *
+ * @param token  memory to store pointer to created token
+ *
+ * @return WG_SUCCESS
+ * @return WG_FAILURE
+ */
 WG_PRIVATE wg_status
 allocate_token(Token **token)
 {
 
-    CHECK_FOR_NULL(token);
+    CHECK_FOR_NULL_PARAM(token);
 
     Token *tok = NULL;
     tok = WG_CALLOC(1, sizeof (Token));

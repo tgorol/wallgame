@@ -180,6 +180,15 @@ cm_write_game(Config *config, char *game_name, Config_section *section)
     return wg_stat;
 }
 
+/**
+ * @brief Read Server section
+ *  
+ * @param ini_fd     config file handler
+ * @param section    memory to store section fields
+ *
+ * @retval WG_SUCCESS
+ * @retval WG_FAILURE
+ */
 WG_PRIVATE wg_status
 read_server_section(ini_fd_t ini_fd, Config_section *section)
 {
@@ -243,6 +252,14 @@ read_server_section(ini_fd_t ini_fd, Config_section *section)
 
 }
 
+/**
+ * @brief Read GameList section
+ *
+ * @param ini_fd        config file handle
+ * @param[out] section  memory to store section fields
+ *
+ * @return 
+ */
 WG_PRIVATE wg_status
 read_games_list_section(ini_fd_t *ini_fd, Config_section *section)
 {
@@ -287,6 +304,16 @@ read_games_list_section(ini_fd_t *ini_fd, Config_section *section)
     return WG_SUCCESS;
 }
 
+/**
+ * @brief Read a Game section
+ *
+ * @param ini_fd        config file handle
+ * @param game_name     name of the game section
+ * @param[out] section memory to store section keys
+ *
+ * @retval WG_SUCCESS
+ * @retval WG_FAILURE
+ */
 WG_PRIVATE wg_status
 read_game_section(ini_fd_t *ini_fd, char *game_name, Config_section *section)
 {
@@ -350,14 +377,33 @@ read_game_section(ini_fd_t *ini_fd, char *game_name, Config_section *section)
     return WG_SUCCESS;
 }
 
+/**
+ * @brief Save a field name in Config_field structure 
+ *
+ * @param name    field name
+ * @param field   Config_field instance
+ *
+ * @retval WG_SUCCESS
+ * @retval WG_FAILURE
+ */
 WG_PRIVATE wg_status
 save_field_name(wg_char *name, Config_field *field)
 {
-    snprintf(field->name, CONFIG_MAX_FIELD_NAME_SIZE, name);
+    int status = 0;
+    status = snprintf(field->name, CONFIG_MAX_FIELD_NAME_SIZE, name);
 
-    return WG_SUCCESS;
+    return (status < 0) ? WG_FAILURE :  WG_SUCCESS;
 }
 
+/**
+ * @brief Add key to the config file
+ *
+ * @param ini_fd    config file handle
+ * @param key_name  key name
+ *
+ * @retval WG_SUCCESS
+ * @retval WG_FAILURE
+ */
 WG_PRIVATE wg_status
 add_key(ini_fd_t ini_fd, char *key_name)
 {
@@ -372,6 +418,16 @@ add_key(ini_fd_t ini_fd, char *key_name)
     return WG_SUCCESS;
 }
 
+/**
+ * @brief Add key to config file
+ *
+ * @param ini_fd    config field handle
+ * @param config_field[] fields to add
+ * @param num number of fields in config_field array
+ *
+ * @retval WG_SUCCESS
+ * @retval WG_FAILURE
+ */
 WG_PRIVATE wg_status
 add_key_value(ini_fd_t ini_fd, Config_field config_field[], wg_int num)
 {
@@ -405,6 +461,16 @@ add_key_value(ini_fd_t ini_fd, Config_field config_field[], wg_int num)
     return WG_SUCCESS;
 }
 
+/**
+ * @brief Find firs invali/empty key
+ *
+ * @param field[]  array aof fields
+ * @param num      number of fields in field array
+ * @param pos      position of found field
+ *
+ * @retval WG_TRUE   key found
+ * @retval WG_FALSE  key does not exist
+ */
 WG_PRIVATE wg_boolean
 find_invalid_key(Config_field field[], wg_int num, wg_int *pos)
 {
@@ -424,6 +490,17 @@ find_invalid_key(Config_field field[], wg_int num, wg_int *pos)
     return (index >= num) ? WG_FALSE : WG_TRUE;
 }
 
+/**
+ * @brief Find a key in section
+ *
+ * @param game_name   key name
+ * @param field[]     field array to scan
+ * @param num         number of fields in field array 
+ * @param[out] pos    memory to store found field index
+ *
+ * @retval WG_TRUE   key found
+ * @retval WG_FALSE  key does not exist
+ */
 WG_PRIVATE wg_boolean
 find_key(char *game_name, Config_field field[], wg_int num, wg_int *pos)
 {

@@ -22,18 +22,29 @@
 
 /*! @{ */
 
+
+#if 0
+
+/**
+ * @brief 
+ */
 typedef struct Async_hook_info_block{
     pthread_t tid;
     wg_char *command;
     List_head list;
 }Async_hook_info_block;
 
+#endif
+
+/**
+ * @brief Command info structure
+ */
 typedef struct Cmd_info {
-    wg_char *name;
-    wg_char *description;
-    Console_hook_cb cb_hook;
-    HOOK_FLAG flags;
-    void *private_data;
+    wg_char *name;           /*!< command name                             */
+    wg_char *description;    /*!< command description                      */
+    Console_hook_cb cb_hook; /*!< callback function                        */
+    HOOK_FLAG flags;         /*!< command flags                            */
+    void *private_data;      /*!< private data passed to callback function */
 }Cmd_info;
 
 WG_PRIVATE wg_status 
@@ -44,12 +55,21 @@ WG_PRIVATE wg_status
 debug_cb_print(wg_uint argc, wg_char *argv[], void *private_data);
 #endif
 
+/**
+ * @brief  Prompt
+ */
 WG_PRIVATE wg_char *prompt = NULL;
 WG_PRIVATE wg_status release_prompt(void);
 WG_PRIVATE wg_status set_prompt(wg_char *new_prompt);
 
+/**
+ * @brief Command database
+ */
 WG_PRIVATE ght_hash_table_t *cmd_directory = NULL;
 
+/**
+ * @brief Asyncronus commands
+ */
 WG_PRIVATE List_head async_cmd;
 
 WG_PRIVATE wg_status add_default_hooks(void);
@@ -60,6 +80,9 @@ WG_PRIVATE wg_boolean execute_command(wg_uint argv, wg_char *command[]);
 
 WG_PRIVATE wg_status print_detail_lines(wg_char *lines[]);
 
+/**
+ * @brief Default commands.
+ */
 Cmd_info def_cmd_info[] = {
     {
         .name         = "help"                ,
@@ -366,6 +389,17 @@ gpm_console_hook_release(Console_hook *hook)
 }
 
 
+/**
+ * @brief Execute command from argv
+ *
+ * command[0] - command name 
+ *
+ * @param argc       number of arguments
+ * @param command[]  command arguments
+ *
+ * @retval WG_TRUE   ok
+ * @retval WG_FALSE  failed
+ */
 WG_PRIVATE wg_boolean
 execute_command(wg_uint argc, char *command[])
 {
@@ -396,6 +430,12 @@ execute_command(wg_uint argc, char *command[])
     return exit_flag;
 }
 
+/**
+ * @brief Add defaut hooks
+ *
+ * @return WG_SUCCESS
+ * @return WG_FAILURE
+ */
 WG_PRIVATE wg_status
 add_default_hooks(void)
 {
@@ -418,6 +458,15 @@ add_default_hooks(void)
     return WG_SUCCESS;
 }
 
+/**
+ * @brief Get hook by name
+ *
+ * @param cmd    command name
+ * @param hook   memory to store command data
+ *
+ * @retval WG_SUCCESS
+ * @retval WG_FAILURE
+ */
 WG_PRIVATE wg_status
 get_hook(wg_char *cmd, Console_hook **hook)
 {
@@ -433,6 +482,14 @@ get_hook(wg_char *cmd, Console_hook **hook)
     return (cmd_hook != NULL) ? WG_SUCCESS : WG_FAILURE;
 }
 
+/**
+ * @brief Set prompt
+ *
+ * @param new_prompt  new prompt
+ *
+ * @return WG_SUCCESS
+ * @return WG_FAILURE
+ */
 WG_PRIVATE wg_status
 set_prompt(wg_char *new_prompt)
 {
@@ -451,6 +508,12 @@ set_prompt(wg_char *new_prompt)
     return WG_SUCCESS;
 }
 
+/**
+ * @brief Release memory allocated for prompt
+ *
+ * @return WG_SUCCESS
+ * @return WG_FAILURE
+ */
 WG_PRIVATE wg_status
 release_prompt(void)
 {
@@ -460,6 +523,16 @@ release_prompt(void)
 }
 
 
+/**
+ * @brief Default help callback
+ *
+ * @param argc          number of arguments
+ * @param argv[]        arguments
+ * @param private_data  user data
+ *
+ * @retval WG_SUCCESS
+ * @retval WG_FAILURE
+ */
 WG_PRIVATE wg_status 
 def_cb_help(wg_uint argc, wg_char *argv[], void *private_data)
 {
@@ -491,14 +564,22 @@ def_cb_help(wg_uint argc, wg_char *argv[], void *private_data)
     return WG_SUCCESS;
 }
 
+/**
+ * @brief Print command detailed description
+ *
+ * @param lines[]   lines to print
+ *
+ * @return 
+ */
 WG_PRIVATE wg_status
 print_detail_lines(wg_char *lines[])
 {
-    while ((lines != NULL) && (*lines != NULL)){
-        printf("%s\n", *lines++);
+    int status = 0;
+    while ((lines != NULL) && (*lines != NULL) && (status >=0)){
+        status = printf("%s\n", *lines++);
     }
 
-    return WG_SUCCESS;
+    return (status < 0) ? WG_FAILURE : WG_SUCCESS;
 }
 
 #ifdef WGDEBUG
