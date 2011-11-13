@@ -24,22 +24,25 @@ typedef enum SCOPE {
     IN_UNKNOWN
 } SCOPE;
 
+/**
+ * @brief Token structure
+ */
 typedef struct Token{
-    TOKEN_TYPE type;
+    TOKEN_TYPE type;                     /*!< type of the token               */
     union {
-        wg_int   integer;
-        wg_char  *string;
-        wg_char  *identifier;
-        wg_char  *invalid;
-        wg_char  unknown;
-        wg_char  character;
-        wg_char  blank;
-        wg_char  end;
-    }value;
-    wg_char *start;
-    wg_char *end;
-    wg_char string[MAX_TOKEN_SIZE + 1]; 
-    List_head head;
+        wg_int   integer;                    /*!< int value           */
+        wg_char  *string;                    /*!< string value        */
+        wg_char  *identifier;                /*!< identifier value    */
+        wg_char  *invalid;                   /*!< invalid value       */
+        wg_char  unknown;                    /*!< unknown value       */
+        wg_char  character;                  /*!< character value     */
+        wg_char  blank;                      /*!< blank value         */
+        wg_char  end;                        /*!< end of stream value */
+    }value;                              /*!< token value                     */
+    wg_char *start;                      /*!< ptr to first char of the token  */
+    wg_char *end;                        /*!< ptr to last+1 char of the token */
+    wg_char string[MAX_TOKEN_SIZE + 1];  /*!< string representation of token  */
+    List_head head;                      /*!< list head                       */
 }Token;
 
 WG_PUBLIC wg_status

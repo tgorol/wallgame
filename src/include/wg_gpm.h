@@ -6,10 +6,13 @@ enum {
     WG_EXIT_ERROR
 };
 
+/**
+ * @brief Field iterator
+ */
 typedef struct Field_iterator{
-    const Config_section *section;
-    wg_uint index;
-    wg_uint last_index;
+    const Config_section *section;  /*!< field section */
+    wg_uint index;                  /*!< actual index  */
+    wg_uint last_index;             /*!< last index    */
 }Field_iterator;
 
 WG_PUBLIC int

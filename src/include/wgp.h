@@ -5,17 +5,24 @@
 #define MAX_PLUGIN_DESC_SIZE 512
 
 
+/**
+ * @brief Plugin info structure
+ */
 typedef struct Wgp_info{
-     wg_char name[MAX_PLUGIN_NAME_SIZE];
-     wg_long version;
-     wg_char description[MAX_PLUGIN_DESC_SIZE];
+     wg_char name[MAX_PLUGIN_NAME_SIZE];        /*!< plugin name        */
+     wg_long version;                           /*!< pligin version     */
+     wg_char description[MAX_PLUGIN_DESC_SIZE]; /*!< plugin description */
 }Wgp_info;
 
+/**
+ * @brief Plugin structure
+ */
 typedef struct Wgp_plugin{
-    Wgp_info info;
-    void *lib;
-    wg_int (*read)(wg_char *buffer, wg_int **readed, wg_size size);
-    wg_status (*init)(Wgp_info*);
+    Wgp_info info;                             /*!< plugin information */
+    void *lib;                                 /*!< plugin file handle */
+    /* plugin interface */
+    wg_int (*read)(wg_char *buffer, wg_int **readed, wg_size size); /*!< read */
+    wg_status (*init)(Wgp_info*);             /*!< info */
 }Wgp_plugin;
 
 WG_PUBLIC wg_status

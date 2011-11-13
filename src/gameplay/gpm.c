@@ -14,13 +14,16 @@
 #include "include/gpm_cmdln.h"
 #include "include/gpm_hooks.h"
 
+/**
+ * @brief Console command information
+ */
 typedef struct Cmd_info {
-    wg_char *name;
-    wg_char *description;
-    Console_hook_cb cb_hook;
-    HOOK_FLAG flags;
-    void *private_data;
-    wg_char **detail_lines;
+    wg_char *name;              /*!< name of the command  */
+    wg_char *description;       /*!< description          */
+    Console_hook_cb cb_hook;    /*!< hook function        */ 
+    HOOK_FLAG flags;            /*!< type of the hook     */
+    void *private_data;         /*!< user defined data    */
+    wg_char **detail_lines;     /*!< detailed description */
 }Cmd_info;
 
 wg_char *details_lsg[] = {

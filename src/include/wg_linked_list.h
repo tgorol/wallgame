@@ -15,12 +15,15 @@ struct List_head{
     List_head *prev;               /*!< previous element in the list */
 };
 
+/**
+ * @brief Linked list iterator
+ */
 typedef struct Iterator{
-    void *next;
-    void *prev;
-    void *list;
-    wg_uint offset;
-    void *reserved;
+    void *next;       /*!< next element in the list     */
+    void *prev;       /*!< previuos element in the list */
+    void *list;       /*!< head of the list             */
+    wg_uint offset;   /*!< list element offset          */
+    void *reserved;   /*!< reserved                     */
 }Iterator;
 
 WG_PUBLIC void dlist_init(List_head *);

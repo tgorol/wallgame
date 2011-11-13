@@ -14,10 +14,10 @@
  * Server section.
  */
 typedef enum CONFIG_SERVER_SECTION {
-    PIPE_PATH       =  0        , 
-    PLAYER_DB_PATH              ,
-    SCORE_DB_PATH               ,
-    CONFIG_SERVER_SECTION_SIZE
+    PIPE_PATH       =  0        ,       /*!< path to a message pipe */
+    PLAYER_DB_PATH              ,       /*!< player database path   */
+    SCORE_DB_PATH               ,       /*!< score database path    */
+    CONFIG_SERVER_SECTION_SIZE          /*!< size of this enum      */
 }CONFIG_SERVER_SECTION;
 
 /**
@@ -63,8 +63,8 @@ typedef struct Config_field{
     CONFIG_FIELD_TYPE type;                     /*!< type of the field */
     wg_char name[CONFIG_MAX_FIELD_NAME_SIZE];   /*!< name of the field */
     union{
-        wg_char string[CONFIG_MAX_STRING_SIZE]; /*!< memory for string type */
-    }value;
+        wg_char string[CONFIG_MAX_STRING_SIZE];   /*!< memory for string type */
+    }value;                                     /*!< field value */
 }Config_field;
 
 /**

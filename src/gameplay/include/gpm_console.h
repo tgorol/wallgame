@@ -11,14 +11,10 @@ typedef enum HOOK_FLAG {
     HOOK_EXIT   = 1 << 2
 }HOOK_FLAG;
 
-typedef struct Console_hook{
-    wg_char *name;
-    wg_char *description;
-    wg_char **detail_lines;
-    Console_hook_cb cb_hook;
-    HOOK_FLAG flags;
-    void *private_data;
-}Console_hook;
+/**
+ * @brief 
+ */
+typedef struct Console_hook Console_hook;
 
 
 #define DEFAULT_HOOK_FLAGS  (HOOK_SYNC)

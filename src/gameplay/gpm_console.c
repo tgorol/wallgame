@@ -37,15 +37,16 @@ typedef struct Async_hook_info_block{
 #endif
 
 /**
- * @brief Command info structure
+ * @brief Describes a console command 
  */
-typedef struct Cmd_info {
-    wg_char *name;           /*!< command name                             */
-    wg_char *description;    /*!< command description                      */
-    Console_hook_cb cb_hook; /*!< callback function                        */
-    HOOK_FLAG flags;         /*!< command flags                            */
-    void *private_data;      /*!< private data passed to callback function */
-}Cmd_info;
+typedef struct Console_hook{
+    wg_char *name;          /*!< name of the command  */
+    wg_char *description;   /*!< description          */
+    wg_char **detail_lines; /*!< detailed description */
+    Console_hook_cb cb_hook; /*!< hook function       */
+    HOOK_FLAG flags;         /*!< hook type           */
+    void *private_data;      /*!< user defined data   */
+}Console_hook;
 
 WG_PRIVATE wg_status 
 def_cb_help(wg_uint argc, wg_char *argv[], void *private_data);
@@ -83,7 +84,7 @@ WG_PRIVATE wg_status print_detail_lines(wg_char *lines[]);
 /**
  * @brief Default commands.
  */
-Cmd_info def_cmd_info[] = {
+Console_hook def_cmd_info[] = {
     {
         .name         = "help"                ,
         .description  = "Print help screen"   ,
@@ -440,7 +441,7 @@ WG_PRIVATE wg_status
 add_default_hooks(void)
 {
     wg_uint index = 0;
-    Cmd_info *def_cmd = NULL;
+    Console_hook *def_cmd = NULL;
     Console_hook *hook = NULL;
     wg_status  status = WG_FAILURE;
 

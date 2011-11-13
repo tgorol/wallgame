@@ -1,10 +1,13 @@
 #ifndef _TRANS_H
 #define _TRANS_H
 
+/**
+ * @brief Unit socket transport structure
+ */
 typedef struct Transport{
-    int out_fd;
-    wg_char *address;
-    wg_boolean is_connected;
+    int out_fd;                 /*!< socket file descriptor */
+    wg_char *address;           /*!< address                */
+    wg_boolean is_connected;    /*!< connection status      */
 }Transport;
 
 WG_PUBLIC wg_status

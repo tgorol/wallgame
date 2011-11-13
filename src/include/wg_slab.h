@@ -1,14 +1,17 @@
 #ifndef _WG_DLAB_H
 #define _WG_DLAB_H
 
+/**
+ * @brief Slab structure
+ */
 typedef struct Wg_slab{
-    wg_size block_size;
-    List_head head;
-    wg_int offset;
-    void *slab;
-    pthread_mutex_t lock;
-    pthread_cond_t empty;
-    pthread_mutexattr_t attr;
+    wg_size block_size;       /*!< slab block size       */
+    List_head head;           /*!< list head             */
+    wg_int offset;            /*!< slab object offest    */
+    void *slab;               /*!< slab memory           */
+    pthread_mutex_t lock;     /*!< slab mutex            */
+    pthread_cond_t empty;     /*!< empty condition event */
+    pthread_mutexattr_t attr; /*!< attributes            */
 }Wg_slab;
 
 WG_PUBLIC wg_status

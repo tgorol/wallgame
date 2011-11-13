@@ -12,18 +12,24 @@ typedef enum MSG_TYPE{
     MSG_STRING 
 }Msg_type;
 
+/**
+ * @brief Message point structure
+ */
 typedef struct Wg_point{
-    wg_float x;
-    wg_float y;
+    wg_float x;    /*!< X coordinate */
+    wg_float y;    /*!< Y coordinate */
 }Wg_point;
 
+/**
+ * @brief Message structure
+ */
 typedef struct Wg_message{
-    Msg_type type;
+    Msg_type type;                              /*!< type of the message */
     union{
-        wg_char string[MAX_MSG_STRING_SIZE];
-        Wg_point point;
-    }value;
-    List_head list;
+        wg_char string[MAX_MSG_STRING_SIZE];      /*!< string value  */
+        Wg_point point;                           /*!< point value   */
+    }value;                                     /*!< message value       */
+    List_head list;                             /*!< list head           */
 }Wg_message;
 
 #endif

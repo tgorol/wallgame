@@ -2,13 +2,16 @@
 #define _WG_WORKQUEUE_H
 
 
+/**
+ * @brief Work queue structure
+ */
 typedef struct WorkQ{
-    pthread_mutex_t lock;
-    pthread_cond_t not_empty;
-    pthread_mutexattr_t attr;
-    List_head head;
-    wg_int offset;
-    wg_boolean sealed;
+    pthread_mutex_t lock;     /*!< workq mutex             */
+    pthread_cond_t not_empty; /*!< on empty condtion event */
+    pthread_mutexattr_t attr; /*!< attributes              */
+    List_head head;           /*!< list head               */
+    wg_int offset;            /*!< workq object offset     */
+    wg_boolean sealed;        /*!< sealed flag             */
 }WorkQ;
 
 WG_PUBLIC wg_status wg_workq_init (WorkQ *queue, wg_int offset);

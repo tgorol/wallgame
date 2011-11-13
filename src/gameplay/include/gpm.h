@@ -11,12 +11,18 @@
 
 #define COMMAND_LINE_OPTION_SIZE 128
 
+/**
+ * @brief Application option entry
+ */
 typedef struct App_option_entry{
-    char value[COMMAND_LINE_OPTION_SIZE + 1];
+    char value[COMMAND_LINE_OPTION_SIZE + 1]; /*!< option value */
 }App_option_entry;
 
+/**
+ * @brief Application options structure
+ */
 typedef struct App_options{
-    App_option_entry ini_file_name;
+    App_option_entry ini_file_name;  /*!< config file path */
 }App_options;
 
 #endif
