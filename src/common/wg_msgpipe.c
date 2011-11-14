@@ -68,12 +68,12 @@ wg_msgpipe_kill(Msgpipe *msgpipe)
  */
 wg_status
 wg_msgpipe_get_exit_codes(Msgpipe *msgpipe, 
-        int *exit_producer, int *exit_consumer)
+        void **exit_producer, void **exit_consumer)
 {
     CHECK_FOR_NULL_PARAM(msgpipe);
 
-    *exit_producer = msgpipe->cancel_status[MSG_THREAD_PROD];
-    *exit_consumer = msgpipe->cancel_status[MSG_THREAD_CONS];
+    *exit_producer = msgpipe->exit_code[MSG_THREAD_PROD];
+    *exit_consumer = msgpipe->exit_code[MSG_THREAD_CONS];
 
     return WG_SUCCESS;
 }
@@ -100,12 +100,17 @@ wg_msgpipe_create(void* (*producer)(Msgpipe_param *),
    pthread_attr_t attr;
    int rc = 0;
 
+   CHECK_FOR_NULL_PARAM(producer);
+   CHECK_FOR_NULL_PARAM(consumer);
+   CHECK_FOR_NULL_PARAM(queue);
+   CHECK_FOR_NULL_PARAM(msgpipe);
+
    memset(msgpipe, '\0', sizeof (Msgpipe));
 
    msgpipe->producer  = producer;
    msgpipe->consumer  = consumer;
    msgpipe->user_data = user_data; 
-   msgpipe->queue = queue;
+   msgpipe->queue     = queue;
 
    pthread_attr_init(&attr);
    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);

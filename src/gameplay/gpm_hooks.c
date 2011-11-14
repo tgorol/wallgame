@@ -9,8 +9,8 @@
 #include <wg_gpm.h>
 #include <wg_trans.h>
 #include <wg_linked_list.h>
+#include <wg_msg.h>
 
-#include "include/gpm_msg.h"
 #include "include/gpm_console.h"
 #include "include/gpm_console_parser.h"
 #include "include/gpm_ini.h"

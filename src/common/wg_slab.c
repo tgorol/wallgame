@@ -54,7 +54,12 @@ wg_slab_init(wg_size block_size, wg_size num, Wg_slab *slab)
         list_add(&slb.head, block_head);
     }
 
+    slb.alloc_num = 0;
+    slb.free_num  = 0;
+
     *slab = slb;
+
+    list_fix_after_copy(&slab->head);
 
     return WG_SUCCESS;
 }
@@ -76,9 +81,12 @@ wg_slab_alloc(Wg_slab *slab, void **block)
 
     object = dlist_pop_first(&slab->head, slab->offset);
 
+    ++slab->alloc_num;
+
     pthread_mutex_unlock(&slab->lock);
 
     *block = object;
+
 
     return WG_SUCCESS;
 }
@@ -101,6 +109,10 @@ wg_slab_free(Wg_slab *slab, void *block)
 
     list_add(&slab->head, block_list);
 
+    ++slab->free_num;
+
+    pthread_cond_signal(&slab->empty);
+
     pthread_mutex_unlock(&slab->lock);
 
     return WG_SUCCESS;
@@ -122,4 +134,15 @@ wg_slab_cleanup(Wg_slab *slab)
 
     return WG_SUCCESS;
 
+}
+
+wg_status
+wg_slab_print_stat(Wg_slab *slab)
+{
+    CHECK_FOR_NULL_PARAM(slab);
+
+    printf("slab allocs = %u\n", slab->alloc_num);
+    printf("slab frees  = %u\n", slab->free_num);
+
+    return WG_SUCCESS;
 }

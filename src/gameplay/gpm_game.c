@@ -14,10 +14,10 @@
 #include <wg_linked_list.h>
 #include <wg_workqueue.h>
 #include <wg_slab.h>
+#include <wg_msg.h>
 #include <wgp.h>
 #include <wg_msgpipe.h>
 
-#include "include/gpm_msg.h"
 #include "include/gpm_game.h"
 
 /*! \defgroup gpm_game Gameplay Game Control 
@@ -40,6 +40,11 @@ typedef struct Game{
     Wg_slab  msg_slab;    /*!< message slab                    */
     Wgp_plugin plugin;    /*!< game plugin                     */
 }Game;
+
+typedef struct Wg_message_wrap{
+    Wg_message body;
+    List_head list;
+}Wg_message_wrap;
 
 /**
  * @brief Running game instance;
@@ -106,14 +111,14 @@ gpm_game_run(wg_char *argv[], wg_char *address, const wg_char *plugin_name)
                 /* TODO Add error checking */
 
                 status = wg_workq_init(&game->msg_queue, 
-                        GET_OFFSET(Wg_message, list));
+                        GET_OFFSET(Wg_message_wrap, list));
                 if (WG_FAILURE == status){
                     trans_unix_close(&game->transport);
                     WG_FREE(game);
                     break;
                 }
 
-                status = wg_slab_init(sizeof (Wg_message), 
+                status = wg_slab_init(sizeof (Wg_message_wrap), 
                         MSG_QUEUE_MAX, &game->msg_slab);
                 if (WG_FAILURE == status){
                     wg_workq_cleanup(&game->msg_queue);
@@ -181,12 +186,12 @@ wg_status
 gpm_game_add_message(Msg_type type, ...)
 {
     wg_status status = WG_FAILURE;
-    Wg_message *message = NULL;
+    Wg_message_wrap *message = NULL;
 
     status = wg_slab_alloc(&running_game->msg_slab, (void**)&message);
     CHECK_FOR_FAILURE(status);
 
-    message->type = type;
+    message->body.type = type;
 
     status = wg_workq_add(&running_game->msg_queue, &message->list);
     if (WG_FAILURE == status){
@@ -256,6 +261,7 @@ gpm_game_kill(void)
 
         WG_DEBUG("Game closed. $$=%ld\n", (long)running_game->process_id);
 
+        wg_slab_print_stat(&running_game->msg_slab);
         wg_slab_cleanup(&running_game->msg_slab);
 
         wgp_unload(&running_game->plugin);
@@ -342,6 +348,25 @@ gpm_game_get_id(wg_uint *id)
     return status;
 }
 
+WG_PRIVATE wg_status
+msg_handler(void *gh, Wg_message *msg)
+{
+    Game *game = NULL;
+    Wg_message_wrap *msg_wrap = NULL;
+
+    game = (Game*)gh;
+#if 0
+    msg_wrap = WG_MALLOC(sizeof (Wg_message_wrap));
+#endif
+
+    wg_slab_alloc(&game->msg_slab, (void**)&msg_wrap);
+
+    msg_wrap->body = *msg;
+
+    wg_workq_add(&game->msg_queue, &msg_wrap->list);
+
+    return WG_SUCCESS;
+}
 
 /**
  * @brief Read data from sensor and write to message queue
@@ -355,11 +380,12 @@ gpm_game_get_id(wg_uint *id)
 WG_PRIVATE void *
 msg_from_sensor(Msgpipe_param *param)
 {
+    Game *game = NULL;
 
-    for (;;){
-        printf("msg_from_sensor\n");
-        sleep(3);
-    }
+    game = (Game*)param->user_data;
+
+    game->plugin.run(game, msg_handler);
+
     return param;
 }
 
@@ -375,19 +401,43 @@ msg_from_sensor(Msgpipe_param *param)
 WG_PRIVATE void *
 msg_to_game(Msgpipe_param *param)
 {
-    Wg_message *msg = NULL;
+    Wg_message_wrap *msg = NULL;
     Game *game = NULL;
+    char buffer[1024];
 
-    game = (Game*)param;
+    game = (Game*)param->user_data;
+
+    sleep(3);
 
     for (;;){
         printf("\n%s: Waiting for a message\n", __PRETTY_FUNCTION__);
         wg_workq_get(param->queue, (void**)&msg);
-        printf("Received msg type = %d\n", msg->type);
-        wg_slab_free(&game->msg_slab, msg);
+        printf("Received msg type = %d\n", msg->body.type);
+        switch (msg->body.type){
+        case MSG_XY:
+            printf("X = %f\nY = %f\n", 
+                    msg->body.value.point.x,
+                    msg->body.value.point.y);
+
+               sprintf(buffer, "%d %d\n", 
+                    (int)msg->body.value.point.x,
+                    (int)msg->body.value.point.y);
+
+               trans_unix_connect(&game->transport);
+               trans_unix_send(&game->transport, (wg_uchar*)buffer, 
+                       strlen(buffer));
+               trans_unix_disconnect(&game->transport);
+            break;
+        default:
+            printf(" ");
+        }
+       wg_slab_free(&game->msg_slab, msg);
+#if 0
+        WG_FREE(msg);
+#endif
     }
 
-     return param;
+    return param;
 }
 
 /*! @} */

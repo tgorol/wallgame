@@ -38,6 +38,7 @@ WG_PUBLIC void dlist_forall_safe(List_head *, void (*)(void*, void*),void *, int
 WG_PUBLIC wg_uint dlist_to_array(List_head *head, void **array, wg_int offset);
 WG_PUBLIC void * dlist_get_first(List_head *head, wg_int offset);
 WG_PUBLIC void * dlist_pop_first(List_head *head, wg_int offset);
+WG_PUBLIC void dlist_fix_after_copy(List_head *head);
 
 #define list_init(head)                                            \
     dlist_init(head)
@@ -75,5 +76,7 @@ WG_PUBLIC void * dlist_pop_first(List_head *head, wg_int offset);
 #define list_to_array(head, type, field,  array)                   \
             dlist_to_array(head, array, GET_OFFSET(type, field))
 
+#define list_fix_after_copy(head)                                  \
+            dlist_fix_after_copy(head)
 
 #endif /* _WG_LIST_H */

@@ -6,7 +6,6 @@
 
 #include <wg_cm.h>
 #include <wg_gpm.h>
-#include <wgp.h>
 
 #include "include/gpm.h"
 #include "include/gpm_ini.h"

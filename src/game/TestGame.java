@@ -79,7 +79,7 @@ class GamePanel extends JPanel{
             while (i.hasNext()){
                 Hit hit = i.next();
                 g.setColor(hit.getColor());
-                System.out.println(hit);
+                //System.out.println(hit);
                 g.fillOval(
                         (int)(hit.getX()/100.0 * size.width), 
                         (int)(hit.getY()/100.0 * size.height),
@@ -182,7 +182,7 @@ class HitReader {
     }
 
     public Socket listen() throws IOException{
-        System.out.println("Waiting for connection...");
+        //System.out.println("Waiting for connection...");
         Socket sock = server.accept();
 
         return sock;

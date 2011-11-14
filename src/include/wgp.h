@@ -4,6 +4,8 @@
 #define MAX_PLUGIN_NAME_SIZE 32
 #define MAX_PLUGIN_DESC_SIZE 512
 
+typedef wg_status (*Msg_handler)(void *gh, Wg_message *msg);
+
 
 /**
  * @brief Plugin info structure
@@ -21,8 +23,8 @@ typedef struct Wgp_plugin{
     Wgp_info info;                             /*!< plugin information */
     void *lib;                                 /*!< plugin file handle */
     /* plugin interface */
-    wg_int (*read)(wg_char *buffer, wg_int **readed, wg_size size); /*!< read */
-    wg_status (*init)(Wgp_info*);             /*!< info */
+    wg_int (*run)(void *gh, Msg_handler handler); 
+    wg_status (*init)(Wgp_info*);              /*!< info */
 }Wgp_plugin;
 
 WG_PUBLIC wg_status

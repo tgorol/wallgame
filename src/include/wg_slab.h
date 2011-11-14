@@ -12,6 +12,8 @@ typedef struct Wg_slab{
     pthread_mutex_t lock;     /*!< slab mutex            */
     pthread_cond_t empty;     /*!< empty condition event */
     pthread_mutexattr_t attr; /*!< attributes            */
+    wg_uint alloc_num;        /*!< allocations counter   */
+    wg_uint free_num;         /*!< deallocation counter  */
 }Wg_slab;
 
 WG_PUBLIC wg_status
@@ -26,5 +28,7 @@ wg_slab_free(Wg_slab *slab, void *block);
 WG_PUBLIC wg_status
 wg_slab_alloc(Wg_slab *slab, void **block);
 
+WG_PUBLIC wg_status
+wg_slab_print_stat(Wg_slab *slab);
 
 #endif

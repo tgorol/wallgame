@@ -1,15 +1,35 @@
+#include <stdlib.h>
+#include <unistd.h>
+#include <time.h>
 #include <string.h>
 
 #include <wg.h>
 #include <wgtypes.h>
 #include <wgmacros.h>
 
+#include <wg_msg.h>
 #include <wgp.h>
 
 
 wg_int
-read(wg_char *buffer, wg_int **readed, wg_size size)
+run(void *gh, Msg_handler handler) 
 {
+    Wg_message msg;
+    int i = 0;
+
+    msg.type = MSG_XY;
+
+    srand(time(NULL));
+
+
+    for (i = 0; i < 10000; ++i){
+        msg.value.point.x = ((float)rand() / (float)RAND_MAX) * 100.0f;
+        msg.value.point.y = ((float)rand() / (float)RAND_MAX) * 100.0f;
+        handler(gh, &msg);
+    }
+
+    for (;;){sleep(1);}
+
     return 0;
 }
 

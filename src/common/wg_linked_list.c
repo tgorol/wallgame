@@ -272,4 +272,18 @@ dlist_pop_first(List_head *head, wg_int offset)
     return h != head ? GET_CONTAINER(h, offset) : NULL;
 }
 
+/**
+ * @brief Fist head after shallow copy
+ *
+ * @param head head of the list
+ */
+void 
+dlist_fix_after_copy(List_head *head)
+{
+    head->next->prev = head;
+    head->prev->next = head;
+
+    return;
+}
+
 /*! @} */

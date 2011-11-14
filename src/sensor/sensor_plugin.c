@@ -10,6 +10,7 @@
 #include <wg_cm.h>
 #include <wg_gpm.h>
 #include <wg_string.h>
+#include <wg_msg.h>
 #include <wgp.h>
 
 #include "include/sensor_plugin.h"
@@ -59,8 +60,8 @@ wgp_load(const wg_char *name, Wgp_plugin *plugin)
         if (WG_FAILURE == status){break;}
 
         /* get pointer to 'read' function              */
-        status = get_function_address(plugin->lib, "read", 
-                (void**)&plugin->read);
+        status = get_function_address(plugin->lib, "run", 
+                (void**)&plugin->run);
 
         if (WG_FAILURE == status){break;}
     }while (0);
@@ -72,28 +73,6 @@ wgp_load(const wg_char *name, Wgp_plugin *plugin)
     return WG_SUCCESS;
 }
 
-
-/**
- * @brief Call read function from the plugin
- *
- * @param plugin plugin to call
- * @param buffer
- * @param readed
- * @param size
- *
- * @return see plugin read function
- */
-wg_int
-wgp_read(Wgp_plugin *plugin, wg_char *buffer, wg_int **readed, wg_size size)
-{
-    CHECK_FOR_NULL_PARAM(plugin);
-    CHECK_FOR_NULL_PARAM(readed);
-    CHECK_FOR_NULL_PARAM(buffer);
-
-    CHECK_FOR_NULL(plugin->read);
-
-    return plugin->read(buffer, readed, size);
-}
 
 /**
  * @brief Get plugin info

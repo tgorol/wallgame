@@ -30,7 +30,7 @@ wg_msgpipe_kill(Msgpipe *msgpipe);
 
 WG_PUBLIC wg_status
 wg_msgpipe_get_exit_codes(Msgpipe *msgpipe, 
-        int *exit_producer, int *exit_consumer);
+        void **exit_producer, void **exit_consumer);
 
 WG_PUBLIC wg_status
 wg_msgpipe_create(void* (*producer)(Msgpipe_param *), 
