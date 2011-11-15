@@ -5,7 +5,7 @@
 #include <stdlib.h>
 
 #define WG_ERROR(...)                               \
-    {fprintf(stderr, "%s:%d ", __PRETTY_FUNCTION__, \
+    {fprintf(stderr, "error: %s:%d ", __PRETTY_FUNCTION__, \
             __LINE__);                              \
     fprintf(stderr, __VA_ARGS__); }
 
@@ -13,12 +13,14 @@
     fprintf(stdout, __VA_ARGS__)                      
 
 #define WG_LOG(...)                  \
+    fprintf(stdout,  "log  : ");     \
     fprintf(stdout, __VA_ARGS__)                      
 
 #ifndef WGDEBUG
 #define WG_DEBUG(...)                
 #else
 #define WG_DEBUG(...)                \
+    fprintf(stdout,  "debug: ");      \
     fprintf(stdout, __VA_ARGS__)                      
 #endif
 
@@ -78,6 +80,12 @@
 #define CHECK_FOR_FAILURE(param)                   \
     if (WG_FAILURE == (param)){                    \
         WG_ERROR("Status failure: " #param"\n");   \
+        return WG_FAILURE;                         \
+    }
+
+#define CHECK_FOR_COND(cond)                       \
+    if (!(cond)){                                  \
+        WG_ERROR("Failed on: " #cond"\n");    \
         return WG_FAILURE;                         \
     }
 
