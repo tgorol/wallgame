@@ -407,15 +407,19 @@ msg_to_game(Msgpipe_param *param)
 
     game = (Game*)param->user_data;
 
+
+    /** @todo remove workaraound */
+
+    /* wait for app to open a pipe */
     sleep(3);
 
     for (;;){
-        printf("\n%s: Waiting for a message\n", __PRETTY_FUNCTION__);
+        WG_DEBUG("\n%s: Waiting for a message\n", __PRETTY_FUNCTION__);
         wg_workq_get(param->queue, (void**)&msg);
-        printf("Received msg type = %d\n", msg->body.type);
+        WG_DEBUG("Received msg type = %d\n", msg->body.type);
         switch (msg->body.type){
         case MSG_XY:
-            printf("X = %f\nY = %f\n", 
+               WG_DEBUG("X = %f Y = %f\n", 
                     msg->body.value.point.x,
                     msg->body.value.point.y);
 

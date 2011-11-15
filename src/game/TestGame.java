@@ -154,9 +154,9 @@ public class TestGame implements Runnable {
                 for (index = 0; index < length; index += 2){
                     int x, y;
                     x = Integer.valueOf(list[index]);
-                    System.out.println("X = " + x);
+                    //System.out.println("X = " + x);
                     y = Integer.valueOf(list[index + 1]);
-                    System.out.println("Y = " + y);
+                    //System.out.println("Y = " + y);
                     hits.add(new Hit(x, y, ColorFactory.getRandom()));
                 }
                 display.repaint();
