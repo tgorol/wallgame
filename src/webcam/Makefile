@@ -1,5 +1,9 @@
 
-SOURCE=wg_cam.c wg_cam_cap.c wg_cam_image.c
+SOURCE=wg_cam.c \
+	   wg_cam_cap.c \
+	   wg_cam_image.c \
+	   wg_cam_readwrite.c  \
+	   wg_cam_img_jpeg.h
 
 APP_NAME=webcam
 
@@ -7,7 +11,7 @@ MAIN_C=wg_cam_main.c
 
 INCLUDE=./include/
 
-EXTRA_CFLAGS+=-D_GNU_SOURCE
+EXTRA_CFLAGS+=-D_GNU_SOURCE `pkg-config --cflags --libs gtk+-2.0`
 
 ifdef WG_DEBUG
 EXTRA_CFLAGS+=-DWGDEBUG
@@ -15,7 +19,7 @@ endif
 
 include $(BUILD_PATH)/env.mk
 
-LIB_LIST+=./build/lib/lib.a ../build/libwg.a
+LIB_LIST+=./build/lib/lib.a ../build/libwg.a -ljpeg
 
 all: clean lib app
 

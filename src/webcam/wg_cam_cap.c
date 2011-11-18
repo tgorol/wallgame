@@ -16,10 +16,23 @@
 #include "include/wg_cam_cap.h"
 #include "include/wg_cam_image.h"
 
+/*! \addtogroup webcam 
+ */
+
+/*! @{ */
+
 WG_PRIVATE const wg_char* yes_no(wg_boolean value);
 
+/**
+ * @brief Get webcam capabilities.
+ *
+ * @param cam webcam instance
+ *
+ * @retval WG_CAM_SUCCESS
+ * @retval WG_CAM_FAILURE
+ */
 wg_cam_status
-wg_cam_cap_read(Wg_camera *cam)
+wg_cam_cap_get(Wg_camera *cam)
 {
     int status = -1;
     wg_cam_status cam_status = WG_CAM_SUCCESS;
@@ -41,6 +54,14 @@ wg_cam_cap_read(Wg_camera *cam)
     return cam_status;
 }
 
+/**
+ * @brief Print capabilities of a webcam
+ *
+ * @param cam webcam onstance
+ *
+ * @retval WG_CAM_SUCCESS
+ * @retval WG_CAM_FAILURE
+ */
 wg_cam_status
 wg_cam_cap_print(Wg_camera *cam)
 {
@@ -87,6 +108,14 @@ wg_cam_cap_print(Wg_camera *cam)
     return WG_CAM_SUCCESS;
 }
 
+/**
+ * @brief Check video capture capability
+ *
+ * @param cam webcam instance
+ *
+ * @retval WG_TRUE
+ * @retval WG_FALSE
+ */
 wg_boolean
 wg_cam_cap_video_capture(Wg_camera *cam)
 {
@@ -96,6 +125,14 @@ wg_cam_cap_video_capture(Wg_camera *cam)
         WG_TRUE : WG_FALSE;
 }
 
+/**
+ * @brief Check video output capability
+ *
+ * @param cam webcam instance
+ *
+ * @retval WG_TRUE
+ * @retval WG_FALSE
+ */
 wg_boolean
 wg_cam_cap_video_output(Wg_camera *cam)
 {
@@ -105,6 +142,14 @@ wg_cam_cap_video_output(Wg_camera *cam)
         WG_TRUE : WG_FALSE;
 }
 
+/**
+ * @brief Check video overlay capability
+ *
+ * @param cam webcam instance
+ *
+ * @retval WG_YES
+ * @retval WG_NO
+ */
 wg_boolean
 wg_cam_cap_video_overlay(Wg_camera *cam)
 {
@@ -114,6 +159,14 @@ wg_cam_cap_video_overlay(Wg_camera *cam)
         WG_TRUE : WG_FALSE;
 }
 
+/**
+ * @brief Check vbi capture capability
+ *
+ * @param cam webcam instance
+ *
+ * @retval WG_YES
+ * @retval WG_NO
+ */
 wg_boolean
 wg_cam_cap_vbi_capture(Wg_camera *cam)
 {
@@ -123,6 +176,14 @@ wg_cam_cap_vbi_capture(Wg_camera *cam)
         WG_TRUE : WG_FALSE;
 }
 
+/**
+ * @brief Check vbi output capability
+ *
+ * @param cam webcam instance
+ *
+ * @retval WG_YES
+ * @retval WG_NO
+ */
 wg_boolean
 wg_cam_cap_vbi_output(Wg_camera *cam)
 {
@@ -132,6 +193,14 @@ wg_cam_cap_vbi_output(Wg_camera *cam)
         WG_TRUE : WG_FALSE;
 }
 
+/**
+ * @brief Check vbi capture capability
+ *
+ * @param cam webcam instance
+ *
+ * @retval WG_YES
+ * @retval WG_NO
+ */
 wg_boolean
 wg_cam_cap_sliced_vbi_capture(Wg_camera *cam)
 {
@@ -141,6 +210,14 @@ wg_cam_cap_sliced_vbi_capture(Wg_camera *cam)
         WG_TRUE : WG_FALSE;
 }
 
+/**
+ * @brief Check vbi output capability
+ *
+ * @param cam webcam instance
+ *
+ * @retval WG_YES
+ * @retval WG_NO
+ */
 wg_boolean
 wg_cam_cap_sliced_vbi_output(Wg_camera *cam)
 {
@@ -150,6 +227,14 @@ wg_cam_cap_sliced_vbi_output(Wg_camera *cam)
         WG_TRUE : WG_FALSE;
 }
 
+/**
+ * @brief Check rds capture capability
+ *
+ * @param cam webcam instance
+ *
+ * @retval WG_YES
+ * @retval WG_NO
+ */
 wg_boolean
 wg_cam_cap_rds_capture(Wg_camera *cam)
 {
@@ -159,6 +244,14 @@ wg_cam_cap_rds_capture(Wg_camera *cam)
         WG_TRUE : WG_FALSE;
 }
 
+/**
+ * @brief Check video output overlay capability
+ *
+ * @param cam webcam instance
+ *
+ * @retval WG_YES
+ * @retval WG_NO
+ */
 wg_boolean
 wg_cam_cap_video_output_overlay(Wg_camera *cam)
 {
@@ -168,6 +261,14 @@ wg_cam_cap_video_output_overlay(Wg_camera *cam)
         WG_TRUE : WG_FALSE;
 }
 
+/**
+ * @brief Check tuner capability
+ *
+ * @param cam webcam instance
+ *
+ * @retval WG_YES
+ * @retval WG_NO
+ */
 wg_boolean
 wg_cam_cap_tuner(Wg_camera *cam)
 {
@@ -177,6 +278,14 @@ wg_cam_cap_tuner(Wg_camera *cam)
         WG_TRUE : WG_FALSE;
 }
 
+/**
+ * @brief Check audio capability
+ *
+ * @param cam webcam instance
+ *
+ * @retval WG_YES
+ * @retval WG_NO
+ */
 wg_boolean
 wg_cam_cap_audio(Wg_camera *cam)
 {
@@ -186,6 +295,14 @@ wg_cam_cap_audio(Wg_camera *cam)
         WG_TRUE : WG_FALSE;
 }
 
+/**
+ * @brief Check radio capability
+ *
+ * @param cam webcam instance
+ *
+ * @retval WG_YES
+ * @retval WG_NO
+ */
 wg_boolean
 wg_cam_cap_radio(Wg_camera *cam)
 {
@@ -195,6 +312,14 @@ wg_cam_cap_radio(Wg_camera *cam)
         WG_TRUE : WG_FALSE;
 }
 
+/**
+ * @brief Check read/write capability
+ *
+ * @param cam webcam instance
+ *
+ * @retval WG_YES
+ * @retval WG_NO
+ */
 wg_boolean
 wg_cam_cap_readwrite(Wg_camera *cam)
 {
@@ -204,6 +329,14 @@ wg_cam_cap_readwrite(Wg_camera *cam)
         WG_TRUE : WG_FALSE;
 }
 
+/**
+ * @brief Check async io capability
+ *
+ * @param cam webcam instance
+ *
+ * @retval WG_YES
+ * @retval WG_NO
+ */
 wg_boolean
 wg_cam_cap_asyncio(Wg_camera *cam)
 {
@@ -213,6 +346,14 @@ wg_cam_cap_asyncio(Wg_camera *cam)
         WG_TRUE : WG_FALSE;
 }
 
+/**
+ * @brief Check streaming capability
+ *
+ * @param cam webcam instance
+ *
+ * @retval WG_YES
+ * @retval WG_NO
+ */
 wg_boolean
 wg_cam_cap_streaming(Wg_camera *cam)
 {
@@ -227,3 +368,5 @@ yes_no(wg_boolean value)
 {
     return value == WG_TRUE ? "yes" : "no"; 
 }
+
+/*! @} */

@@ -117,10 +117,10 @@
 
 #define STRING_NOT_EMPTY(string)  (*(string) != '\0')
 
-#define MAX(a, b)                                          \
+#define WG_MAX(a, b)                                          \
     ((a) > (b) ? (a) : (b)) 
     
-#define MIN(a, b)                                          \
+#define WG_MIN(a, b)                                          \
     ((a) < (b) ? (a) : (b)) 
 
 #define STRI(s) #s

@@ -370,7 +370,7 @@ fill_token(Token *token, TOKEN_TYPE type, wg_char *start, wg_char *end)
             token->type = TOK_INVALID;
             token->value.string = token->string;
     }
-    size = MIN(token->end - token->start, MAX_TOKEN_SIZE);
+    size = WG_MIN(token->end - token->start, MAX_TOKEN_SIZE);
     strncpy(token->string, token->start, size);
     token->string[size] = '\0';
 

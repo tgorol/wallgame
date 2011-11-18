@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <sys/types.h>
 
 #include <wgtypes.h>
 #include <wg.h>

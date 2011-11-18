@@ -1,0 +1,102 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <cairo.h>
+#include <gtk/gtk.h>
+#include <gdk-pixbuf/gdk-pixbuf.h>
+
+#include <wgtypes.h>
+#include <wg.h>
+#include <wgmacros.h>
+#include <wg_linked_list.h>
+
+#include <linux/videodev2.h>
+
+#include "include/wg_cam.h"
+#include "include/wg_cam_cap.h"
+#include "include/wg_cam_image.h"
+#include "include/wg_cam_readwrite.h"
+#include "include/wg_cam_img_jpeg.h"
+
+int
+main(int argc, char *argv[])
+{
+    Wg_camera camera;
+    Wg_frame frame;
+    struct v4l2_format format;
+    FILE *fh = NULL;
+    int i = 0;
+    wg_uint width = 0;
+    wg_uint height = 0;
+    wg_uchar *out_buffer = NULL;
+    wg_ssize unpacked_size = 0;
+//    GdkPixbuf *pixbuf = NULL;
+
+    Wg_camera  *sel_cams[1];
+    wg_boolean retevent[1];
+    wg_char name[128];
+
+    List_head fmt;
+
+    wg_cam_init(&camera, "/dev/video0");
+
+    wg_cam_open(&camera);
+
+    wg_cam_cap_print(&camera);
+
+    wg_cam_image_format_get(&camera, WG_CAM_OUT_VIDEO_CAPTURE, &format);
+
+    wg_cam_image_format_print(&format);
+
+    list_init(&fmt);
+
+    wg_cam_image_fmtdesc_list(&camera, WG_CAM_OUT_VIDEO_CAPTURE, &fmt);
+
+    wg_cam_image_fmtdesc_list_print(&fmt);
+
+    wg_cam_image_fmtdesc_list_cleanup(&fmt);
+
+    frame.start = NULL;
+
+    sel_cams[0] = &camera;
+
+    for (i = 0; i < 20; ++i){
+        if (wg_cam_frame_select(1, sel_cams, retevent, -1) != WG_CAM_SUCCESS){
+            wg_cam_frame_buffer_release(&frame);
+            break;
+        }
+            
+        if (wg_cam_frame_read(&camera, &frame) == WG_CAM_SUCCESS){
+            sprintf(name, "pix%d.jpg", i);
+            fh = fopen(name, "w");
+
+            fwrite(frame.start, sizeof (wg_uchar), frame.size, fh);
+
+            fclose(fh);
+
+            if (WG_CAM_SUCCESS == wg_cam_img_jpeg_decompress(
+                        frame.start, frame.size, &out_buffer, 
+                        &unpacked_size, &width, &height)){
+#if 0
+                pixbuf = gdk_pixbuf_new_from_data(out_buffer, 
+                        GDK_COLORSPACE_RGB, FALSE, 8, width, height, width * 3, 
+                        (GdkPixbufDestroyNotify )free, out_buffer);
+
+
+
+                g_object_unref(pixbuf);
+
+#endif
+                WG_FREE(out_buffer);
+            }
+
+        }
+    }
+
+    wg_cam_frame_buffer_release(&frame);
+
+    wg_cam_close(&camera);
+
+    return 0;
+}

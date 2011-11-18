@@ -17,6 +17,7 @@ typedef float          wg_float     ;
 typedef double         wg_double    ;
 
 typedef size_t         wg_size      ;
+typedef ssize_t        wg_ssize     ;
 
 typedef long int       wg_long      ;
 

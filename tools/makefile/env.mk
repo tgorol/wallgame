@@ -15,8 +15,8 @@ ifndef AUTHOR
 endif
 
 
-INCLUDE+= /opt/include/ \
-          $(ROOT_DIR)/src/include/
+INCLUDE+= /opt/include/               \
+          $(ROOT_DIR)/src/include/    
 
 LIB+= /opt/lib/      \
 		  
@@ -25,7 +25,8 @@ LIBLIST+= ini      \
 		  readline \
 		  ghthash  \
 		  pthread  \
-		  dl
+		  dl       \
+		  jpeg
 
 ifneq "$(strip $(INCLUDE))" ""
 	INC_PATH=$(foreach inc, $(INCLUDE), -I$(inc))

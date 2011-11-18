@@ -1,7 +1,7 @@
 #ifndef _WG_CAM_CAP_H
 #define _WG_CAM_CAP_H
 
-WG_PUBLIC wg_cam_status wg_cam_cap_read(Wg_camera *cam);
+WG_PUBLIC wg_cam_status wg_cam_cap_get(Wg_camera *cam);
 
 WG_PUBLIC wg_cam_status wg_cam_cap_print(Wg_camera *cam);
 

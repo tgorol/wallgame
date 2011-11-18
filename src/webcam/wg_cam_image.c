@@ -23,10 +23,27 @@
 #include "include/wg_cam_cap.h"
 #include "include/wg_cam_image.h"
 
+/*! \addtogroup webcam 
+ */
+
+/*! @{ */
+
 WG_PRIVATE const wg_char * cam_image_format_pixel_fmt(__u32 pixel_format);
 
 WG_PRIVATE const wg_char* yes_no(wg_uint value);
 
+/**
+ * @brief Get webcam format
+ *
+ * @param cam     webcam instance
+ * @param type    format type
+ * @param format  memmory to store format data
+ *
+ * @retval WG_CAM_SUCCESS
+ * @retval WG_CAM_FAILURE
+ * @retval WG_CAM_BUSY
+ * @retval WG_CAM_INVAL
+ */
 wg_cam_status
 wg_cam_image_format_get(Wg_camera *cam, WG_CAM_OUT_TYPE type, 
         struct v4l2_format *format)
@@ -58,6 +75,17 @@ wg_cam_image_format_get(Wg_camera *cam, WG_CAM_OUT_TYPE type,
     return WG_CAM_SUCCESS;
 }
 
+/**
+ * @brief Set webcam format
+ *
+ * @param cam     webcam instance
+ * @param format  format to set
+ *
+ * @retval WG_CAM_SUCCESS
+ * @retval WG_CAM_FAILURE
+ * @retval WG_CAM_BUSY
+ * @retval WG_CAM_INVAL
+ */
 wg_cam_status
 wg_cam_image_format_set(Wg_camera *cam, struct v4l2_format *format)
 {
@@ -84,6 +112,18 @@ wg_cam_image_format_set(Wg_camera *cam, struct v4l2_format *format)
     return WG_CAM_SUCCESS;
 }
 
+/**
+ * @brief Get list of supported formats
+ *
+ * Type of the element in the list os Wg_cam_fmtdesc
+ *
+ * @param cam    webcam instance
+ * @param type   format type
+ * @param head   head of the list to store data
+ *
+ * @retval WG_CAM_SUCCESS
+ * @retval WG_CAM_FAILURE
+ */
 wg_cam_status
 wg_cam_image_fmtdesc_list(Wg_camera *cam, WG_CAM_OUT_TYPE type, List_head *head)
 {
@@ -97,6 +137,8 @@ wg_cam_image_fmtdesc_list(Wg_camera *cam, WG_CAM_OUT_TYPE type, List_head *head)
 
     tmp_desc.index = 0;
     list_init(head);
+
+    memset(&tmp_desc, '\0', sizeof (struct v4l2_fmtdesc));
 
     for (;;){
         tmp_desc.type = type;
@@ -122,6 +164,14 @@ wg_cam_image_fmtdesc_list(Wg_camera *cam, WG_CAM_OUT_TYPE type, List_head *head)
     return WG_CAM_SUCCESS;
 }
 
+/**
+ * @brief Print webcam format description
+ *
+ * @param fmt  format to pint
+ *
+ * @retval WG_CAM_SUCCESS
+ * @retval WG_CAM_FAILURE
+ */
 wg_cam_status
 wg_cam_image_fmtdesc_print(Wg_cam_fmtdesc *fmt)
 {
@@ -138,10 +188,17 @@ wg_cam_image_fmtdesc_print(Wg_cam_fmtdesc *fmt)
              yes_no(fmt->desc.flags & V4L2_FMT_FLAG_COMPRESSED)
             );
     return WG_CAM_SUCCESS;
-    
 }
 
 
+/**
+ * @brief Print format list
+ *
+ * @param head head of the list to print
+ *
+ * @retval WG_CAM_SUCCESS
+ * @retval WG_CAM_FAILURE
+ */
 wg_cam_status
 wg_cam_image_fmtdesc_list_print(List_head *head)
 {
@@ -155,9 +212,16 @@ wg_cam_image_fmtdesc_list_print(List_head *head)
     }
 
     return WG_CAM_SUCCESS;
-
 }
 
+/**
+ * @brief Cleanup format list
+ *
+ * @param head list of formats
+ *
+ * @retval WG_CAM_SUCCESS
+ * @retval WG_CAM_FAILURE
+ */
 wg_cam_status
 wg_cam_image_fmtdesc_list_cleanup(List_head *head)
 {
@@ -176,6 +240,14 @@ wg_cam_image_fmtdesc_list_cleanup(List_head *head)
 
 }
 
+/**
+ * @brief Print format information 
+ *
+ * @param format format to print
+ *
+ * @retval WG_CAM_SUCCESS
+ * @retval WG_CAM_FAILURE
+ */
 wg_cam_status
 wg_cam_image_format_print(struct v4l2_format *format)
 {
@@ -198,6 +270,13 @@ wg_cam_image_format_print(struct v4l2_format *format)
     return WG_CAM_SUCCESS;
 }
 
+/**
+ * @brief Convert pixel format to string
+ *
+ * @param pixel_format pixel format
+ *
+ * @return pixel format  ASCIZ representation
+ */
 WG_PRIVATE const wg_char *
 cam_image_format_pixel_fmt(__u32 pixel_format)
 {
@@ -220,3 +299,5 @@ yes_no(wg_uint value)
 {
     return value ? "yes" : "no"; 
 }
+
+/*! @} */

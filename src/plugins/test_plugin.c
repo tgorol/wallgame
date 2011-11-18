@@ -10,7 +10,7 @@
 #include <wg_msg.h>
 #include <wgp.h>
 
-#define LOOP_NUM 5000
+#define LOOP_NUM 20000
 
 WG_PRIVATE void get_random_coordinate(float *coord);
 
