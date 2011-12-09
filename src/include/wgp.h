@@ -23,7 +23,7 @@ typedef struct Wgp_plugin{
     Wgp_info info;                             /*!< plugin information */
     void *lib;                                 /*!< plugin file handle */
     /* plugin interface */
-    wg_int (*run)(void *gh, Msg_handler handler); 
+    wg_int (*run)(void *gh, Msg_handler handler); /*!< run plugin */
     wg_status (*init)(Wgp_info*);              /*!< info */
 }Wgp_plugin;
 

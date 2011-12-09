@@ -41,9 +41,13 @@ typedef struct Game{
     Wgp_plugin plugin;    /*!< game plugin                     */
 }Game;
 
+
+/**
+ * @brief Message wrapper
+ */
 typedef struct Wg_message_wrap{
-    Wg_message body;
-    List_head list;
+    Wg_message body;        /*!< body of the message */
+    List_head list;         /*!< list leaf           */
 }Wg_message_wrap;
 
 /**

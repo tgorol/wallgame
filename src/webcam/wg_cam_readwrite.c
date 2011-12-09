@@ -18,22 +18,120 @@
 #include <wg.h>
 #include <wgmacros.h>
 
-#include "include/wg_cam.h"
-#include "include/wg_cam_cap.h"
-#include "include/wg_cam_readwrite.h"
+#include "include/cam.h"
+#include "include/cam_frame.h"
+#include "include/cam_cap.h"
+#include "include/cam_readwrite.h"
 
-/*! \addtogroup webcam 
+/*! @defgroup webcam_readwrite Webcam Read/Write
+ * @ingroup webcam 
  */
+
+/*! @{ */
 
 #define POLL_FLAGS (POLLIN | POLLPRI)
 
-/*! @{ */
+WG_PRIVATE cam_status
+read_frame(Wg_camera *cam, Wg_frame *frame);
+
+WG_PRIVATE cam_status
+alloc_frame_buffer(Wg_camera *cam, Wg_frame *frame);
+
+WG_PRIVATE cam_status
+release_frame_buffer(Wg_frame *frame);
+
+WG_PRIVATE cam_status
+get_frame_size(Wg_camera *cam, wg_ssize *frame_size);
+
+WG_PRIVATE cam_status
+close_camera(Wg_camera *cam);
+
+WG_PRIVATE cam_status
+open_camera(Wg_camera *cam);
+
+WG_PRIVATE cam_status
+start_camera(Wg_camera *cam);
+
+WG_PRIVATE cam_status
+stop_camera(Wg_camera *cam);
+
+WG_PRIVATE cam_status
+cleanup_frame(Wg_camera *cam, Wg_frame *frame);
+
+WG_PRIVATE cam_status
+discard_frame(Wg_camera *cam, Wg_frame *frame);
+
+/**
+ * @brief Switch camera into read/write mode.
+ *
+ * @param cam webcam instance
+ *
+ * @retval CAM_SUCCESS
+ * @retval CAM_FAILURE
+ */
+cam_status
+cam_readwrite_init(Wg_camera *cam)
+{
+    CHECK_FOR_NULL_PARAM(cam);
+
+    cam->cam_ops.read          = read_frame;
+    cam->cam_ops.cleanup_frame = cleanup_frame;
+    cam->cam_ops.empty_frame   = discard_frame;
+    cam->cam_ops.close         = close_camera;
+    cam->cam_ops.open          = open_camera;
+    cam->cam_ops.start         = start_camera;
+    cam->cam_ops.stop          = stop_camera;
+
+    return CAM_SUCCESS;
+}
+
+WG_PRIVATE cam_status
+discard_frame(Wg_camera *cam, Wg_frame *frame)
+{
+    CHECK_FOR_NULL_PARAM(cam);
+    CHECK_FOR_NULL_PARAM(frame);
+
+    return CAM_SUCCESS;
+}
+
+WG_PRIVATE cam_status
+cleanup_frame(Wg_camera *cam, Wg_frame *frame)
+{
+    CHECK_FOR_NULL_PARAM(cam);
+    CHECK_FOR_NULL_PARAM(frame);
+
+    return release_frame_buffer(frame);
+}
+
+WG_PRIVATE cam_status
+stop_camera(Wg_camera *cam)
+{
+    return CAM_SUCCESS;
+}
+
+WG_PRIVATE cam_status
+start_camera(Wg_camera *cam)
+{
+    return CAM_SUCCESS;
+}
+
+WG_PRIVATE cam_status
+close_camera(Wg_camera *cam)
+{
+    return CAM_SUCCESS;
+}
+
+WG_PRIVATE cam_status
+open_camera(Wg_camera *cam)
+{
+    return CAM_SUCCESS;
+}
 
 /**
  * @brief Read a frame from webcam
  *
  * When frame->start is NULL buffer will be allocated.
- * Frame buffer must be released by wg_cam_frame_buffer_release()
+ * Frame buffer must be released by cam_frame_buffer_release()
  *
  * @param cam       webcam instance
  * @param buffer    memory for buffer buffer 
@@ -41,8 +139,8 @@
  *
  * @return 
  */
-wg_cam_status
-wg_cam_frame_read(Wg_camera *cam, Wg_frame *frame)
+WG_PRIVATE cam_status
+read_frame(Wg_camera *cam, Wg_frame *frame)
 {
     ssize_t len = 0; 
     wg_ssize size = 0;
@@ -50,16 +148,16 @@ wg_cam_frame_read(Wg_camera *cam, Wg_frame *frame)
     CHECK_FOR_NULL_PARAM(cam);
     CHECK_FOR_NULL_PARAM(frame);
 
-    if ((wg_cam_cap_readwrite(cam) && wg_cam_cap_video_capture(cam)) 
+    if ((cam_cap_readwrite(cam) && cam_cap_video_capture(cam)) 
             != WG_TRUE){
-        return WG_CAM_FAILURE;
+        return CAM_FAILURE;
     }
 
-    wg_cam_frame_get_size(cam, &size);
+    get_frame_size(cam, &size);
 
     if (frame->start == NULL){
-        if (wg_cam_frame_buffer_alloc(cam, frame) != WG_CAM_SUCCESS){
-            return WG_CAM_FAILURE;
+        if (alloc_frame_buffer(cam, frame) != CAM_SUCCESS){
+            return CAM_FAILURE;
         }
     }
 
@@ -69,16 +167,16 @@ wg_cam_frame_read(Wg_camera *cam, Wg_frame *frame)
     if (-1 == len){
         switch (errno){
             case EIO:
-                return WG_CAM_IO;
+                return CAM_IO;
                 break;
             default:
                 WG_FREE(frame->start);
                 frame->size = 0;
-                return WG_CAM_FAILURE;
+                return CAM_FAILURE;
         }
     }
 
-    return WG_CAM_SUCCESS;
+    return CAM_SUCCESS;
 }
 
 /**
@@ -87,27 +185,27 @@ wg_cam_frame_read(Wg_camera *cam, Wg_frame *frame)
  * @param cam    webcam instance
  * @param frame  memory for frame buffer
  *
- * @retval WG_CAM_SUCCESS
- * @retval WG_CAM_FAILURE
+ * @retval CAM_SUCCESS
+ * @retval CAM_FAILURE
  */
-wg_cam_status
-wg_cam_frame_buffer_alloc(Wg_camera *cam, Wg_frame *frame)
+WG_PRIVATE cam_status
+alloc_frame_buffer(Wg_camera *cam, Wg_frame *frame)
 {
     wg_uchar *buf = NULL;
     wg_ssize size = 0;
     CHECK_FOR_NULL_PARAM(frame);
 
-    wg_cam_frame_get_size(cam, &size);
+    get_frame_size(cam, &size);
 
     buf = WG_CALLOC(size, sizeof (wg_uchar));
     if (NULL == buf){
-        return WG_CAM_FAILURE;
+        return CAM_FAILURE;
     }
 
     frame->start = buf;
     frame->size  = size;
 
-    return WG_CAM_SUCCESS;
+    return CAM_SUCCESS;
 }
 
 /**
@@ -124,14 +222,14 @@ wg_cam_frame_buffer_alloc(Wg_camera *cam, Wg_frame *frame)
  *
  * @return 
  */
-wg_cam_status
-wg_cam_frame_select(wg_uint num, Wg_camera *cameras[], wg_boolean retval[],
+cam_status
+select_frame(wg_uint num, Wg_camera *cameras[], wg_boolean retval[],
         wg_int timeout_ms)
 {
     struct pollfd *fds = NULL;
     wg_int i = 0;
     int status = -1;
-    wg_cam_status cam_status = WG_CAM_FAILURE;
+    cam_status cam_status = CAM_FAILURE;
 
     fds = alloca(num * sizeof (struct pollfd));
     CHECK_FOR_NULL(fds);
@@ -145,17 +243,17 @@ wg_cam_frame_select(wg_uint num, Wg_camera *cameras[], wg_boolean retval[],
     switch (status){
         case -1:
             WG_LOG("%s\n", strerror(errno));
-            cam_status = WG_CAM_FAILURE;
+            cam_status = CAM_FAILURE;
             break;
         case  0:
-            cam_status = WG_CAM_TIMEOUT;
+            cam_status = CAM_TIMEOUT;
             break;
         default:
             for (i = 0; i < num; ++i){
                 retval[i] = ((fds[i].revents & POLL_FLAGS) != 0) ?
                     WG_TRUE : WG_FALSE;
             }
-            cam_status = WG_CAM_SUCCESS;
+            cam_status = CAM_SUCCESS;
     }
 
     return cam_status;
@@ -166,11 +264,11 @@ wg_cam_frame_select(wg_uint num, Wg_camera *cameras[], wg_boolean retval[],
  *
  * @param frame frame to release
  *
- * @retval WG_CAM_SUCCESS
- * @retval WG_CAM_FAILURE
+ * @retval CAM_SUCCESS
+ * @retval CAM_FAILURE
  */
-wg_cam_status
-wg_cam_frame_buffer_release(Wg_frame *frame)
+WG_PRIVATE cam_status
+release_frame_buffer(Wg_frame *frame)
 {
     CHECK_FOR_NULL_PARAM(frame);
 
@@ -178,7 +276,7 @@ wg_cam_frame_buffer_release(Wg_frame *frame)
 
     memset(frame, '\0', sizeof (Wg_frame));
 
-    return WG_CAM_SUCCESS;
+    return CAM_SUCCESS;
 }
 
 /**
@@ -189,15 +287,16 @@ wg_cam_frame_buffer_release(Wg_frame *frame)
  *
  * @return 
  */
-wg_cam_status
-wg_cam_frame_get_size(Wg_camera *cam, wg_ssize *frame_size)
+WG_PRIVATE cam_status
+get_frame_size(Wg_camera *cam, wg_ssize *frame_size)
 {
     CHECK_FOR_NULL_PARAM(cam);
     CHECK_FOR_NULL_PARAM(size);
 
-    *frame_size = cam->fmt[WG_CAM_FMT_CAPTURE].fmt.pix.sizeimage;
+    *frame_size = cam->fmt[CAM_FMT_CAPTURE].fmt.pix.sizeimage;
 
-    return WG_CAM_SUCCESS;
+    return CAM_SUCCESS;
 }
+
 
 /*! @} */

@@ -57,3 +57,7 @@ ifeq ($(BUILD_TYPE),  RELEASE)
 else
 	CFLAGS+=-g  -Wall -Werror
 endif
+
+ifdef PROF
+	CFLAGS+=-pg
+endif

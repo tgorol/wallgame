@@ -11,7 +11,7 @@ LIBLIST+=$(OUT_NAME)
 
 include $(BUILD_PATH)/env.mk
 
-MODULE_NAMES=gameplay config common transport sensor plugins
+MODULE_NAMES=gameplay config common transport sensor plugins webcam
 
 .PHONY: $(MODULE_NAMES) app
 
@@ -34,6 +34,9 @@ sensor:
 
 plugins:
 	make OUT_DIR=$(OUT_DIR) -C $@
+
+#webcam:
+#	make OUT_DIR=$(OUT_DIR) -C $@
 
 
 clean: cleanall

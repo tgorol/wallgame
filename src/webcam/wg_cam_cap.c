@@ -12,11 +12,12 @@
 #include <wg.h>
 #include <wgmacros.h>
 #include <wg_linked_list.h>
-#include "include/wg_cam.h"
-#include "include/wg_cam_cap.h"
-#include "include/wg_cam_image.h"
+#include "include/cam.h"
+#include "include/cam_cap.h"
+#include "include/cam_output.h"
 
-/*! \addtogroup webcam 
+/*! @defgroup webcam_capabilities Webcam Capabilities
+ * @ingroup webcam 
  */
 
 /*! @{ */
@@ -28,14 +29,14 @@ WG_PRIVATE const wg_char* yes_no(wg_boolean value);
  *
  * @param cam webcam instance
  *
- * @retval WG_CAM_SUCCESS
- * @retval WG_CAM_FAILURE
+ * @retval CAM_SUCCESS
+ * @retval CAM_FAILURE
  */
-wg_cam_status
-wg_cam_cap_get(Wg_camera *cam)
+cam_status
+cam_cap_get(Wg_camera *cam)
 {
     int status = -1;
-    wg_cam_status cam_status = WG_CAM_SUCCESS;
+    cam_status cam_status = CAM_SUCCESS;
 
     CHECK_FOR_NULL_PARAM(cam);
 
@@ -47,7 +48,7 @@ wg_cam_cap_get(Wg_camera *cam)
     if (-1 == status){
         WG_LOG("%s", strerror(errno));
         if (EINVAL == errno){
-            cam_status = WG_CAM_INVAL;
+            cam_status = CAM_INVAL;
         }
     }
 
@@ -59,11 +60,11 @@ wg_cam_cap_get(Wg_camera *cam)
  *
  * @param cam webcam onstance
  *
- * @retval WG_CAM_SUCCESS
- * @retval WG_CAM_FAILURE
+ * @retval CAM_SUCCESS
+ * @retval CAM_FAILURE
  */
-wg_cam_status
-wg_cam_cap_print(Wg_camera *cam)
+cam_status
+cam_cap_print(Wg_camera *cam)
 {
     struct v4l2_capability *cap = NULL;
 
@@ -81,31 +82,31 @@ wg_cam_cap_print(Wg_camera *cam)
              cap->version & 0xFF);
 
     WG_PRINT("video capture        : %s\n", 
-            yes_no(wg_cam_cap_video_capture(cam)));
+            yes_no(cam_cap_video_capture(cam)));
     WG_PRINT("video output         : %s\n", 
-            yes_no(wg_cam_cap_video_output(cam)));
+            yes_no(cam_cap_video_output(cam)));
     WG_PRINT("video overlay        : %s\n", 
-            yes_no(wg_cam_cap_video_overlay(cam)));
+            yes_no(cam_cap_video_overlay(cam)));
     WG_PRINT("vbi capture          : %s\n", 
-            yes_no(wg_cam_cap_vbi_capture(cam)));
-    WG_PRINT("vbi output           : %s\n", yes_no(wg_cam_cap_vbi_output(cam)));
+            yes_no(cam_cap_vbi_capture(cam)));
+    WG_PRINT("vbi output           : %s\n", yes_no(cam_cap_vbi_output(cam)));
     WG_PRINT("sliced vbi capture   : %s\n",
-            yes_no(wg_cam_cap_sliced_vbi_capture(cam)));
+            yes_no(cam_cap_sliced_vbi_capture(cam)));
     WG_PRINT("sliced vbi output    : %s\n",
-            yes_no(wg_cam_cap_sliced_vbi_output(cam)));
+            yes_no(cam_cap_sliced_vbi_output(cam)));
     WG_PRINT("rds capture          : %s\n", 
-            yes_no(wg_cam_cap_rds_capture(cam)));
+            yes_no(cam_cap_rds_capture(cam)));
     WG_PRINT("video output overlay : %s\n", 
-            yes_no(wg_cam_cap_video_output_overlay(cam)));
-    WG_PRINT("tuner                : %s\n", yes_no(wg_cam_cap_tuner(cam)));
-    WG_PRINT("audio                : %s\n", yes_no(wg_cam_cap_audio(cam)));
-    WG_PRINT("radio                : %s\n", yes_no(wg_cam_cap_radio(cam)));
+            yes_no(cam_cap_video_output_overlay(cam)));
+    WG_PRINT("tuner                : %s\n", yes_no(cam_cap_tuner(cam)));
+    WG_PRINT("audio                : %s\n", yes_no(cam_cap_audio(cam)));
+    WG_PRINT("radio                : %s\n", yes_no(cam_cap_radio(cam)));
 
-    WG_PRINT("read/write           : %s\n", yes_no(wg_cam_cap_readwrite(cam)));
-    WG_PRINT("async io             : %s\n", yes_no(wg_cam_cap_asyncio(cam)));
-    WG_PRINT("streaming            : %s\n", yes_no(wg_cam_cap_streaming(cam)));
+    WG_PRINT("read/write           : %s\n", yes_no(cam_cap_readwrite(cam)));
+    WG_PRINT("async io             : %s\n", yes_no(cam_cap_asyncio(cam)));
+    WG_PRINT("streaming            : %s\n", yes_no(cam_cap_streaming(cam)));
 
-    return WG_CAM_SUCCESS;
+    return CAM_SUCCESS;
 }
 
 /**
@@ -117,7 +118,7 @@ wg_cam_cap_print(Wg_camera *cam)
  * @retval WG_FALSE
  */
 wg_boolean
-wg_cam_cap_video_capture(Wg_camera *cam)
+cam_cap_video_capture(Wg_camera *cam)
 {
     CHECK_FOR_NULL_PARAM(cam);
 
@@ -134,7 +135,7 @@ wg_cam_cap_video_capture(Wg_camera *cam)
  * @retval WG_FALSE
  */
 wg_boolean
-wg_cam_cap_video_output(Wg_camera *cam)
+cam_cap_video_output(Wg_camera *cam)
 {
     CHECK_FOR_NULL_PARAM(cam);
 
@@ -151,7 +152,7 @@ wg_cam_cap_video_output(Wg_camera *cam)
  * @retval WG_NO
  */
 wg_boolean
-wg_cam_cap_video_overlay(Wg_camera *cam)
+cam_cap_video_overlay(Wg_camera *cam)
 {
     CHECK_FOR_NULL_PARAM(cam);
 
@@ -168,7 +169,7 @@ wg_cam_cap_video_overlay(Wg_camera *cam)
  * @retval WG_NO
  */
 wg_boolean
-wg_cam_cap_vbi_capture(Wg_camera *cam)
+cam_cap_vbi_capture(Wg_camera *cam)
 {
     CHECK_FOR_NULL_PARAM(cam);
 
@@ -185,7 +186,7 @@ wg_cam_cap_vbi_capture(Wg_camera *cam)
  * @retval WG_NO
  */
 wg_boolean
-wg_cam_cap_vbi_output(Wg_camera *cam)
+cam_cap_vbi_output(Wg_camera *cam)
 {
     CHECK_FOR_NULL_PARAM(cam);
 
@@ -202,7 +203,7 @@ wg_cam_cap_vbi_output(Wg_camera *cam)
  * @retval WG_NO
  */
 wg_boolean
-wg_cam_cap_sliced_vbi_capture(Wg_camera *cam)
+cam_cap_sliced_vbi_capture(Wg_camera *cam)
 {
     CHECK_FOR_NULL_PARAM(cam);
 
@@ -219,7 +220,7 @@ wg_cam_cap_sliced_vbi_capture(Wg_camera *cam)
  * @retval WG_NO
  */
 wg_boolean
-wg_cam_cap_sliced_vbi_output(Wg_camera *cam)
+cam_cap_sliced_vbi_output(Wg_camera *cam)
 {
     CHECK_FOR_NULL_PARAM(cam);
 
@@ -236,7 +237,7 @@ wg_cam_cap_sliced_vbi_output(Wg_camera *cam)
  * @retval WG_NO
  */
 wg_boolean
-wg_cam_cap_rds_capture(Wg_camera *cam)
+cam_cap_rds_capture(Wg_camera *cam)
 {
     CHECK_FOR_NULL_PARAM(cam);
 
@@ -253,7 +254,7 @@ wg_cam_cap_rds_capture(Wg_camera *cam)
  * @retval WG_NO
  */
 wg_boolean
-wg_cam_cap_video_output_overlay(Wg_camera *cam)
+cam_cap_video_output_overlay(Wg_camera *cam)
 {
     CHECK_FOR_NULL_PARAM(cam);
 
@@ -270,7 +271,7 @@ wg_cam_cap_video_output_overlay(Wg_camera *cam)
  * @retval WG_NO
  */
 wg_boolean
-wg_cam_cap_tuner(Wg_camera *cam)
+cam_cap_tuner(Wg_camera *cam)
 {
     CHECK_FOR_NULL_PARAM(cam);
 
@@ -287,7 +288,7 @@ wg_cam_cap_tuner(Wg_camera *cam)
  * @retval WG_NO
  */
 wg_boolean
-wg_cam_cap_audio(Wg_camera *cam)
+cam_cap_audio(Wg_camera *cam)
 {
     CHECK_FOR_NULL_PARAM(cam);
 
@@ -304,7 +305,7 @@ wg_cam_cap_audio(Wg_camera *cam)
  * @retval WG_NO
  */
 wg_boolean
-wg_cam_cap_radio(Wg_camera *cam)
+cam_cap_radio(Wg_camera *cam)
 {
     CHECK_FOR_NULL_PARAM(cam);
 
@@ -321,7 +322,7 @@ wg_cam_cap_radio(Wg_camera *cam)
  * @retval WG_NO
  */
 wg_boolean
-wg_cam_cap_readwrite(Wg_camera *cam)
+cam_cap_readwrite(Wg_camera *cam)
 {
     CHECK_FOR_NULL_PARAM(cam);
 
@@ -338,7 +339,7 @@ wg_cam_cap_readwrite(Wg_camera *cam)
  * @retval WG_NO
  */
 wg_boolean
-wg_cam_cap_asyncio(Wg_camera *cam)
+cam_cap_asyncio(Wg_camera *cam)
 {
     CHECK_FOR_NULL_PARAM(cam);
 
@@ -355,7 +356,7 @@ wg_cam_cap_asyncio(Wg_camera *cam)
  * @retval WG_NO
  */
 wg_boolean
-wg_cam_cap_streaming(Wg_camera *cam)
+cam_cap_streaming(Wg_camera *cam)
 {
     CHECK_FOR_NULL_PARAM(cam);
 

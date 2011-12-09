@@ -16,6 +16,10 @@
     fprintf(stdout,  "log  : ");     \
     fprintf(stdout, __VA_ARGS__)                      
 
+#define WG_WARN(...)                      \
+    fprintf(stdout,  "WARNINIG  : ");     \
+    fprintf(stdout, __VA_ARGS__)                      
+
 #ifndef WGDEBUG
 #define WG_DEBUG(...)                
 #else
