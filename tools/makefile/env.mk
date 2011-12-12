@@ -6,13 +6,8 @@ ifndef OUT_NAME
 OUT_NAME=lib
 endif
 
-ifndef VERSION
-	VERSION="N/A"
-endif
-
-ifndef AUTHOR
-	AUTHOR="Unknown"
-endif
+VERSION="1.0"
+AUTHOR="Tomasz Gorol"
 
 
 INCLUDE+= /opt/include/               \
@@ -50,10 +45,10 @@ endif
 OBJ=$(foreach file, $(SOURCE), $(basename $(file)).o)
 
 # Add archiceture
-CFLAGS+=-march=$(CPU_ARCH) -std=$(C_STD) -DAUTHOR=$(AUTHOR) -DVERSION=$(VERSION)
+CFLAGS+=-march=$(CPU_ARCH) -std=$(C_STD) 
 
 ifeq ($(BUILD_TYPE),  RELEASE)
-	CFLAGS+=-O2  -Wall -Werror
+	CFLAGS+=-O2 -g -Wall -Werror
 else
 	CFLAGS+=-g  -Wall -Werror
 endif

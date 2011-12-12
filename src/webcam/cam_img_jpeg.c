@@ -12,6 +12,7 @@
 #include <linux/videodev2.h>
 
 #include "include/cam.h"
+#include "include/cam_img.h"
 #include "include/cam_img_jpeg.h"
 
 #define LINES_PER_READ 32
@@ -52,8 +53,10 @@ set_source_manager(struct jpeg_decompress_struct *jdecomp, Wg_src_mgr* mgr);
 WG_PRIVATE cam_status
 init_source_manager(Wg_src_mgr *mgr, wg_uchar *buffer, wg_ssize size);
 
+#if 0
 WG_PRIVATE cam_status
 alloc_jrows(struct jpeg_decompress_struct *jdecomp, Wg_image *img);
+#endif
 
 WG_PRIVATE cam_status
 set_options(struct jpeg_decompress_struct *jdecomp);
@@ -126,7 +129,11 @@ cam_img_jpeg_decompress(wg_uchar *in_buffer, wg_ssize in_size,
     }
 
     /* allocate memory to store decomressed image */
+#if 0
     alloc_jrows(&jdecomp, img);
+#endif
+    cam_img_fill(jdecomp.output_width ,jdecomp.output_height, 
+            jdecomp.output_components, img);
 
     /* read decompressed lines                    */
     for (index = 0; jdecomp.output_scanline < jdecomp.output_height;){
@@ -147,26 +154,6 @@ cam_img_jpeg_decompress(wg_uchar *in_buffer, wg_ssize in_size,
     return CAM_SUCCESS;
 }
 
-/**
- * @brief Cleanup decompressed image buffers
- *
- * @param img  decomressed image after decompression
- *
- * @retval CAM_SUCCESS
- * @retval CAM_FAILURE
- */
-cam_status
-cam_img_cleanup(Wg_image *img)
-{
-    CHECK_FOR_NULL_PARAM(img);
-
-    WG_FREE(img->rows);
-    WG_FREE(img->image);
-
-    memset(img, '\0', sizeof (Wg_image));
-
-    return CAM_SUCCESS;
-}
 
 WG_PRIVATE cam_status
 set_options(struct jpeg_decompress_struct *jdecomp)
@@ -183,6 +170,9 @@ set_options(struct jpeg_decompress_struct *jdecomp)
 
     return CAM_SUCCESS;
 }
+
+
+#if 0
 
 WG_PRIVATE cam_status
 alloc_jrows(struct jpeg_decompress_struct *jdecomp, Wg_image *img)
@@ -233,6 +223,7 @@ alloc_jrows(struct jpeg_decompress_struct *jdecomp, Wg_image *img)
     return CAM_SUCCESS;
 }
 
+#endif
 
 WG_PRIVATE cam_status
 init_source_manager(Wg_src_mgr *mgr, wg_uchar *buffer, wg_ssize size)
@@ -323,6 +314,7 @@ error_exit(j_common_ptr cinfo)
 
     return;
 }
+
 
 
 /*! @} */

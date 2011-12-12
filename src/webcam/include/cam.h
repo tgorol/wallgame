@@ -94,6 +94,8 @@ typedef struct Wg_cam_decompressor{
     cam_decomp run;  /*!< pointer to a decompressor function */
 }Wg_cam_decompressor;
 
+
+
 /**
  * @brief Camera
  */
@@ -108,6 +110,20 @@ struct Wg_camera{
     Wg_cam_ops cam_ops;                    /*!< Camera operations         */
     Wg_cam_decompressor dcomp;             /*!< Selected decompressor     */
 };
+
+/* 
+ * Inline functions
+ */
+
+inline static cam_status invoke_decompressor(
+        Wg_cam_decompressor *decomp,
+        wg_uchar *in_buffer, wg_ssize in_size, 
+        wg_uint width, wg_uint height, Wg_image *img)
+{
+    CHECK_FOR_NULL_PARAM(decomp);
+
+    return decomp->run(in_buffer, in_size, width, height, img);
+}
 
 
 WG_PUBLIC cam_status cam_init(Wg_camera *cam, wg_char* dev_path);

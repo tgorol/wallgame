@@ -22,6 +22,7 @@
 #include "include/cam_readwrite.h"
 #include "include/cam_img_jpeg.h"
 #include "include/cam_format_selector.h"
+#include "include/cam_img.h"
 
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
@@ -81,7 +82,8 @@ void*
 capture(void *data)
 {
     Wg_frame *frame = NULL;
-    Wg_image *image = NULL;
+    Wg_image *image_sub = NULL;
+    Wg_image  image;
     Wg_camera *camera = NULL;
     Camera  *cam = NULL;
     int old_state = 0;
@@ -106,25 +108,30 @@ capture(void *data)
 
     for(;;){
         if (cam_read(camera, frame) == CAM_SUCCESS){
-            image = WG_MALLOC(sizeof (Wg_image));
+            image_sub = WG_MALLOC(sizeof (Wg_image));
 
-            status = decompressor.run(frame->start, frame->size, 
-                    frame->width, frame->height, image);
+            status = invoke_decompressor(&decompressor, 
+                    frame->start, frame->size, 
+                    frame->width, frame->height, &image);
             if(CAM_SUCCESS == status){
                 cam_discard_frame(camera, frame);
-
-                pthread_mutex_lock(&cam->mutex);
 
                 if (cam->pixbuf != NULL){
                     g_object_unref(cam->pixbuf);
                     cam->pixbuf = NULL;
                 }
 
-                cam->pixbuf = gdk_pixbuf_new_from_data(image->image, 
+                cam_img_fill(639, 479, 3, image_sub);
+
+                cam_img_get_subimage(&image, 0, 0, image_sub);
+
+                cam_img_cleanup(&image);
+
+                cam->pixbuf = gdk_pixbuf_new_from_data(image_sub->image, 
                         GDK_COLORSPACE_RGB, FALSE, 8, 
-                        image->width, image->height, 
-                        image->row_distance, 
-                        xbuf_free, image);
+                        image_sub->width, image_sub->height, 
+                        image_sub->row_distance, 
+                        xbuf_free, image_sub);
 
                 pthread_mutex_unlock(&cam->mutex);
 
@@ -136,7 +143,7 @@ capture(void *data)
             }else{
                 cam_discard_frame(camera, frame);
 
-                WG_FREE(image);    
+                WG_FREE(image_sub);    
             }
         }else{
             pthread_exit(NULL);

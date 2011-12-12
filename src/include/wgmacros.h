@@ -134,7 +134,7 @@
 #define ELEMNUM(array)                                    \
     (sizeof (array) / sizeof (array[0]))
 
-inline WG_STATIC void
+WG_INLINE void
 char_2_hex(wg_char c, wg_char *ret)
 {
     static char hex_table[] = {

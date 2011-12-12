@@ -17,4 +17,8 @@
  */
 #define WG_PRIVATE  static
 
+/** @brief Overriden inline
+ */
+#define WG_INLINE  static inline
+
 #endif

@@ -1,13 +1,14 @@
 
-SOURCE=wg_cam.c                  \
-	   wg_cam_cap.c              \
-	   wg_cam_output.c           \
-	   wg_cam_readwrite.c        \
-	   wg_cam_img_jpeg.h         \
-	   wg_cam_streaming.c        \
-	   wg_cam_frame.c            \
-	   wg_cam_img_yuyv.c         \
-	   wg_cam_format_selector.c 
+SOURCE=cam.c                  \
+	   cam_cap.c              \
+	   cam_output.c           \
+	   cam_readwrite.c        \
+	   cam_img_jpeg.h         \
+	   cam_streaming.c        \
+	   cam_frame.c            \
+	   cam_img_yuyv.c         \
+	   cam_img.h              \
+	   cam_format_selector.c 
 
 APP_NAME=webcam
 

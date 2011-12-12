@@ -9,6 +9,7 @@
 #include <sys/ioctl.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <poll.h>
 
 #include <linux/videodev2.h>
 
@@ -229,6 +230,7 @@ cam_stop(Wg_camera *cam)
 cam_status
 cam_read(Wg_camera *cam, Wg_frame *frame)
 {
+    struct pollfd fds;
     cam_status status = CAM_FAILURE;
     CHECK_FOR_NULL_PARAM(cam);
     CHECK_FOR_NULL_PARAM(frame);
@@ -237,6 +239,10 @@ cam_read(Wg_camera *cam, Wg_frame *frame)
         case WG_FRAME_EMPTY:
         case WG_FRAME_INVALID:
             if (NULL != cam->cam_ops.read){
+                fds.fd     = cam->fd_cam;
+                fds.events = POLLIN | POLLPRI;
+
+                poll(&fds, 1, -1);
                 status = cam->cam_ops.read(cam, frame);
                 if (CAM_SUCCESS == status){
                     frame->state = WG_FRAME_FULL;

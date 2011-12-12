@@ -99,7 +99,7 @@ cam_output_format_set(Wg_camera *cam, struct v4l2_format *format)
 
     status = ioctl(cam->fd_cam, VIDIOC_S_FMT, format);
     if (-1 == status){
-        WG_LOG("%s", strerror(errno));
+        WG_LOG("%s\n", strerror(errno));
         switch (errno){
             case EBUSY:
                 return CAM_BUSY;
