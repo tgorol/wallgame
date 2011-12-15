@@ -17,6 +17,13 @@ typedef enum CAM_MODE {
     CAM_MODE_UNKNOWN                /*!< Unknown mode   */
 }CAM_MODE;
 
+typedef enum CAM_FLAGS {
+    ENABLE_DECOMPRESSOR = 1<<0
+}CAM_FLAGS;
+
+#define IS_FLAG_SET(flag, flag_name)          \
+    ((flag) & (flag_name))
+
 /**
  * @brief Status codes returned by the Camera module
  */
@@ -128,7 +135,7 @@ inline static cam_status invoke_decompressor(
 
 WG_PUBLIC cam_status cam_init(Wg_camera *cam, wg_char* dev_path);
 
-WG_PUBLIC cam_status cam_open(Wg_camera *cam, CAM_MODE mode);
+WG_PUBLIC cam_status cam_open(Wg_camera *cam, CAM_MODE mode, wg_uint flags);
 
 WG_PUBLIC cam_status cam_close(Wg_camera *cam);
 

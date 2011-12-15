@@ -87,16 +87,17 @@ cam_init(Wg_camera *cam, wg_char* dev_path)
  * @retval CAM_FAILURE
  */
 cam_status
-cam_open(Wg_camera *cam, CAM_MODE mode)
+cam_open(Wg_camera *cam, CAM_MODE mode, wg_uint flags)
 {
     cam_status status = CAM_FAILURE;
     struct stat st; 
+    List_head desc_head;
 
     CHECK_FOR_NULL_PARAM(cam);
 
 
     if (-1 == stat (cam->dev_path, &st)) {
-        WG_LOG("Cannot identify '%s': %d, %s\n",
+        WG_LOG("Cannot identify '%s': errno(%d), %s\n",
                 cam->dev_path, errno, strerror (errno));
         return CAM_FAILURE;
     }
@@ -105,6 +106,7 @@ cam_open(Wg_camera *cam, CAM_MODE mode)
         WG_LOG("%s is no device\n", cam->dev_path);
         return CAM_FAILURE;
     }
+
     do {
         cam->fd_cam = open(cam->dev_path, O_RDWR, 0);
         if (-1 == cam->fd_cam){
@@ -113,7 +115,7 @@ cam_open(Wg_camera *cam, CAM_MODE mode)
         }
 
         status = cam_cap_get(cam);
-        if (CAM_FAILURE == status){
+        if (CAM_SUCCESS != status){
             close(cam->fd_cam);
             cam->fd_cam = -1;
             return CAM_FAILURE;
@@ -121,7 +123,7 @@ cam_open(Wg_camera *cam, CAM_MODE mode)
 
         status = cam_output_format_get(cam, CAM_OUT_VIDEO_CAPTURE, 
                 &cam->fmt[CAM_FMT_CAPTURE]);
-        if (CAM_FAILURE == status){
+        if (CAM_SUCCESS != status){
             close(cam->fd_cam);
             cam->fd_cam = -1;
             return CAM_FAILURE;
@@ -130,11 +132,20 @@ cam_open(Wg_camera *cam, CAM_MODE mode)
         switch (mode){
             case CAM_MODE_INVALID:
             case CAM_MODE_READWRITE:
-                select_mode(cam, mode);
+            case CAM_MODE_STREAMING:
+                status = select_mode(cam, mode);
+                if (CAM_SUCCESS != status){
+                    close(cam->fd_cam);
+                    cam->fd_cam = -1;
+                    WG_LOG("Can't select capture mode for %s\n", cam->dev_path);
+                    return CAM_FAILURE;
+                }
                 break;
             default:
                 break;
         }
+
+        /* at this point 'cam_ops' are valid (filled by delect mode) */
         status = cam->cam_ops.open(cam); 
         if (CAM_SUCCESS != status){
             close(cam->fd_cam);
@@ -143,10 +154,32 @@ cam_open(Wg_camera *cam, CAM_MODE mode)
         }
     } while(status != CAM_SUCCESS);
 
-    status = cam_select_decompressor(cam);
+#ifdef WGDEBUG
+    status = cam_output_format_description_list(
+            cam, CAM_OUT_VIDEO_CAPTURE, &desc_head);
     if (CAM_SUCCESS != status){
         close(cam->fd_cam);
         cam->fd_cam = -1;
+        WG_LOG("Can't read output format descriptions\n");
+        return  status;
+    }
+
+    /* print supported video capture formats */
+    cam_output_format_description_list_print(&desc_head);
+
+    cam_output_format_description_list_cleanup(&desc_head);
+    
+    /* print camera capabilities */
+    cam_cap_print(cam);
+#endif
+
+    if (IS_FLAG_SET(flags, ENABLE_DECOMPRESSOR)){
+        status = cam_select_decompressor(cam);
+        if (CAM_SUCCESS != status){
+            close(cam->fd_cam);
+            cam->fd_cam = -1;
+            WG_LOG("Can't find a decompressor for seleted mode\n");
+        }
     }
 
     return status;
@@ -387,11 +420,11 @@ select_mode(Wg_camera *cam, CAM_MODE mode)
     if (cam_cap_video_capture(cam) == WG_TRUE){
         if ((cam_cap_streaming(cam) == WG_TRUE) && MODE_STREAM(mode)){
             WG_LOG("Webcam switch into STREAMING mode\n");
-            cam_streaming_init(cam);
+            status = cam_streaming_init(cam);
         }else if ((cam_cap_readwrite(cam) == WG_TRUE)
                 && MODE_READWRITE(mode)){
             WG_WARN("Webcam switch into READ/WRITE mode\n");
-            cam_readwrite_init(cam);
+            status = cam_readwrite_init(cam);
         }else{
             status = CAM_NO_SUPPORT;
         }
