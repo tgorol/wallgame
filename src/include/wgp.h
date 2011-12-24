@@ -6,6 +6,12 @@
 
 typedef wg_status (*Msg_handler)(void *gh, Wg_message *msg);
 
+typedef enum WGP_FUNC_ID {
+     WGP_INIT = 0     ,
+     WGP_RUN          ,
+     WGP_FUNC_ID_NUM
+} WGP_FUNC_ID;
+
 
 /**
  * @brief Plugin info structure
@@ -22,10 +28,22 @@ typedef struct Wgp_info{
 typedef struct Wgp_plugin{
     Wgp_info info;                             /*!< plugin information */
     void *lib;                                 /*!< plugin file handle */
-    /* plugin interface */
-    wg_int (*run)(void *gh, Msg_handler handler); /*!< run plugin */
-    wg_status (*init)(Wgp_info*);              /*!< info */
+    fvoid f[WGP_FUNC_ID_NUM];
 }Wgp_plugin;
+
+#define WGP_CALL_INIT(p, ...)                          \
+    CAST_FUNC(GET_FUNC(p, WGP_INIT) , wg_status, Wgp_info *)(__VA_ARGS__) 
+
+#define WGP_CALL_RUN(p, ...)                           \
+    CAST_FUNC(GET_FUNC(p, WGP_RUN) , wg_int, void*, Msg_handler)(__VA_ARGS__) 
+   
+
+#define GET_FUNC(p, func_id)                      \
+    ((p)->f[func_id])
+
+#define CAST_FUNC(func, ret, ...)                       \
+    ((ret (*)(__VA_ARGS__))func)
+  
 
 WG_PUBLIC wg_status
 wgp_load(const wg_char *name, Wgp_plugin *plugin);

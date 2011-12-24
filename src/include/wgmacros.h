@@ -3,44 +3,58 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-
-#define WG_ERROR(...)                               \
-    {fprintf(stderr, "error: %s:%d ", __PRETTY_FUNCTION__, \
-            __LINE__);                              \
-    fprintf(stderr, __VA_ARGS__); }
-
-#define WG_PRINT(...)                \
+ 
+/** @brief Print message on stdout */
+#define WG_PRINT(...)                                     \
     fprintf(stdout, __VA_ARGS__)                      
 
-#define WG_LOG(...)                  \
-    fprintf(stdout,  "log  : ");     \
-    fprintf(stdout, __VA_ARGS__)                      
+/** @brief Print message on stderr */
+#define WG_PRINT_ERR(...)                                 \
+    fprintf(stderr, __VA_ARGS__)
 
-#define WG_WARN(...)                      \
-    fprintf(stdout,  "WARNINIG  : ");     \
-    fprintf(stdout, __VA_ARGS__)                      
+/** @brief Print error message */
+#define WG_ERROR(...)                                     \
+    WG_PRINT_ERR("ERROR: %s:%d ", __PRETTY_FUNCTION__,    \
+            __LINE__);                                    \
+    WG_PRINT_ERR(__VA_ARGS__)
 
+/** @brief Print warning log message */
+#define WG_LOG(...)                                       \
+    WG_PRINT("LOG: ");                                    \
+    WG_PRINT(__VA_ARGS__)
+
+/** @brief Print warning message */
+#define WG_WARN(...)                                      \
+    WG_PRINT("WARNINIG: ");                             \
+    WG_PRINT(__VA_ARGS__)                      
+
+/** @brief Print debug message     */
 #ifndef WGDEBUG
 #define WG_DEBUG(...)                
 #else
 #define WG_DEBUG(...)                \
-    fprintf(stdout,  "debug: ");      \
-    fprintf(stdout, __VA_ARGS__)                      
+    WG_PRINT("DEBUG: ");      \
+    WG_PRINT(__VA_ARGS__)                      
 #endif
 
+/** @biref If value == NULL return WG_FAILURE
+ */
 #define CHECK_FOR_NULL(param)                    \
     if (NULL == (param)){                        \
         WG_ERROR("NULL parameter: " #param"\n"); \
         return WG_FAILURE;                       \
     }
 
+
+/** @brief Check for null parameters.  
+ */
 #ifdef RELEASE
 #define CHECK_FOR_NULL_PARAM(param) CHECK_FOR_NULL(param)
 #else
 #define CHECK_FOR_NULL_PARAM(param)                    
 #endif
 
-
+/** @todo addRANGE_LT_PARAM */
 #ifdef RELEASE
 #define CHECK_FOR_RANGE_LT(param, val)                    
 #else
@@ -89,7 +103,7 @@
 
 #define CHECK_FOR_COND(cond)                       \
     if (!(cond)){                                  \
-        WG_ERROR("Failed on: " #cond"\n");    \
+        WG_ERROR("Failed on: " #cond"\n");         \
         return WG_FAILURE;                         \
     }
 
@@ -116,6 +130,9 @@
     alloca(size)
 
 #define WG_FREE_PTR (&free)
+
+#define WG_ZERO_STRUCT(p)                                  \
+    memset(p, '\0', sizeof (*p))
 
 #define STRING_EMPTY(string)  (*(string) == '\0')
 

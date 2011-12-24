@@ -388,7 +388,7 @@ msg_from_sensor(Msgpipe_param *param)
 
     game = (Game*)param->user_data;
 
-    game->plugin.run(game, msg_handler);
+    WGP_CALL_RUN(&game->plugin, game, msg_handler);
 
     return param;
 }

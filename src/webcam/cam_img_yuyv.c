@@ -127,7 +127,6 @@ clamp_0_255(wg_int value)
             "2:"
             : "=a"(value)
             : "a"(value)
-            :
            );
 
     return (wg_uchar)value;

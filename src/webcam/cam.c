@@ -82,6 +82,7 @@ cam_init(Wg_camera *cam, wg_char* dev_path)
  *
  * @param cam webcam instance
  * @param mode mode to open camera in.
+ * @param flags options 
  *
  * @retval CAM_SUCCESS
  * @retval CAM_FAILURE

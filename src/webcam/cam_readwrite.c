@@ -231,7 +231,7 @@ select_frame(wg_uint num, Wg_camera *cameras[], wg_boolean retval[],
     int status = -1;
     cam_status cam_status = CAM_FAILURE;
 
-    fds = alloca(num * sizeof (struct pollfd));
+    fds = WG_ALLOCA(num * sizeof (struct pollfd));
     CHECK_FOR_NULL(fds);
 
     for (i = 0; i < num; ++i){

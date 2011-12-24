@@ -48,9 +48,9 @@ OBJ=$(foreach file, $(SOURCE), $(basename $(file)).o)
 CFLAGS+=-march=$(CPU_ARCH) -std=$(C_STD) 
 
 ifeq ($(BUILD_TYPE),  RELEASE)
-	CFLAGS+=-O2 -g -Wall -Werror
+	CFLAGS+=-O2 -g -Wall
 else
-	CFLAGS+=-g  -Wall -Werror
+	CFLAGS+=-g  -Wall 
 endif
 
 ifdef PROF

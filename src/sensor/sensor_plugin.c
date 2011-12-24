@@ -20,9 +20,17 @@
 
 /*! @{ */
 
+static const wg_char * const func[] = {
+    [WGP_INIT] = "init"    ,
+    [WGP_RUN]  = "run"
+}; 
+
 
 WG_STATIC wg_status
-get_function_address(void *lib, wg_char *func_name, void **address);
+get_function_address(void *lib, const wg_char *func_name, void **address);
+
+WG_STATIC wg_status
+fill_functions(Wgp_plugin *plugin);
 
 /**
  * @brief Load plugin.
@@ -41,7 +49,9 @@ wgp_load(const wg_char *name, Wgp_plugin *plugin)
     CHECK_FOR_NULL_PARAM(name);
     CHECK_FOR_NULL_PARAM(plugin);
 
-    /* open plugin                        */
+    WG_ZERO_STRUCT(plugin);
+
+    /* open a plugin                        */
     lib = dlopen(name, RTLD_LAZY);
     if (NULL == lib){
         return WG_FAILURE; 
@@ -50,21 +60,12 @@ wgp_load(const wg_char *name, Wgp_plugin *plugin)
     plugin->lib = lib;
    
     do {
-        /* get pointer to 'init' function              */
-        status = get_function_address(plugin->lib, "init", 
-                (void**)&plugin->init);
-        if (WG_FAILURE == status){break;}
-
+        status = fill_functions(plugin);
+        if(WG_FAILURE == status) { break;}
         /* initialize plugin                           */
-        status = plugin->init(&plugin->info);
-        if (WG_FAILURE == status){break;}
-
-        /* get pointer to 'read' function              */
-        status = get_function_address(plugin->lib, "run", 
-                (void**)&plugin->run);
-
-        if (WG_FAILURE == status){break;}
+        status = WGP_CALL_INIT(plugin, &plugin->info);
     }while (0);
+    /* If error in above loop exit with error */
     if (WG_FAILURE == status){
         dlclose(lib);
         return WG_FAILURE;
@@ -107,9 +108,26 @@ wgp_unload(Wgp_plugin *plugin)
 
     dlclose(plugin->lib);
 
-    memset(plugin, '\0', sizeof (Wgp_plugin));
+    WG_ZERO_STRUCT(plugin);
 
     return WG_SUCCESS;
+}
+
+WG_STATIC wg_status
+fill_functions(Wgp_plugin *plugin)
+{
+    wg_int i = 0;
+    wg_status status = WG_SUCCESS;
+
+    CHECK_FOR_NULL_PARAM(plugin);
+
+    /* loop through all functions and store their address */
+    for (i = 0; ((i < ELEMNUM(func)) && (status == WG_SUCCESS)); ++i){
+        status = get_function_address(plugin->lib, func[i], 
+        (void**)&plugin->f[i]);
+    }
+
+    return status;
 }
 
 /** @brief Get function address from the library
@@ -122,7 +140,7 @@ wgp_unload(Wgp_plugin *plugin)
  * @retval WG_FAILURE
  */
 WG_STATIC wg_status
-get_function_address(void *lib, wg_char *func_name, void **address)
+get_function_address(void *lib, const wg_char *func_name, void **address)
 {
     void *func_addr = NULL;
 #ifdef WGDEBUG

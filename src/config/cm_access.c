@@ -208,10 +208,10 @@ read_server_section(ini_fd_t ini_fd, Config_section *section)
     strncpy(section->name, SERVER_SECTION_NAME, 
             CONFIG_MAX_FIELD_NAME_SIZE);
 
+    config_field = &(field[PIPE_PATH]);
     /* read pipe path key */
     status = ini_locateKey(ini_fd, SERVER_PIPE_PATH_KEY);
     if (INI_ERROR != status){
-        config_field = &(field[PIPE_PATH]);
         status = ini_readString(ini_fd, 
                 config_field->value.string, 
                 CONFIG_MAX_STRING_SIZE);
@@ -221,10 +221,10 @@ read_server_section(ini_fd_t ini_fd, Config_section *section)
         CONFIG_FIELD_STRING   :
         CONFIG_FIELD_INVALID;
 
+    config_field = &(field[PLAYER_DB_PATH]);
     /* read player database path key */
     status = ini_locateKey(ini_fd, SERVER_PLAYER_DB_KEY);
     if (INI_ERROR != status){
-        config_field = &(field[PLAYER_DB_PATH]);
         status = ini_readString(ini_fd, 
                 config_field->value.string, 
                 CONFIG_MAX_STRING_SIZE);
@@ -234,10 +234,10 @@ read_server_section(ini_fd_t ini_fd, Config_section *section)
         CONFIG_FIELD_STRING   :
         CONFIG_FIELD_INVALID;
 
+    config_field = &(field[SCORE_DB_PATH]);
     /* read highscore database path key */
     status = ini_locateKey(ini_fd, SERVER_SCORE_DB_KEY);
     if (INI_ERROR != status){
-        config_field = &(field[SCORE_DB_PATH]);
         status = ini_readString(ini_fd, 
                 config_field->value.string, 
                 CONFIG_MAX_STRING_SIZE);

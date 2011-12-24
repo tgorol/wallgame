@@ -9,7 +9,7 @@
 #include <wgmacros.h>
 
 #include <ght_hash_table.h>
-#include <editline/readline.h>
+#include <readline/readline.h>
 
 #include <wg_linked_list.h>
 #include <wg_iterator.h>
@@ -37,17 +37,6 @@ typedef struct Async_hook_info_block{
 
 #endif
 
-/**
- * @brief Describes a console command 
- */
-typedef struct Console_hook{
-    wg_char *name;          /*!< name of the command  */
-    wg_char *description;   /*!< description          */
-    wg_char **detail_lines; /*!< detailed description */
-    Console_hook_cb cb_hook; /*!< hook function       */
-    HOOK_FLAG flags;         /*!< hook type           */
-    void *private_data;      /*!< user defined data   */
-}Console_hook;
 
 WG_PRIVATE wg_status 
 def_cb_help(wg_uint argc, wg_char *argv[], void *private_data);
@@ -236,7 +225,7 @@ gpm_console_start(void)
             line = readline((prompt != NULL) ? prompt : "");
         }while (line == NULL);
         if ('\0' != *line){
-            add_history(line);
+            //add_history(line);
         }
 
         dlist_init(&tok_list);

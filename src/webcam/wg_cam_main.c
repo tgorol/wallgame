@@ -234,7 +234,7 @@ void button_clicked_start
         cam->camera = camera;
 
         cam_init(cam->camera, "/dev/video0");
-        status = cam_open(cam->camera, 0, ENABLE_DECOMPRESSOR);
+        status = cam_open(cam->camera, CAM_MODE_READWRITE, ENABLE_DECOMPRESSOR);
         if (CAM_SUCCESS == status){
             pthread_attr_init(&attr);
             pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);

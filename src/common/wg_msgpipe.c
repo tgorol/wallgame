@@ -2,6 +2,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <sys/types.h>
+#include <errno.h>
 
 #include <wgtypes.h>
 #include <wg.h>
@@ -19,6 +20,8 @@
 
 WG_PRIVATE void* wg_msgpipe_producer(void *data);
 WG_PRIVATE void* wg_msgpipe_consumer(void *data);
+WG_PRIVATE void producer_cleanup(void *arg);
+WG_PRIVATE void consumer_cleanup(void *arg);
 
 /**
  * @brief Kill pipe
@@ -33,28 +36,38 @@ WG_PRIVATE void* wg_msgpipe_consumer(void *data);
 wg_status
 wg_msgpipe_kill(Msgpipe *msgpipe)
 {
+    wg_int status = 0;
     CHECK_FOR_NULL_PARAM(msgpipe);
 
     /* cancel consumer */
-    msgpipe->cancel_status[MSG_THREAD_CONS] = 
-        pthread_cancel(msgpipe->thread[MSG_THREAD_CONS]);
-
-    /* cancel producer */
-    msgpipe->cancel_status[MSG_THREAD_PROD] = 
-        pthread_cancel(msgpipe->thread[MSG_THREAD_PROD]);
-
+    status = pthread_cancel(msgpipe->thread[MSG_THREAD_CONS]);
+    msgpipe->cancel_status[MSG_THREAD_CONS] = status;
+    /* If thread exited already print wraning */
+    if (ESRCH == status){
+        WG_DEBUG("Consumer thread finished already.\n");
+    }
+ 
     /* wait for consumer */
     pthread_join(msgpipe->thread[MSG_THREAD_CONS],
             &(msgpipe->exit_code[MSG_THREAD_CONS]));
+    
+    WG_DEBUG("Consumer thread joined.\n");
+
+    /* cancel producer */
+    status = pthread_cancel(msgpipe->thread[MSG_THREAD_PROD]);
+    msgpipe->cancel_status[MSG_THREAD_PROD] = status;
+    /* If thread exited already print wraning */
+    if (ESRCH == status){
+        WG_DEBUG("Consumer thread finished already.\n");
+    }
 
     /* wait for producer */
     pthread_join(msgpipe->thread[MSG_THREAD_PROD],
             &(msgpipe->exit_code[MSG_THREAD_PROD]));
 
-    return ((msgpipe->cancel_status[MSG_THREAD_CONS] == 0) && 
-            (msgpipe->cancel_status[MSG_THREAD_PROD] == 0)) ?
-        WG_SUCCESS   :
-        WG_FAILURE   ;
+    WG_DEBUG("Producer thread joined.\n");
+
+    return WG_SUCCESS;
 }
 
 /**
@@ -119,25 +132,35 @@ wg_msgpipe_create(void* (*producer)(Msgpipe_param *),
    rc = pthread_create(&thread_cons, &attr, wg_msgpipe_consumer, 
            (void*)msgpipe);
    if (0 != rc){
-       WG_LOG("Threads creation failed: %d\n", rc);
+       WG_ERROR("Thread creation failed: %d\n", rc);
        pthread_attr_destroy(&attr);
        return WG_FAILURE;
    }
    msgpipe->thread[MSG_THREAD_CONS] = thread_cons;
 
+   WG_DEBUG("Consumer thread created.\n");
+
    rc = pthread_create(&thread_prod, &attr, wg_msgpipe_producer, 
            (void*)msgpipe);
    if (0 != rc){
-       WG_LOG("Threads creation failed: %d\n", rc);
+       WG_ERROR("Thread creation failed: %d\n", rc);
        pthread_attr_destroy(&attr);
        pthread_cancel(thread_cons);
        return WG_FAILURE;
    }
+   WG_DEBUG("Producer thread created.\n");
+
    pthread_attr_destroy(&attr);
 
    msgpipe->thread[MSG_THREAD_PROD] = thread_prod;
 
    return WG_SUCCESS;
+}
+
+WG_PRIVATE void
+producer_cleanup(void *arg)
+{
+    return;
 }
 
 /**
@@ -157,6 +180,7 @@ wg_msgpipe_producer(void *data)
     int old_state = 0;
     int old_type = 0;
     Msgpipe_param param = {0};
+    void *ret_value = NULL;
 
     CHECK_FOR_NULL_PARAM(data);
 
@@ -173,9 +197,22 @@ wg_msgpipe_producer(void *data)
     /* create data passed to the user define function */
     param.queue     = msgpipe->queue;
     param.user_data = msgpipe->user_data;
+    
+    /* set cleanup routine */
+    pthread_cleanup_push(producer_cleanup, msgpipe);
 
     /* call producer function */
-    return msgpipe->producer(&param);
+    ret_value =  msgpipe->producer(&param);
+
+    pthread_cleanup_pop(1);
+
+    return ret_value;
+}
+
+WG_PRIVATE void
+consumer_cleanup(void *arg)
+{
+    return;
 }
 
 /**
@@ -194,6 +231,7 @@ wg_msgpipe_consumer(void *data)
     Msgpipe *msgpipe = NULL;
     int old_state = 0;
     int old_type = 0;
+    void *ret_value = NULL;
     Msgpipe_param param = {0};
 
     CHECK_FOR_NULL_PARAM(data);
@@ -212,8 +250,14 @@ wg_msgpipe_consumer(void *data)
     param.queue     = msgpipe->queue;
     param.user_data = msgpipe->user_data;
 
+    pthread_cleanup_push(consumer_cleanup, msgpipe);
+
     /* call consumer function */
-    return msgpipe->consumer(&param);
+    ret_value = msgpipe->consumer(&param);
+
+    pthread_cleanup_pop(1);
+
+    return ret_value;
 }
 
 /*! @} */

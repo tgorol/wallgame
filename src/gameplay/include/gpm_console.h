@@ -12,11 +12,16 @@ typedef enum HOOK_FLAG {
 }HOOK_FLAG;
 
 /**
- * @brief 
+ * @brief Describes a console command 
  */
-typedef struct Console_hook Console_hook;
-
-
+typedef struct Console_hook{
+    wg_char *name;          /*!< name of the command  */
+    wg_char *description;   /*!< description          */
+    wg_char **detail_lines; /*!< detailed description */
+    Console_hook_cb cb_hook; /*!< hook function       */
+    HOOK_FLAG flags;         /*!< hook type           */
+    void *private_data;      /*!< user defined data   */
+}Console_hook;
 #define DEFAULT_HOOK_FLAGS  (HOOK_SYNC)
 
 wg_status
