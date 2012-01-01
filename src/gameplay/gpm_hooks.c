@@ -161,7 +161,11 @@ cb_start(wg_int argc, wg_char *args[], void *private_data)
 wg_status
 cb_stop(wg_int argc, wg_char *args[], void *private_data)
 {
-    gpm_game_kill();
+    if (WG_TRUE == gpm_game_is_running()){
+        gpm_game_kill();
+    }else{
+        WG_PRINT("There is no game running!\n");
+    }
     return WG_SUCCESS;
 }
 
@@ -197,7 +201,7 @@ cb_lsg(wg_int argc, wg_char *argv[], void *private_data)
                 printf("[%s]\n", game->name); 
                 gpm_ini_get_field_iterator(&itr, game);
 
-                while (wg_ini_field_iterator_next(&itr, &field) == WG_SUCCESS){
+                while (gpm_ini_field_iterator_next(&itr, &field) == WG_SUCCESS){
                     printf("%s : %s\n", field->name, field->value.string);
                 }
             }

@@ -45,12 +45,12 @@ endif
 OBJ=$(foreach file, $(SOURCE), $(basename $(file)).o)
 
 # Add archiceture
-CFLAGS+=-march=$(CPU_ARCH) -std=$(C_STD) 
+CFLAGS+=-march=$(CPU_ARCH) -std=$(C_STD) -D_REENTRANT 
 
 ifeq ($(BUILD_TYPE),  RELEASE)
-	CFLAGS+=-O2 -g -Wall
+	CFLAGS+=-O2 -Wall 
 else
-	CFLAGS+=-g  -Wall 
+	CFLAGS+=-g -Wall -Werror -DWGDEBUG
 endif
 
 ifdef PROF

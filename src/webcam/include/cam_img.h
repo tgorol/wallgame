@@ -43,7 +43,7 @@ cam_img_get_width(Wg_image *img, wg_uint *width)
  * @brief Get haight of the image
  *
  * @param img    image structure
- * @param width  memory to store height
+ * @param height  memory to store height
  *
  * @retval CAM_SUCCESS
  * @retval CAM_FAILURE

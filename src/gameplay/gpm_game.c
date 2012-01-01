@@ -19,6 +19,7 @@
 #include <wg_msgpipe.h>
 
 #include "include/gpm_game.h"
+#include "include/gpm_console.h"
 
 /*! \defgroup gpm_game Gameplay Game Control 
  */
@@ -26,12 +27,17 @@
 /*! @{ */
 
 
+/** @brief Maximum number of messages in the queue */
 #define MSG_QUEUE_MAX   1024
+
+/** @brief Maximum number of characters in game name */
+#define GAME_NAME_MAX   256
 
 /**
  * @brief Game Instance Structure
  */
 typedef struct Game{
+    wg_char name[GAME_NAME_MAX]; /*!< game name */
     Transport transport;  /*!< transport connected to the game */
     pid_t process_id;     /*!< process id of the game          */
     wg_uint game_id;      /*!< user defined id                 */
@@ -55,9 +61,36 @@ typedef struct Wg_message_wrap{
  */
 WG_PRIVATE Game *running_game = NULL;
 
-
 WG_PRIVATE void * msg_from_sensor(Msgpipe_param *queue);
 WG_PRIVATE void * msg_to_game(Msgpipe_param *queue);
+WG_PRIVATE wg_status add_default_hooks(void);
+WG_PRIVATE wg_status def_game(wg_uint argc, wg_char *args[], 
+                              void *private_data);
+
+WG_PRIVATE Console_hook def_cmd_info[] = {
+    {
+        .name         = "game"                       ,
+        .description  = "Print running game stats"   ,
+        .cb_hook      = def_game                     ,
+        .flags        = HOOK_SYNC                    ,
+        .private_data = NULL             
+    }
+};
+
+
+/**
+ * @brief Initialize game control module
+ *
+ * @retval WG_SUCCESS
+ * @retval WG_FAILURE
+ */
+wg_status
+gpm_game_init(void)
+{
+    add_default_hooks();
+
+    return WG_SUCCESS;
+}
 
 /**
  * @brief Start a game
@@ -87,7 +120,7 @@ gpm_game_run(wg_char *argv[], wg_char *address, const wg_char *plugin_name)
         case 0:
             execvp(argv[0], argv);
             WG_ERROR("BUG: Shoudn't be here\n");
-            /* TODO make this more readable */
+            /* @todo make this more readable */
             exit(1);
             break;
         case -1:
@@ -95,10 +128,14 @@ gpm_game_run(wg_char *argv[], wg_char *address, const wg_char *plugin_name)
             return WG_FAILURE;
         default:
             do {
+                /* create game instance */
                 game = WG_CALLOC(1, sizeof (Game));
                 if (NULL == game){
                     break;
                 }
+
+                strncpy(game->name, argv[0], GAME_NAME_MAX);
+                WG_LOG("Command %s\n", game->name);
 
                 /* save process id               */
                 game->process_id = game_pid;
@@ -112,7 +149,7 @@ gpm_game_run(wg_char *argv[], wg_char *address, const wg_char *plugin_name)
 
                 WG_DEBUG("Transaction created at %s\n", address);
 
-                /* TODO Add error checking */
+                /* @todo Add error checking */
 
                 status = wg_workq_init(&game->msg_queue, 
                         GET_OFFSET(Wg_message_wrap, list));
@@ -192,11 +229,13 @@ gpm_game_add_message(Msg_type type, ...)
     wg_status status = WG_FAILURE;
     Wg_message_wrap *message = NULL;
 
+    /* allocate memory for a message */
     status = wg_slab_alloc(&running_game->msg_slab, (void**)&message);
     CHECK_FOR_FAILURE(status);
 
     message->body.type = type;
 
+    /* add message to the queue */
     status = wg_workq_add(&running_game->msg_queue, &message->list);
     if (WG_FAILURE == status){
         wg_slab_free(&running_game->msg_slab, message);
@@ -271,10 +310,9 @@ gpm_game_kill(void)
         wgp_unload(&running_game->plugin);
         WG_DEBUG("Plugin unloaded\n");
 
-        /* TODO Clean a workq */
+        /* @todo Clean a workq */
 
         WG_FREE(running_game);
-
 
         running_game = NULL;
     }
@@ -295,11 +333,13 @@ gpm_game_is_running(void)
 
     if ((running_game != NULL) && (running_game->process_id != 0)){
         if (0 == waitpid(running_game->process_id, NULL, WNOHANG)){
+            /* game still running */
             is_running = WG_TRUE;
         }else{
+            /* game closed by a user */
             is_running = WG_FALSE;
             trans_unix_close(&running_game->transport);
-            memset(&running_game, '\0', sizeof (Game));
+            WG_ZERO_STRUCT(&running_game);
         }
     }
 
@@ -352,6 +392,17 @@ gpm_game_get_id(wg_uint *id)
     return status;
 }
 
+/** @brief Send message to the game.
+ * Each time a plugin wants to send a message this function
+ * is called. Pointer to this function is passed as an argument
+ * of 'run' function of the plugin.
+ *
+ * @param gh global handler (pointer to a game instance)
+ * @param msg message to send
+ *
+ * @retval WG_SUCCESS
+ * @retval WG_FAILURE
+ */
 WG_PRIVATE wg_status
 msg_handler(void *gh, Wg_message *msg)
 {
@@ -359,14 +410,13 @@ msg_handler(void *gh, Wg_message *msg)
     Wg_message_wrap *msg_wrap = NULL;
 
     game = (Game*)gh;
-#if 0
-    msg_wrap = WG_MALLOC(sizeof (Wg_message_wrap));
-#endif
 
+    /* allocate memory for a message */
     wg_slab_alloc(&game->msg_slab, (void**)&msg_wrap);
 
     msg_wrap->body = *msg;
 
+    /* add message to the queue */
     wg_workq_add(&game->msg_queue, &msg_wrap->list);
 
     return WG_SUCCESS;
@@ -379,7 +429,7 @@ msg_handler(void *gh, Wg_message *msg)
  *
  * @param param paramaters
  *
- * @return NULL
+ * @return param argument
  */
 WG_PRIVATE void *
 msg_from_sensor(Msgpipe_param *param)
@@ -388,6 +438,7 @@ msg_from_sensor(Msgpipe_param *param)
 
     game = (Game*)param->user_data;
 
+    /* call 'run' function of the loaded plugin */
     WGP_CALL_RUN(&game->plugin, game, msg_handler);
 
     return param;
@@ -400,7 +451,7 @@ msg_from_sensor(Msgpipe_param *param)
  *
  * @param param paramaters
  *
- * @return NULL
+ * @return param argument
  */
 WG_PRIVATE void *
 msg_to_game(Msgpipe_param *param)
@@ -410,7 +461,6 @@ msg_to_game(Msgpipe_param *param)
     char buffer[1024];
 
     game = (Game*)param->user_data;
-
 
     /** @todo remove workaraound */
 
@@ -440,12 +490,49 @@ msg_to_game(Msgpipe_param *param)
             printf(" ");
         }
        wg_slab_free(&game->msg_slab, msg);
-#if 0
-        WG_FREE(msg);
-#endif
     }
 
     return param;
+}
+
+WG_PRIVATE wg_status
+add_default_hooks(void)
+{
+    wg_uint index = 0;
+    Console_hook *def_cmd = NULL;
+    Console_hook *hook = NULL;
+    wg_status  status = WG_FAILURE;
+
+    for (index = 0; index < ELEMNUM(def_cmd_info); ++index){
+        def_cmd = &(def_cmd_info[index]);
+        status = gpm_console_new_hook(def_cmd->name, def_cmd->cb_hook, NULL,
+                &hook);
+        CHECK_FOR_FAILURE(status);
+
+        gpm_console_set_hook_flags(hook, def_cmd->flags);
+        gpm_console_add_hook_description(hook, def_cmd->description, NULL);
+        gpm_console_register_hook(hook);
+    }
+
+    return WG_SUCCESS;
+}
+
+WG_PRIVATE wg_status 
+def_game(wg_uint argc, wg_char *args[], void *private_data)
+{
+    const Wgp_info *plugin_info;
+
+    if (gpm_game_is_running() == WG_FALSE){
+        WG_PRINT("There is no game running\n");
+    }else{
+        wgp_info(&running_game->plugin, &plugin_info);
+        WG_PRINT("Game name        : %s\n", running_game->name);
+        WG_PRINT("Transport address: %s\n", running_game->transport.address);
+        WG_PRINT("Plugin name      : %s\n", plugin_info->name);
+        WG_PRINT("Game pid         : %ld\n", (long)running_game->process_id);
+    }
+
+    return WG_SUCCESS;
 }
 
 /*! @} */

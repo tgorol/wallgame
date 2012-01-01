@@ -130,9 +130,9 @@ cam_img_get_subimage(Wg_image *img_src, wg_uint x, wg_uint y,
 
     CHECK_FOR_NULL_PARAM(img_src);
     CHECK_FOR_NULL_PARAM(img_dest);
-    CHECK_FOR_RANGE_GE(img_dest->width, img_src->width);
-    CHECK_FOR_RANGE_GE(x + img_dest->width, img_src->width);
-    CHECK_FOR_RANGE_GE(y + img_dest->height, img_src->height);
+    CHECK_FOR_RANGE_GT(img_dest->width, img_src->width);
+    CHECK_FOR_RANGE_GT(x + img_dest->width, img_src->width);
+    CHECK_FOR_RANGE_GT(y + img_dest->height, img_src->height);
 
     row = &(img_src->rows[y]);
 

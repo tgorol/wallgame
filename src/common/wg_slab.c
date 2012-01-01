@@ -124,14 +124,14 @@ wg_slab_cleanup(Wg_slab *slab)
 {
     CHECK_FOR_NULL(slab);
 
-    /* TODO Add code: wait for all blocks */
+    /* @todo Add code: wait for all blocks */
 
     WG_FREE(slab->slab);
     pthread_cond_destroy(&slab->empty);
     pthread_mutex_destroy(&slab->lock);
     pthread_mutexattr_destroy(&slab->attr);
 
-    memset(slab, '\0', sizeof (Wg_slab));
+    WG_ZERO_STRUCT(slab);
 
     return WG_SUCCESS;
 
@@ -142,8 +142,8 @@ wg_slab_print_stat(Wg_slab *slab)
 {
     CHECK_FOR_NULL_PARAM(slab);
 
-    printf("slab allocs = %u\n", slab->alloc_num);
-    printf("slab frees  = %u\n", slab->free_num);
+    WG_DEBUG("slab allocs = %u\n", slab->alloc_num);
+    WG_DEBUG("slab frees  = %u\n", slab->free_num);
 
     return WG_SUCCESS;
 }

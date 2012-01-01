@@ -6,12 +6,14 @@
 
 #include <wg_cm.h>
 #include <wg_gpm.h>
+#include <wg_msg.h>
 
 #include "include/gpm.h"
 #include "include/gpm_ini.h"
 #include "include/gpm_console.h"
 #include "include/gpm_cmdln.h"
 #include "include/gpm_hooks.h"
+#include "include/gpm_game.h"
 
 /**
  * @brief Console command information
@@ -34,6 +36,15 @@ wg_char *details_lsg[] = {
 };
 
 Cmd_info cmd_info[] = {
+    {
+        .name         = "quit"           ,
+        .description  = "Quit program"   ,
+        .cb_hook      = cb_exit          ,
+        .flags        = HOOK_SYNC | HOOK_EXIT   ,
+        .private_data = NULL             ,
+        .detail_lines = NULL
+    }
+    ,
     {
         .name         = "exit"           ,
         .description  = "Quit program"   ,
@@ -79,7 +90,7 @@ Cmd_info cmd_info[] = {
     ,
     {
         .name         = "pause"          ,
-        .description  = "Stop a game"    ,
+        .description  = "Pause a game"   ,
         .cb_hook      = cb_pause         ,
         .flags        = HOOK_SYNC        ,
         .private_data = NULL             
@@ -95,9 +106,9 @@ Cmd_info cmd_info[] = {
     }
     ,
     {
-        .name         = "send"            ,
+        .name         = "send"           ,
         .description  = "Send data to the game"    ,
-        .cb_hook      = cb_send           ,
+        .cb_hook      = cb_send          ,
         .flags        = HOOK_SYNC        ,
         .private_data = NULL             ,      
         .detail_lines = NULL
@@ -143,6 +154,8 @@ wg_start(int argc, char *argv[])
     if (WG_SUCCESS != status){
         return WG_EXIT_ERROR;
     }
+
+    gpm_game_init();
 
     /* start receiving input from the user */
     status = gpm_console_start();

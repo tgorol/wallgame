@@ -74,7 +74,7 @@ WG_PRIVATE wg_status print_detail_lines(wg_char *lines[]);
 /**
  * @brief Default commands.
  */
-Console_hook def_cmd_info[] = {
+WG_PRIVATE Console_hook def_cmd_info[] = {
     {
         .name         = "help"                ,
         .description  = "Print help screen"   ,

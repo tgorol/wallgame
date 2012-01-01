@@ -121,7 +121,7 @@ capture(void *data)
                     cam->pixbuf = NULL;
                 }
 
-                cam_img_fill(639, 479, 3, image_sub);
+                cam_img_fill(image.width, image.height, 3, image_sub);
 
                 cam_img_get_subimage(&image, 0, 0, image_sub);
 
@@ -234,7 +234,7 @@ void button_clicked_start
         cam->camera = camera;
 
         cam_init(cam->camera, "/dev/video0");
-        status = cam_open(cam->camera, CAM_MODE_READWRITE, ENABLE_DECOMPRESSOR);
+        status = cam_open(cam->camera, 0, ENABLE_DECOMPRESSOR);
         if (CAM_SUCCESS == status){
             pthread_attr_init(&attr);
             pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);

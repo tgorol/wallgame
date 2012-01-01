@@ -179,7 +179,7 @@ gpm_ini_get_field_iterator(Field_iterator *itr, const Config_section *section)
  * @return Field element or NULL if end of list
  */
 wg_status
-wg_ini_field_iterator_next(Field_iterator *itr, 
+gpm_ini_field_iterator_next(Field_iterator *itr, 
         const Config_field **config_field)
 {
     const Config_field *cf = NULL;

@@ -3,7 +3,6 @@
 
 #define MAX_PATH_LENGTH   512
 
-
 WG_PUBLIC wg_status
 gpm_game_run(wg_char *argv[], wg_char * address_index, 
         const wg_char *plugin_name);
@@ -25,5 +24,8 @@ gpm_game_set_id(wg_uint id);
 
 WG_PUBLIC wg_status
 gpm_game_add_message(Msg_type type, ...);
+
+WG_PUBLIC wg_status
+gpm_game_init(void);
 
 #endif

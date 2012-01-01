@@ -10,7 +10,11 @@ INCLUDE=./include
 
 OUT_NAME=common
 
-EXTRA_CFLAGS=-D_REENTRANT
+EXTRA_CFLAGS=
+
+ifdef WG_DEBUG
+EXTRA_CFLAGS+=-DWGDEBUG
+endif
 
 include $(BUILD_PATH)/env.mk
 

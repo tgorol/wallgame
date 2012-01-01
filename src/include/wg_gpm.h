@@ -32,7 +32,7 @@ WG_PUBLIC wg_status
 gpm_ini_get_game_by_index(wg_uint index, const Config_section **game);
 
 WG_PUBLIC wg_status
-wg_ini_field_iterator_next(Field_iterator *itr, const 
+gpm_ini_field_iterator_next(Field_iterator *itr, const 
         Config_field **config_field);
 
 WG_PUBLIC wg_status
