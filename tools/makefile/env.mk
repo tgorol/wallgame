@@ -1,6 +1,6 @@
 OUT_DIR?=$(CURDIR)/build/lib/
 CPU_ARCH?=i386
-C_STD?=c99
+C_STD?=gnu99
 
 ifndef OUT_NAME
 OUT_NAME=lib
@@ -46,6 +46,8 @@ OBJ=$(foreach file, $(SOURCE), $(basename $(file)).o)
 
 # Add archiceture
 CFLAGS+=-march=$(CPU_ARCH) -std=$(C_STD) -D_REENTRANT 
+
+# Set float_t precision 
 
 ifeq ($(BUILD_TYPE),  RELEASE)
 	CFLAGS+=-O2 -Wall 

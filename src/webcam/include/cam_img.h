@@ -20,6 +20,12 @@ enum RGB24_PIXEL{
  */
 typedef wg_uchar rgb24_pixel[RGB24_RGB];
 
+typedef struct Wg_rgb{
+    wg_uchar red;
+    wg_uchar green;
+    wg_uchar blue;
+}Wg_rgb;
+
 /**
  * @brief Get width of the image
  *
@@ -145,15 +151,15 @@ cam_img_get_components_per_pixel(Wg_image *img, wg_uint *comp_per_pixel)
 
 /** @brief Get RED compontent of the pixel
  */
-#define PIXEL_RED(pixel)   pixel[RGB24_R]
+#define PIXEL_RED(pixel)   (pixel)[RGB24_R]
 
 /** @brief Get GREEN component of the pixel
  */
-#define PIXEL_GREEN(pixel) pixel[RGB24_G]
+#define PIXEL_GREEN(pixel) (pixel)[RGB24_G]
 
 /** @brief Get BLUE component of the pixel
  */
-#define PIXEL_BLUE(pixel)  pixel[RGB24_B]
+#define PIXEL_BLUE(pixel)  (pixel)[RGB24_B]
 
 
 WG_PUBLIC cam_status
@@ -165,6 +171,11 @@ cam_img_cleanup(Wg_image *img);
 WG_PUBLIC cam_status
 cam_img_get_subimage(Wg_image *img_src, wg_uint x, wg_uint y, 
         Wg_image *img_dest);
+
+WG_PUBLIC cam_status
+cam_img_filter_color_threshold(const Wg_image *img, const Wg_rgb *base, 
+        const Wg_rgb *threshold, const Wg_rgb *background, 
+        const Wg_rgb *foreground);
 
 /*! @} */
 

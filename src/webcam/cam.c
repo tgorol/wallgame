@@ -67,6 +67,7 @@ cam_init(Wg_camera *cam, wg_char* dev_path)
     memset(cam, '\0', sizeof (Wg_camera));
 
     cam->mode = CAM_MODE_INVALID;
+    cam->state = CAM_STATE_UNINIT;
 
     strncpy(cam->dev_path, dev_path, DEV_PATH_MAX);
 
@@ -95,6 +96,11 @@ cam_open(Wg_camera *cam, CAM_MODE mode, wg_uint flags)
     List_head desc_head;
 
     CHECK_FOR_NULL_PARAM(cam);
+
+    if (CAM_STATE_UNINIT != cam->state){
+        WG_ERROR("Trying to open mot initialized camera\n");
+        return CAM_FAILURE;
+    }
 
 
     if (-1 == stat (cam->dev_path, &st)) {
@@ -183,6 +189,8 @@ cam_open(Wg_camera *cam, CAM_MODE mode, wg_uint flags)
         }
     }
 
+    cam->state = CAM_STATE_STOP;
+
     return status;
 }
 
@@ -199,13 +207,24 @@ cam_open(Wg_camera *cam, CAM_MODE mode, wg_uint flags)
 cam_status
 cam_close(Wg_camera *cam)
 {
+    cam_status status = CAM_FAILURE;
     CHECK_FOR_NULL_PARAM(cam);
 
     CHECK_FOR_COND(cam->fd_cam != -1);
 
-    close(cam->fd_cam);
+    switch (cam->state){
+    case CAM_STATE_START:
+        cam_stop(cam);
+    case CAM_STATE_STOP:
+        close(cam->fd_cam);
+        cam->state = CAM_STATE_UNINIT;
+        status = CAM_SUCCESS;
+        break;
+    case CAM_STATE_UNINIT:
+        return CAM_FAILURE;
+    }
 
-    return CAM_SUCCESS;
+    return status;
 }
 
 /**
@@ -223,8 +242,14 @@ cam_start(Wg_camera *cam)
 
     CHECK_FOR_NULL_PARAM(cam);
 
+    if (CAM_STATE_STOP != cam->state){
+        WG_ERROR("Trying to start capturing for started camera\n");
+        return CAM_FAILURE;
+    }
+
     if (NULL != cam->cam_ops.start){
         status = cam->cam_ops.start(cam);
+        cam->state = CAM_STATE_START;
     }
 
     return status;
@@ -246,6 +271,7 @@ cam_stop(Wg_camera *cam)
     CHECK_FOR_NULL_PARAM(cam);
 
     if (NULL != cam->cam_ops.stop){
+        cam->state = CAM_STATE_STOP;
         status = cam->cam_ops.stop(cam);
     }
 
@@ -398,7 +424,7 @@ cam_decompressor(Wg_camera *cam, Wg_cam_decompressor *dcomp)
 WG_PRIVATE CAM_MODE
 get_fallback_mode(CAM_MODE mode)
 {
-    static CAM_MODE fallback_mode[] = {
+    static const CAM_MODE fallback_mode[] = {
         [CAM_MODE_INVALID]   = CAM_MODE_READWRITE,
         [CAM_MODE_STREAMING] = CAM_MODE_READWRITE,
         [CAM_MODE_READWRITE] = CAM_MODE_UNKNOWN
@@ -406,7 +432,7 @@ get_fallback_mode(CAM_MODE mode)
     CAM_MODE new_mode = CAM_MODE_UNKNOWN;
 
     if (CAM_MODE_UNKNOWN != mode){
-        new_mode =fallback_mode[mode];
+        new_mode = fallback_mode[mode];
     }
 
     return new_mode;

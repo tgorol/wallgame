@@ -29,8 +29,8 @@ typedef wg_char u32str[sizeof (__u32) + 1];
 
 WG_STATIC Fmt_decomp supported_formats[] = {
     {v4l2_fourcc('J', 'P', 'E', 'G'), {cam_img_jpeg_decompress}}, 
-    {v4l2_fourcc('Y', 'U', 'Y', 'V'), {cam_img_yuyv_2_rgb24}},
-    {v4l2_fourcc('M', 'J', 'P', 'G'), {cam_img_jpeg_decompress}}
+    {v4l2_fourcc('M', 'J', 'P', 'G'), {cam_img_jpeg_decompress}},
+    {v4l2_fourcc('Y', 'U', 'Y', 'V'), {cam_img_yuyv_2_rgb24}}
 };
 
 WG_PRIVATE void
@@ -78,6 +78,9 @@ cam_select_decompressor(Wg_camera *cam)
 
         format.fmt.pix.pixelformat = supported_formats[index].pixelformat;
   
+        cam_print_u32_as_string(supported_formats[index].pixelformat,
+                pixelfmt_str);
+        WG_DEBUG("Trying format : %s....\n", pixelfmt_str);
         status = cam_output_format_set(cam, &format);
         switch (status){
             case CAM_BUSY:
@@ -85,11 +88,10 @@ cam_select_decompressor(Wg_camera *cam)
                 break;
             case CAM_INVAL:
                 /* means not supported format, try the next one */
+                WG_DEBUG("Format %s not supported\n", pixelfmt_str);
                 break;
             case CAM_SUCCESS:
-                cam_print_u32_as_string(supported_formats[index].pixelformat,
-                         pixelfmt_str);
-                WG_LOG("Selected format is %s\n", pixelfmt_str);
+                WG_DEBUG("Format %s supported\n", pixelfmt_str);
 
                 cam->fmt[CAM_FMT_CAPTURE] = format;
                 cam->dcomp = supported_formats[index].decompressor;

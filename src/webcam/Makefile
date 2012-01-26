@@ -8,7 +8,8 @@ SOURCE=cam.c                  \
 	   cam_frame.c            \
 	   cam_img_yuyv.c         \
 	   cam_img.h              \
-	   cam_format_selector.c 
+	   cam_format_selector.c  \
+	   cam_hsv.c
 
 APP_NAME=webcam
 
@@ -24,7 +25,7 @@ endif
 
 include $(BUILD_PATH)/env.mk
 
-LIB_LIST+=./build/lib/lib.a ../build/libwg.a -ljpeg
+LIB_LIST+=./build/lib/lib.a ../build/libwg.a -ljpeg -lm
 
 all: clean lib app
 

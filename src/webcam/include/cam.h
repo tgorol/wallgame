@@ -4,6 +4,10 @@
 
 #define DEV_PATH_MAX   64
 
+/*! Number of buffers to allocate for streaming mode */
+#define DEFAULT_BUFFER_NUM 20
+
+
 enum {CAM_FMT_CAPTURE, CAM_FMT_NUM};
 
 /**
@@ -36,6 +40,12 @@ typedef enum cam_status{
     CAM_TIMEOUT              ,     /*!< Timeout error         */
     CAM_NO_SUPPORT                 /*!< Feature not supported */
 }cam_status;
+
+typedef enum cam_state{
+    CAM_STATE_UNINIT = 0,
+    CAM_STATE_STOP      ,
+    CAM_STATE_START     
+}cam_state;
 
 /**
  * @brief Camera buffer
@@ -77,10 +87,17 @@ typedef struct Wg_cam_ops{
         /*!< on marking a buffer as empty */
 }Wg_cam_ops;
 
+typedef enum cam_type {
+    CAM_RGB = 0,
+    CAM_BGRX   ,
+    CAM_HSV
+} cam_type;
+
 /**
  * @brief Represents an image returned by a decompressor
  */
 typedef struct Wg_image{
+    cam_type type;
     wg_uchar **rows;       /*!< array of rows                          */
     wg_uchar *image;       /*!< start of the image                     */
     wg_ssize size;         /*!< number of bytes in the image           */
@@ -102,12 +119,12 @@ typedef struct Wg_cam_decompressor{
 }Wg_cam_decompressor;
 
 
-
 /**
  * @brief Camera
  */
 struct Wg_camera{
     CAM_MODE mode;                         /*!< Working mode              */
+    cam_state state;
     char dev_path[DEV_PATH_MAX + 1];       /*!< Device path               */
     int fd_cam;                            /*!< Device handler            */
     struct v4l2_capability cap;            /*!< Capabilities              */
@@ -152,4 +169,9 @@ WG_PUBLIC cam_status cam_stop(Wg_camera *cam);
 WG_PUBLIC cam_status
 cam_decompressor(Wg_camera *cam, Wg_cam_decompressor *dcomp);
 
+WG_PUBLIC cam_status
+cam_img_rgb_2_hsv(Wg_image *rgb_img, Wg_image *hsv_img);
+
+WG_PUBLIC cam_status
+cam_img_rgb_2_hsv_fast(Wg_image *rgb_img, Wg_image *hsv_img);
 #endif

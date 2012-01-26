@@ -1,6 +1,10 @@
 #ifndef _WGTYPES_H
 #define _WGTYPES_H
 
+#include <math.h>
+#include <limits.h>
+/*! @todo Remove this include */
+
 typedef char           wg_char      ;
 typedef signed char    wg_schar     ;
 typedef unsigned char  wg_uchar     ;
@@ -13,15 +17,20 @@ typedef signed int     wg_sint      ;
 typedef unsigned int   wg_uint      ;
 typedef int            wg_int       ;
 
-typedef float          wg_float     ;
-typedef double         wg_double    ;
+typedef float        wg_float     ;
+typedef double       wg_double    ;
 
 typedef size_t         wg_size      ;
 typedef ssize_t        wg_ssize     ;
 
 typedef long int       wg_long      ;
 
+#define WG_UCHAR_MAX   UCHAR_MAX
+#define WG_CHAR_MAX    CHAR_MAX
+
 typedef void (*fvoid)(void)         ;
+
+#define WG_FLOAT(val)  ((wg_float)val)
 
 typedef enum WG_BOOLEAN {
     WG_FALSE = (1 == 0), 

@@ -83,8 +83,11 @@ capture(void *data)
 {
     Wg_frame *frame = NULL;
     Wg_image *image_sub = NULL;
-    Wg_image  image;
+//    Wg_image  image;
+    Wg_image  hsv_img;
     Wg_camera *camera = NULL;
+//    Wg_rgb base;
+//    Wg_rgb thresh;
     Camera  *cam = NULL;
     int old_state = 0;
     int old_type = 0;
@@ -106,13 +109,21 @@ capture(void *data)
     cam_decompressor(camera, &decompressor);
     cam_start(camera);
 
+//    thresh.red   = 0xff;
+//    thresh.green = 0xff;
+//    thresh.blue  = 0xff;
+
+//    base.red   = 0x80;
+//    base.green = 0x80;
+//    base.blue  = 0x80;
+
     for(;;){
         if (cam_read(camera, frame) == CAM_SUCCESS){
             image_sub = WG_MALLOC(sizeof (Wg_image));
 
             status = invoke_decompressor(&decompressor, 
                     frame->start, frame->size, 
-                    frame->width, frame->height, &image);
+                    frame->width, frame->height, image_sub);
             if(CAM_SUCCESS == status){
                 cam_discard_frame(camera, frame);
 
@@ -121,11 +132,18 @@ capture(void *data)
                     cam->pixbuf = NULL;
                 }
 
-                cam_img_fill(image.width, image.height, 3, image_sub);
+//                cam_img_fill(image.width, image.height, 3, image_sub);
 
-                cam_img_get_subimage(&image, 0, 0, image_sub);
+//                cam_img_get_subimage(&image, 0, 0, image_sub);
 
-                cam_img_cleanup(&image);
+                cam_img_rgb_2_hsv_fast(image_sub, &hsv_img);
+
+                cam_img_cleanup(&hsv_img);
+                
+//                cam_img_cleanup(&image);
+
+//                cam_img_filter_color_threshold(&image, &base, &thresh, 
+//                      NULL, NULL);
 
                 cam->pixbuf = gdk_pixbuf_new_from_data(image_sub->image, 
                         GDK_COLORSPACE_RGB, FALSE, 8, 

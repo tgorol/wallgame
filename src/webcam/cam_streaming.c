@@ -28,8 +28,6 @@
  * @ingroup webcam 
  */
 
-#define DEFAULT_BUFFER_NUM 5
-
 #define POLL_FLAGS (POLLIN | POLLPRI)
 
 /*! @{ */
