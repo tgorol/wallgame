@@ -59,7 +59,7 @@ get_fallback_mode(CAM_MODE mode);
  * @retval CAM_FAILURE
  */
 cam_status
-cam_init(Wg_camera *cam, wg_char* dev_path)
+cam_init(Wg_camera *cam, const wg_char* dev_path)
 {
     CHECK_FOR_NULL_PARAM(cam);
     CHECK_FOR_NULL_PARAM(dev_path);
@@ -415,6 +415,32 @@ cam_decompressor(Wg_camera *cam, Wg_cam_decompressor *dcomp)
     if (NULL != cam->dcomp.run){
         *dcomp = cam->dcomp;
         status = CAM_SUCCESS;
+    }
+
+    return status;
+}
+
+cam_status
+cam_set_resolution(Wg_camera *cam, wg_uint width, wg_uint height)
+{
+    struct v4l2_format capture;
+    cam_status status = CAM_SUCCESS;
+
+    CHECK_FOR_NULL_PARAM(cam);
+    
+    capture = cam->fmt[CAM_FMT_CAPTURE]; 
+
+    if (capture.fmt.pix.width != width || capture.fmt.pix.height != height){
+        capture.fmt.pix.width  = width;
+        capture.fmt.pix.height = height;
+
+        WG_LOG("Trying new resolution w:%u h%u\n", width, height);
+        status = cam_output_format_set(cam, &capture);
+        if (CAM_SUCCESS != status){
+            WG_LOG("%s: Can't change resolution \n", cam->dev_path);
+        }
+    
+        cam->fmt[CAM_FMT_CAPTURE] = capture;
     }
 
     return status;

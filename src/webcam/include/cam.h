@@ -5,7 +5,7 @@
 #define DEV_PATH_MAX   64
 
 /*! Number of buffers to allocate for streaming mode */
-#define DEFAULT_BUFFER_NUM 20
+#define DEFAULT_BUFFER_NUM 4
 
 
 enum {CAM_FMT_CAPTURE, CAM_FMT_NUM};
@@ -58,6 +58,8 @@ typedef struct Wg_cam_buf{
 typedef struct Wg_camera Wg_camera;
 typedef struct Wg_frame Wg_frame;
 
+typedef wg_uint8 gray_pixel;
+
 
 /**
  * @brief Camera operations
@@ -87,17 +89,20 @@ typedef struct Wg_cam_ops{
         /*!< on marking a buffer as empty */
 }Wg_cam_ops;
 
-typedef enum cam_type {
-    CAM_RGB = 0,
-    CAM_BGRX   ,
-    CAM_HSV
-} cam_type;
+typedef enum img_type {
+    IMG_INVALI  ,
+    IMG_RGB     ,
+    IMG_BGRX    ,
+    IMG_YUYV    ,
+    IMG_HSV     ,
+    IMG_GS
+} img_type;
 
 /**
  * @brief Represents an image returned by a decompressor
  */
 typedef struct Wg_image{
-    cam_type type;
+    img_type type;
     wg_uchar **rows;       /*!< array of rows                          */
     wg_uchar *image;       /*!< start of the image                     */
     wg_ssize size;         /*!< number of bytes in the image           */
@@ -150,7 +155,7 @@ inline static cam_status invoke_decompressor(
 }
 
 
-WG_PUBLIC cam_status cam_init(Wg_camera *cam, wg_char* dev_path);
+WG_PUBLIC cam_status cam_init(Wg_camera *cam, const wg_char* dev_path);
 
 WG_PUBLIC cam_status cam_open(Wg_camera *cam, CAM_MODE mode, wg_uint flags);
 
@@ -174,4 +179,32 @@ cam_img_rgb_2_hsv(Wg_image *rgb_img, Wg_image *hsv_img);
 
 WG_PUBLIC cam_status
 cam_img_rgb_2_hsv_fast(Wg_image *rgb_img, Wg_image *hsv_img);
+
+WG_PUBLIC cam_status
+cam_img_rgb_2_bgrx(Wg_image *rgb_img, Wg_image *bgrx_img);
+
+WG_PUBLIC cam_status
+cam_img_rgb_2_hsv_gtk(Wg_image *rgb_img, Wg_image *hsv_img);
+
+WG_PUBLIC wg_status
+cam_img_rgb_2_grayscale(Wg_image *rgb_img, Wg_image *grayscale_img);
+
+WG_PUBLIC wg_status
+cam_img_grayscale_2_rgb(Wg_image *grayscale_img, Wg_image *rgb_img);
+
+WG_PUBLIC wg_status
+cam_img_grayscale_max_min(Wg_image* grayscale_img, gray_pixel *gs_max,
+        gray_pixel *gs_min);
+
+WG_PUBLIC wg_status
+cam_img_grayscale_normalize(Wg_image* grayscale_img, gray_pixel new_max,
+        gray_pixel new_min);
+
+WG_PUBLIC cam_status
+cam_img_grayscale_histogram(Wg_image* grayscale_img, wg_int *histogram, 
+        wg_size size);
+
+WG_PUBLIC cam_status
+cam_set_resolution(Wg_camera *cam, wg_uint width, wg_uint height);
+
 #endif

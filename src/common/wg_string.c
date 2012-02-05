@@ -30,7 +30,7 @@ wg_strcpy(wg_char *dest, const wg_char *src)
 }
 
 wg_status
-wg_strdup(wg_char *string, wg_char **copied)
+wg_strdup(const wg_char *string, wg_char **copied)
 {
     wg_char *copy;
     CHECK_FOR_NULL(string);

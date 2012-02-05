@@ -143,9 +143,6 @@ WG_STATIC wg_status
 get_function_address(void *lib, const wg_char *func_name, void **address)
 {
     void *func_addr = NULL;
-#ifdef WGDEBUG
-    DECLARE_FUNC_STR_BUFFER(buf);
-#endif
 
     CHECK_FOR_NULL_PARAM(lib);
     CHECK_FOR_NULL_PARAM(func_name);
@@ -156,11 +153,7 @@ get_function_address(void *lib, const wg_char *func_name, void **address)
 
     *address = func_addr;
 
-#ifdef WGDEBUG
-    wg_fptr_2_str((fvoid)func_addr, buf);
-#endif
-
-    WG_DEBUG("Plugin: function %s at %s\n", func_name, buf);
+    WG_DEBUG("Plugin: function %s at %p\n", func_name, func_addr);
 
     return WG_SUCCESS;
 }

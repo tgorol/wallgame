@@ -1,24 +1,10 @@
 #ifndef _CAM_IMG_H
 #define _CAM_IMG_H
 
-/*! @addtogroup webcam_img
+/*! @addtogroup image
  * @{
  */
 
-/**
- * @brief Position of a color component in pixel
- */
-enum RGB24_PIXEL{
-    RGB24_R = 0 ,    /*!< Red component index   */
-    RGB24_G     ,    /*!< Green component index */
-    RGB24_B     ,    /*!< Blue component index  */
-    RGB24_RGB   ,    /*!< Number of components  */
-};
-
-/**
- * @brief Pixel type
- */
-typedef wg_uchar rgb24_pixel[RGB24_RGB];
 
 typedef struct Wg_rgb{
     wg_uchar red;
@@ -104,7 +90,7 @@ cam_img_get_pixel(Wg_image *img, wg_uint row_off, wg_uint col_off,
     CHECK_FOR_RANGE_GE(row_off, img->height);
     CHECK_FOR_RANGE_GE(col_off, img->width);
 
-    *pixel = img->rows[row_off] + col_off;
+    *pixel = img->rows[row_off] + (col_off * img->components_per_pixel);
 
     return CAM_SUCCESS;
 }
@@ -150,6 +136,7 @@ cam_img_get_components_per_pixel(Wg_image *img, wg_uint *comp_per_pixel)
 }
 
 /** @brief Get RED compontent of the pixel
+ * @todo change names to RGB_R, RGB_G RGB_B
  */
 #define PIXEL_RED(pixel)   (pixel)[RGB24_R]
 
@@ -161,9 +148,9 @@ cam_img_get_components_per_pixel(Wg_image *img, wg_uint *comp_per_pixel)
  */
 #define PIXEL_BLUE(pixel)  (pixel)[RGB24_B]
 
-
-WG_PUBLIC cam_status
-cam_img_fill(wg_uint width, wg_uint height, wg_uint comp_num, Wg_image *img);
+cam_status
+cam_img_fill(wg_uint width, wg_uint height, wg_uint comp_num, img_type,
+        Wg_image *img);
 
 WG_PUBLIC cam_status
 cam_img_cleanup(Wg_image *img);

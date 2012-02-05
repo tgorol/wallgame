@@ -3,6 +3,7 @@
 
 #include <math.h>
 #include <limits.h>
+#include <stdint.h>
 /*! @todo Remove this include */
 
 typedef char           wg_char      ;
@@ -17,13 +18,22 @@ typedef signed int     wg_sint      ;
 typedef unsigned int   wg_uint      ;
 typedef int            wg_int       ;
 
-typedef float        wg_float     ;
-typedef double       wg_double    ;
+typedef float          wg_float     ;
+typedef double         wg_double    ;
 
 typedef size_t         wg_size      ;
 typedef ssize_t        wg_ssize     ;
 
 typedef long int       wg_long      ;
+
+typedef uint32_t       wg_uint32    ;
+typedef int32_t        wg_int32     ;
+
+typedef uint16_t       wg_uint16    ;
+typedef int16_t        wg_int16     ;
+
+typedef uint8_t        wg_uint8    ;
+typedef int8_t         wg_int8     ;
 
 #define WG_UCHAR_MAX   UCHAR_MAX
 #define WG_CHAR_MAX    CHAR_MAX

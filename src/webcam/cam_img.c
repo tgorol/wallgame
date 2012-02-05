@@ -12,8 +12,12 @@
 #include "include/cam.h"
 #include "include/cam_img.h"
 
-/*! @defgroup webcam_img Webcam Image Manipulation
- *  @ingroup webcam 
+
+/*! @todo make cam_img.c independent feom any format */
+#include "include/cam_img_bgrx.h"
+#include "include/cam_img_rgb.h"
+
+/*! @defgroup image Image Manipulation
  */
 
 /*! @{ */
@@ -80,7 +84,8 @@ WG_PRIVATE const Wg_rgb default_fg = {
  * @retval CAM_FAILURE
  */
 cam_status
-cam_img_fill(wg_uint width, wg_uint height, wg_uint comp_num, Wg_image *img)
+cam_img_fill(wg_uint width, wg_uint height, wg_uint comp_num, img_type type,
+        Wg_image *img)
 {
     register JSAMPROW *tmp_raw_array = NULL;
     JSAMPROW *row_array     = NULL;
@@ -122,6 +127,7 @@ cam_img_fill(wg_uint width, wg_uint height, wg_uint comp_num, Wg_image *img)
     img->components_per_pixel = comp_num;
     img->rows                 = row_array;
     img->row_distance         = row_size;
+    img->type                 = type;
 
     return CAM_SUCCESS;
 }
@@ -149,6 +155,8 @@ cam_img_cleanup(Wg_image *img)
 
 /**
  * @brief Get subimage
+ *
+ * img_dest must be initialized with cam_img_fill()
  *
  * @param img_src   source image
  * @param x         x
@@ -321,12 +329,11 @@ fast_memcpy(wg_uchar *restrict dest, wg_uchar *restrict src, const wg_size size)
             "movl %1, %%esi\n\t"
             "movl %2, %%ecx\n\t"
             "movl %%ecx, %%edx\n\t"
+            "andl $0x3, %%ecx\n\t"
+            "rep movsb\n\t"
+            "movl %%edx, %%ecx\n\t"
             "shr $2, %%ecx\n\t"
             "rep movsd\n\t"
-            "2:\tandl $0x3, %%edx\n\t"
-            "movl %%edx, %%ecx\n\t"
-            "rep movsb\n\t"
-            "4:\n\t"
             :
             :"g"(dest), "g"(src), "g"(size)
             :"edx", "ecx", "esi", "edi"

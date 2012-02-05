@@ -68,15 +68,16 @@ cam_img_yuyv_2_rgb24(wg_uchar *in_buffer, wg_ssize in_size,
         wg_uint width, wg_uint height, Wg_image *img)
 {
     register wg_uchar *outbuf = NULL;
-    Component pixbuf = NULL;
+    register Component pixbuf = NULL;
     wg_uchar  *component;
     wg_uint width_count = 0;
     wg_int  BE, GDE, RD;
     wg_int  C0, C1, D, E;
-    pixbuf = (Component)in_buffer;
     wg_int comp_num = 0;
 
-    cam_img_fill(width, height, 3, img);
+    pixbuf = (Component)in_buffer;
+
+    cam_img_fill(width, height, 3, IMG_RGB, img);
 
     outbuf = img->image;
 
@@ -87,8 +88,8 @@ cam_img_yuyv_2_rgb24(wg_uchar *in_buffer, wg_ssize in_size,
      * Y0 and Y1 - luminations for 2 pixels
      * V and U   - belong to both pixels
      */
-    for (width_count = 0; width_count < comp_num; ++width_count){
-        component = pixbuf[width_count];
+    for (width_count = 0; width_count < comp_num; ++width_count, ++pixbuf){
+        component = *pixbuf;
 
         C0 = C(component[POS_Y0]);
         C1 = C(component[POS_Y1]);

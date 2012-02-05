@@ -1,0 +1,33 @@
+Ubuntu Instalation:
+
+Instal following packages
+* tcl8.4-dev
+* libreadline-dev
+* libjpeg8-dev
+* gtk-3.0
+
+sudo apt-get install tcl8.4-dev libreadline-dev libjpeg8-dev gtk-3.0
+
+then compile libini and libghthash as follows
+
+> cd libini-1.1.10
+> ./configure
+> make
+> sudo make install
+
+> cd libghthash-0.6.2
+> ./configure
+> make
+> sudo make install
+
+Then we can compile wall_game
+
+> source env.sh
+> cd src
+> make
+
+And webcam plugin
+
+> cd webcam
+> make
+

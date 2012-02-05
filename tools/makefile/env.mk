@@ -1,5 +1,5 @@
 OUT_DIR?=$(CURDIR)/build/lib/
-CPU_ARCH?=i386
+CPU_ARCH?=i686
 C_STD?=gnu99
 
 ifndef OUT_NAME
@@ -21,7 +21,9 @@ LIBLIST+= ini      \
 		  ghthash  \
 		  pthread  \
 		  dl       \
-		  jpeg
+		  jpeg     
+
+
 
 ifneq "$(strip $(INCLUDE))" ""
 	INC_PATH=$(foreach inc, $(INCLUDE), -I$(inc))
@@ -47,12 +49,10 @@ OBJ=$(foreach file, $(SOURCE), $(basename $(file)).o)
 # Add archiceture
 CFLAGS+=-march=$(CPU_ARCH) -std=$(C_STD) -D_REENTRANT 
 
-# Set float_t precision 
-
 ifeq ($(BUILD_TYPE),  RELEASE)
-	CFLAGS+=-O2 -Wall 
+	CFLAGS+=-g -Wall
 else
-	CFLAGS+=-g -Wall -Werror -DWGDEBUG
+	CFLAGS+=-g -Wall -Werror -pedantic -DWGDEBUG
 endif
 
 ifdef PROF

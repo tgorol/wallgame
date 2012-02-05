@@ -3,13 +3,19 @@ SOURCE=cam.c                  \
 	   cam_cap.c              \
 	   cam_output.c           \
 	   cam_readwrite.c        \
-	   cam_img_jpeg.h         \
 	   cam_streaming.c        \
 	   cam_frame.c            \
 	   cam_img_yuyv.c         \
-	   cam_img.h              \
 	   cam_format_selector.c  \
-	   cam_hsv.c
+	   cam_img.c              \
+	   cam_img_jpeg.h         \
+	   cam_img_hsv.c          \
+	   cam_img_bgrx.c         \
+	   cam_img_rgb.c          \
+	   cam_img_grayscale.c    \
+	   gui_camera.c           \
+	   gui_resolution.c       \
+	   gui_screen.c  
 
 APP_NAME=webcam
 
@@ -17,7 +23,8 @@ MAIN_C=wg_cam_main.c
 
 INCLUDE=./include/
 
-EXTRA_CFLAGS+=-D_GNU_SOURCE `pkg-config --cflags --libs gtk+-2.0`
+EXTRA_CFLAGS+=-D_GNU_SOURCE -DGTK_DISABLE_DEPRECATED=1 \
+               `pkg-config --cflags gtk+-3.0`
 
 ifdef WG_DEBUG
 EXTRA_CFLAGS+=-DWGDEBUG
@@ -25,7 +32,7 @@ endif
 
 include $(BUILD_PATH)/env.mk
 
-LIB_LIST+=./build/lib/lib.a ../build/libwg.a -ljpeg -lm
+LIB_LIST+=./build/lib/lib.a ../build/libwg.a -ljpeg -lm -lgthread-2.0 `pkg-config --libs gtk+-3.0`
 
 all: clean lib app
 

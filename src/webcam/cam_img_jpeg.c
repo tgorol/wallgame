@@ -133,7 +133,7 @@ cam_img_jpeg_decompress(wg_uchar *in_buffer, wg_ssize in_size,
     alloc_jrows(&jdecomp, img);
 #endif
     cam_img_fill(jdecomp.output_width ,jdecomp.output_height, 
-            jdecomp.output_components, img);
+            jdecomp.output_components, IMG_RGB, img);
 
     /* read decompressed lines                    */
     for (index = 0; jdecomp.output_scanline < jdecomp.output_height;){
