@@ -93,7 +93,7 @@ cam_img_get_row(Wg_image *img, wg_uint row_num, wg_uchar **row)
  * @return 
  */
 WG_INLINE cam_status
-cam_img_get_pixel(Wg_image *img, wg_uint col_off, wg_uint row_off, 
+cam_img_get_pixel(Wg_image *img, wg_uint row_off, wg_uint col_off, 
         wg_uchar **pixel)
 {
     CHECK_FOR_NULL_PARAM(img);

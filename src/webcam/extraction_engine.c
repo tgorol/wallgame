@@ -18,6 +18,22 @@
 
 #define   CACHE_TAN_NUM (135 + 45)
 
+#define NB_X   6
+#define NB_Y   6
+
+#define NB_X2   4
+#define NB_Y2   4
+
+#define FPPOS  16
+#define FPPOS_MAX (1 << 16)
+
+#define FPPOS_INC(val)  ((val) += (FPPOS_VAL(1)))
+#define FPPOS_VAL(val)  ((wg_int32)(((wg_uint32)(val)) << FPPOS))
+
+/*! @todo handle negative numbers properly */
+#define FPPOS_INT(val)  ((wg_int32)(((wg_int32)(val)) >> FPPOS))
+
+static wg_uint32 tan_c_array[2 * NB_X + 1][2 * NB_Y + 1];
 
 static wg_float  tan_cache[CACHE_TAN_NUM];
 
@@ -37,16 +53,112 @@ ef_init(void)
     return status;
 }
 
-cam_status
+wg_status
 ef_threshold(Wg_image *img, gray_pixel value)
 {
+    gray_pixel *gs_pixel;
+    Cam_img_iterator itr;
+
+    CHECK_FOR_NULL_PARAM(img);
+
+    if (img->type != IMG_GS){
+        WG_ERROR("Invalig image format! Passed %d expect %d\n", 
+                img->type, IMG_GS);
+        return CAM_FAILURE;
+    }
+
+    cam_img_get_iterator(img, &itr);
+
+    while (cam_img_iterator_next_row(&itr) != NULL){
+        while ((gs_pixel = cam_img_iterator_next_col(&itr)) != NULL){
+            *gs_pixel = *gs_pixel >= value ? 255 : 0;
+        }
+    }
+
+    return WG_SUCCESS;
+}
+
+
+WG_PRIVATE wg_status
+detect_circle(Wg_image *img, Wg_image *acc, wg_uint x1, wg_uint y1, 
+        wg_uint nb_x, wg_uint nb_y)
+{
+    gray_pixel *gs_pixel;
+    wg_uint *acc_pixel;
+    wg_int x2;
+    wg_int y2;
+    wg_int x0;
+    wg_int y0;
+    wg_uint width;
+    wg_uint height;
+    wg_int xm;
+    wg_int ym;
+    wg_int m;
+
+    cam_img_get_width(img, &width);
+    cam_img_get_height(img, &height);
+
+    x1     = FPPOS_VAL(x1);;
+    y1     = FPPOS_VAL(y1);
+    nb_x   = FPPOS_VAL(nb_x);
+    nb_y   = FPPOS_VAL(nb_y);
+    width  = FPPOS_VAL(width);
+    height = FPPOS_VAL(height);
+
+    for (x2 = x1 - nb_x; x2 < x1 + nb_x; FPPOS_INC(x2)){
+        for (y2 = y1 - nb_y; y2 < y1 + nb_y; FPPOS_INC(y2)){
+            if ((abs(x2 - x1) > FPPOS_VAL(NB_X2)) | 
+                    (abs(y2 - y1) > FPPOS_VAL(NB_Y2))){
+                if ((x2 > 0) && (y2 > 0) && (x2 < width) && (y2 < height)){
+                    cam_img_get_pixel(img, FPPOS_INT(y2), FPPOS_INT(x2),
+                            (wg_uchar**)&gs_pixel);
+                    if (*gs_pixel == 255){
+                        xm = (x1 + x2) >> 1;
+                        ym = (y1 + y2) >> 1;
+                        m = tan_c_array[FPPOS_INT(x2 - x1) + NB_X]
+                            [FPPOS_INT(y2 - y1) + NB_Y];
+                        if ((m > FPPOS_VAL(-1)) && (m < FPPOS_VAL(1))){
+                            for (x0 = 0; x0 < width; FPPOS_INC(x0)){
+                                y0 = ym + m * (xm - x0);
+                                if ((y0 > 0) && (y0 < height)){
+                                    cam_img_get_pixel(acc,
+                                            FPPOS_INT(y0), FPPOS_INT(x0), 
+                                            (wg_uchar**)&acc_pixel);
+                                    ++*acc_pixel;
+                                }
+                            }
+                        }else{
+                            for (y0 = 0; y0 < height; FPPOS_INC(y0)){
+                                x0 = xm + (ym - y0) / m;
+                                if ((x0 > 0) && (x0 < width)){
+                                    cam_img_get_pixel(acc, 
+                                            FPPOS_INT(y0), FPPOS_INT(x0),
+                                            (wg_uchar**)&acc_pixel);
+                                    ++*acc_pixel;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return WG_SUCCESS;
+}
+
+wg_status
+ef_detect_circle(Wg_image *img, Wg_image *acc)
+{
+    cam_status status = CAM_FAILURE;
+    gray_pixel *gs_pixel;
     wg_uint width;
     wg_uint height;
     wg_uint row;
     wg_uint col;
-    gray_pixel *gs_pixel;
 
     CHECK_FOR_NULL_PARAM(img);
+    CHECK_FOR_NULL_PARAM(acc);
 
     if (img->type != IMG_GS){
         WG_ERROR("Invalig image format! Passed %d expect %d\n", 
@@ -57,17 +169,26 @@ ef_threshold(Wg_image *img, gray_pixel value)
     cam_img_get_width(img, &width);
     cam_img_get_height(img, &height);
 
+    status = cam_img_fill(width, height, sizeof (wg_uint), IMG_CIRCLE_ACC,
+            acc);
+    if (CAM_SUCCESS != status){
+        return CAM_FAILURE;
+    }
+
     for (row = 0; row < height; ++row){
         cam_img_get_row(img, row, (wg_uchar**)&gs_pixel);
         for (col = 0; col < width; ++col, ++gs_pixel){
-            *gs_pixel = *gs_pixel > value ? 255 : 0;
+            if (*gs_pixel == 255){
+                detect_circle(img, acc, row, col, NB_X, NB_Y);
+            }
         }
     }
 
-    return WG_SUCCESS;
+    return CAM_SUCCESS;
+
 }
 
-cam_status
+wg_status
 ef_smooth(Wg_image *img, Wg_image *new_img)
 {
     wg_uint width;
@@ -109,7 +230,7 @@ ef_smooth(Wg_image *img, Wg_image *new_img)
     return CAM_SUCCESS;
 }
 
-cam_status
+wg_status
 ef_detect_edge(Wg_image *img, Wg_image *new_img)
 {
     wg_uint width;
@@ -118,6 +239,7 @@ ef_detect_edge(Wg_image *img, Wg_image *new_img)
     wg_uint col;
     gray_pixel *gs_pixel;
     gray_pixel *gs_new_pixel;
+    wg_uint rd;
 
     CHECK_FOR_NULL_PARAM(img);
     CHECK_FOR_NULL_PARAM(new_img);
@@ -130,22 +252,96 @@ ef_detect_edge(Wg_image *img, Wg_image *new_img)
 
     cam_img_get_width(img, &width);
     cam_img_get_height(img, &height);
+    cam_img_get_row_distance(img, &rd);
 
-    cam_img_fill(width - 1, height - 1, GS_COMPONENT_NUM, IMG_GS,
+    cam_img_fill(width - 2, height - 2, GS_COMPONENT_NUM, IMG_GS,
             new_img);
 
-    for (row = 0; row < height - 1; ++row){
+    for (row = 0; row < height - 2; ++row){
         cam_img_get_row(img, row, (wg_uchar**)&gs_pixel);
         cam_img_get_row(new_img, row, (wg_uchar**)&gs_new_pixel);
-        for (col = 0; col < width - 1; ++col, ++gs_pixel, ++gs_new_pixel){
+        for (col = 0; col < width - 2; ++col, ++gs_pixel, ++gs_new_pixel){
             *gs_new_pixel = WG_MAX(
-                    abs(gs_pixel[0] - gs_pixel[img->row_distance + 1]),
-                    abs(gs_pixel[1] - gs_pixel[img->row_distance - 1])
+                    abs(gs_pixel[0] - gs_pixel[2] + 
+                        (gs_pixel[rd] << 1) - (gs_pixel[rd + 2] << 1) +
+                        gs_pixel[rd + rd] - gs_pixel[rd + rd + 2]),
+                    abs(gs_pixel[0] + (gs_pixel[1] << 1) + gs_pixel[2] -
+                        gs_pixel[rd + rd] - (gs_pixel[rd + rd + 1] << 1) - 
+                        gs_pixel[rd + rd + 2])
                     );
         }
     }
 
     return CAM_SUCCESS;
+}
+
+WG_PRIVATE wg_boolean
+hist_check(Wg_image *img, wg_uint row, wg_uint col)
+{
+    wg_uint width;
+    wg_uint height;
+
+    cam_img_get_width(img, &width);
+    cam_img_get_height(img, &height);
+
+    return (col >= 1) && (col < width - 2) && (row >= 1) && (row < height - 2);
+}
+
+WG_PRIVATE wg_status
+hist_connect(Wg_image *img, wg_uint row, wg_uint col, wg_uint low)
+{
+    wg_uint x1;
+    wg_uint y1;
+    gray_pixel *gs_pixel;
+    gray_pixel pix;
+
+    for (x1 = col - 1; x1 <= col + 1; ++x1){
+        for (y1 = row - 1; y1 <= row + 1; ++y1, ++gs_pixel){
+            cam_img_get_pixel(img, y1, x1, (wg_uchar**)&gs_pixel);
+            pix = *gs_pixel;
+            if ((pix >= low) && (pix != 255) && hist_check(img, y1, x1)){
+                *gs_pixel = 255;
+                hist_connect(img, y1, x1, low);
+            }
+        }
+    }
+
+    return WG_SUCCESS;
+}
+
+wg_status
+ef_hyst_thr(Wg_image *img, wg_uint upp, wg_uint low)
+{
+    wg_uint width;
+    wg_uint height;
+    wg_uint row;
+    wg_uint col;
+    gray_pixel *gs_pixel;
+    gray_pixel pix;
+
+    CHECK_FOR_NULL_PARAM(img);
+
+    if (img->type != IMG_GS){
+        WG_ERROR("Invalig image format! Passed %d expect %d\n", 
+                img->type, IMG_GS);
+        return CAM_FAILURE;
+    }
+
+    cam_img_get_width(img, &width);
+    cam_img_get_height(img, &height);
+
+    for (row = 1; row < height - 2; ++row){
+        cam_img_get_row(img, row, (wg_uchar**)&gs_pixel);
+        for (col = 1; col < width - 2; ++col, ++gs_pixel){
+            pix = *gs_pixel;
+            if ((pix >= upp) && (pix !=255)){
+                *gs_pixel = 255;
+                hist_connect(img, row, col, low);
+            }
+        }
+    }
+
+    return WG_SUCCESS;
 }
 
 wg_status
@@ -167,7 +363,7 @@ ef_paint_pixel(Wg_image *img, wg_int x, wg_int y, gray_pixel value)
     cam_img_get_height(img, &height);
 
     if ((x < width) && (y < height) && (x >= 0) && (y >= 0)){
-        cam_img_get_pixel(img, x, y, &gs_pixel);
+        cam_img_get_pixel(img, y, x, &gs_pixel);
         *gs_pixel = value;
     }
 
@@ -202,7 +398,7 @@ ef_paint_line(Wg_image *img, wg_float m, wg_uint c, gray_pixel value)
     return WG_SUCCESS;
 }
 
-cam_status
+wg_status
 ef_hough_print_acc(Wg_image *img, acc *width_acc)
 {
     wg_uint width;
@@ -228,7 +424,7 @@ ef_hough_print_acc(Wg_image *img, acc *width_acc)
     return WG_SUCCESS;
 }
 
-cam_status
+wg_status
 ef_hough_paint_long_lines(Wg_image *img, acc *width_acc, acc *height_acc)
 {
     wg_uint width;
@@ -260,7 +456,7 @@ ef_hough_paint_long_lines(Wg_image *img, acc *width_acc, acc *height_acc)
     return WG_SUCCESS;
 }
 
-cam_status
+wg_status
 ef_hough_paint_lines(Wg_image *img, acc *width_acc, acc *height_acc, wg_uint value)
 {
     wg_uint width;
@@ -283,7 +479,7 @@ ef_hough_paint_lines(Wg_image *img, acc *width_acc, acc *height_acc, wg_uint val
     return WG_SUCCESS;
 }
 
-cam_status
+wg_status
 ef_hough_lines(Wg_image *img, acc **width_acc, acc **height_acc)
 {
     wg_uint width;
@@ -341,10 +537,24 @@ ef_hough_lines(Wg_image *img, acc **width_acc, acc **height_acc)
     WG_PRIVATE void 
 init_tan_cache(void)
 {
+    wg_int x;
+    wg_int y;
     wg_int i = 0;
+    wg_int tg = 0;
 
     for (i = 0; i < CACHE_TAN_NUM; ++i){
         tan_cache[i] = tan(((i - 45) * M_PI) / 180.0);
+    }
+
+    for (x = -NB_X ; x <= NB_X; ++x){
+        for (y = -NB_Y ; y <= NB_Y; ++y){
+            if (y != 0){
+                tg = (WG_FLOAT(x) * WG_FLOAT(FPPOS_MAX) / WG_FLOAT(y));
+            }else{
+                tg = FPPOS_VAL(9999);
+            }
+            tan_c_array[x + NB_X][y + NB_Y] = tg;
+        }
     }
 
     return;

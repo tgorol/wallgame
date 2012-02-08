@@ -173,11 +173,15 @@ capture(gpointer data)
 
                          ef_detect_edge(&hsv_img, image_sub);
 
-                         ef_threshold(image_sub, (gray_pixel)gtk_range_get_value(GTK_RANGE(cam->threshold)));
+
 
                          cam_img_cleanup(&hsv_img);
 
                          hsv_img = *image_sub;
+
+                         ef_hyst_thr(&hsv_img, (gray_pixel)gtk_range_get_value(GTK_RANGE(cam->threshold)), 150);
+
+                         ef_threshold(image_sub, 255);
 
 //                       cam_img_grayscale_normalize(&hsv_img, 255, 0);
 
@@ -185,10 +189,14 @@ capture(gpointer data)
 
                          ef_hough_paint_long_lines(&hsv_img, w_acc, h_acc);
 
-                         ef_hough_print_acc(&hsv_img, w_acc);
+//                         ef_hough_print_acc(&hsv_img, w_acc);
                         
                          WG_FREE(w_acc);
                          WG_FREE(h_acc);
+
+                         ef_detect_circle(&hsv_img, image_sub);
+
+                         cam_img_cleanup(image_sub);
 
                          cam_img_grayscale_2_rgb(&hsv_img, image_sub);
 

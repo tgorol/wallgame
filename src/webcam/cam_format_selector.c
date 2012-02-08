@@ -28,8 +28,8 @@ typedef struct Fmt_decomp{
 typedef wg_char u32str[sizeof (__u32) + 1]; 
 
 WG_STATIC Fmt_decomp supported_formats[] = {
-    {v4l2_fourcc('Y', 'U', 'Y', 'V'), {cam_img_yuyv_2_rgb24}},
     {v4l2_fourcc('M', 'J', 'P', 'G'), {cam_img_jpeg_decompress}},
+    {v4l2_fourcc('Y', 'U', 'Y', 'V'), {cam_img_yuyv_2_rgb24}},
     {v4l2_fourcc('J', 'P', 'E', 'G'), {cam_img_jpeg_decompress}}
 };
 

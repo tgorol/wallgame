@@ -24,7 +24,7 @@ MAIN_C=wg_cam_main.c
 INCLUDE=./include/
 
 EXTRA_CFLAGS+=-D_GNU_SOURCE `pkg-config --cflags gtk+-3.0` \
-			  -DGTK_DISABLE_DEPRECATED=0 
+			  -DGTK_DISABLE_DEPRECATED=1
 
 ifdef WG_DEBUG
 EXTRA_CFLAGS+=-DWGDEBUG
