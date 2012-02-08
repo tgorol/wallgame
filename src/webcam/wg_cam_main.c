@@ -24,6 +24,7 @@
 #include "include/cam_img_jpeg.h"
 #include "include/cam_format_selector.h"
 #include "include/cam_img.h"
+#include "include/extraction_engine.h"
 
 #include "include/gui_resolution.h"
 #include "include/gui_camera.h"
@@ -37,6 +38,7 @@ typedef struct Camera{
     GtkWidget *gui_camera;
     GtkWidget *show_gray;
     GtkWidget *normalize;
+    GtkWidget *threshold;
     GThread   *thread;
     Wg_camera *camera;
     gint fps;
@@ -68,15 +70,12 @@ on_expose_event(GtkWidget *widget,
     wg_uint height = 0;
     int w_width = 0;
     int w_height = 0;
-    GtkWidget *resolution;
 
     cam = (Camera*)data;
 
     if (cam->pixbuf != NULL){
-        resolution = gui_camera_get_resolution_widget(
-                GUI_CAMERA(cam->gui_camera));
-
-        gui_resolution_get(GUI_RESOLUTION(resolution), &width, &height);
+        gui_camera_get_active_resolution(GUI_CAMERA(cam->gui_camera),
+			&width, &height);
 
         w_width = gtk_widget_get_allocated_width(widget);
         w_height = gtk_widget_get_allocated_height(widget);
@@ -115,7 +114,9 @@ capture(gpointer data)
     wg_uint width = 0;
     wg_uint height = 0;
     Wg_cam_decompressor decompressor;
-    GtkWidget *resolution = NULL;
+    acc *w_acc, *h_acc;
+
+    ef_init();
 
     cam = (Camera*)data;
 
@@ -125,9 +126,8 @@ capture(gpointer data)
 
     cam_decompressor(cam->camera, &decompressor);
 
-    resolution = gui_camera_get_resolution_widget(GUI_CAMERA(cam->gui_camera));
-
-    gui_resolution_get(GUI_RESOLUTION(resolution), &width, &height);
+    gui_camera_get_active_resolution(GUI_CAMERA(cam->gui_camera),
+		    &width, &height);
     cam_set_resolution(cam->camera, width, height);
 
     cam_start(cam->camera);
@@ -146,6 +146,7 @@ capture(gpointer data)
                     frame->start, frame->size, 
                     frame->width, frame->height, image_sub);
             if(CAM_SUCCESS == status){
+                
                 cam_discard_frame(cam->camera, frame);
 
 //               cam_img_rgb_2_bgrx(image_sub, &hsv_img);
@@ -161,8 +162,33 @@ capture(gpointer data)
                          if (gtk_toggle_button_get_active(
                                      GTK_TOGGLE_BUTTON(cam->normalize))){
 
-                             cam_img_grayscale_normalize(&hsv_img, 255, 0);
+                             ef_smooth(&hsv_img, image_sub);
+
+                             cam_img_grayscale_normalize(image_sub, 255, 0);
+
+                             cam_img_cleanup(&hsv_img);
+
+                             hsv_img = *image_sub;
                          }
+
+                         ef_detect_edge(&hsv_img, image_sub);
+
+                         ef_threshold(image_sub, (gray_pixel)gtk_range_get_value(GTK_RANGE(cam->threshold)));
+
+                         cam_img_cleanup(&hsv_img);
+
+                         hsv_img = *image_sub;
+
+//                       cam_img_grayscale_normalize(&hsv_img, 255, 0);
+
+                         ef_hough_lines(&hsv_img, &w_acc, &h_acc);
+
+                         ef_hough_paint_long_lines(&hsv_img, w_acc, h_acc);
+
+                         ef_hough_print_acc(&hsv_img, w_acc);
+                        
+                         WG_FREE(w_acc);
+                         WG_FREE(h_acc);
 
                          cam_img_grayscale_2_rgb(&hsv_img, image_sub);
 
@@ -286,7 +312,8 @@ void button_clicked_start
         resolution = gui_camera_get_resolution_widget(
                 GUI_CAMERA(cam->gui_camera));
 
-        device = gtk_entry_get_text(GTK_ENTRY(dev_path));
+        device = gtk_combo_box_text_get_active_text(
+			GTK_COMBO_BOX_TEXT(dev_path));
 
         cam_init(cam->camera, device);
         status = cam_open(cam->camera, 0, ENABLE_DECOMPRESSOR);
@@ -340,13 +367,15 @@ static void button_clicked_capture
 }
 
 static void
-select_resolution(Gui_resolution *obj, gpointer data)
+select_resolution(GtkWidget *obj, gpointer data)
 {
+#if 0
     wg_uint width = 0;
     wg_uint height = 0;
 
-    gui_resolution_get(obj, &width, &height);
+    gui_camera_get_active_resolution(GTK_CAMERA(obj), &width, &height);
     WG_LOG("New resolution w:%u h:%u\n", width, height);
+#endif
 
 }
 
@@ -361,6 +390,7 @@ int main(int argc, char *argv[])
     GtkWidget *hbox = NULL;
     GtkWidget *area = NULL;
     GtkWidget *color_button = NULL;
+    GtkWidget *thres = NULL;
     Camera    *camera = NULL;
     GtkWidget *gtk_cam = NULL;
     List_head  video;
@@ -381,6 +411,7 @@ int main(int argc, char *argv[])
     }
 
     gtk_init(&argc, &argv);
+    thres =  gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 0.0, 255.0, 1.0);
 
     camera = WG_CALLOC(1, sizeof (Camera));
 
@@ -388,11 +419,13 @@ int main(int argc, char *argv[])
     area   = gtk_drawing_area_new();
     gtk_cam = gui_camera_new();
 
+
     camera->area = area;
     camera->gui_camera  = gtk_cam;
     camera->window = window;
     camera->fps = 0;
     camera->frame_count = 0;
+    camera->threshold = thres;
 
     button_start = gui_camera_get_start_widget(GUI_CAMERA(gtk_cam));
     button_stop = gui_camera_get_stop_widget(GUI_CAMERA(gtk_cam));
@@ -405,6 +438,8 @@ int main(int argc, char *argv[])
 
     camera->show_gray = gui_camera_add_checkbox(GUI_CAMERA(gtk_cam), 
             "Show gray scale");
+
+    gui_camera_add(GUI_CAMERA(gtk_cam), thres);
 
     gtk_widget_set_sensitive(button_start, TRUE);
     gtk_widget_set_sensitive(button_stop, FALSE);

@@ -95,7 +95,8 @@ typedef enum img_type {
     IMG_BGRX    ,
     IMG_YUYV    ,
     IMG_HSV     ,
-    IMG_GS
+    IMG_GS      ,
+    IMG_USER
 } img_type;
 
 /**

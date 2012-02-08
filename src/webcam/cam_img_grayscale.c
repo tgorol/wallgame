@@ -37,13 +37,13 @@
 wg_status
 cam_img_rgb_2_grayscale(Wg_image *rgb_img, Wg_image *grayscale_img)
 {
+    register gray_pixel *gs_pixel;
+    register rgb24_pixel *rgb_pixel;
     cam_status status = CAM_FAILURE;
     wg_uint width;
     wg_uint height;
-    wg_uint row;
-    wg_uint col;
-    gray_pixel *gs_pixel;
-    rgb24_pixel *rgb_pixel;
+    Cam_img_iterator rgb_itr;
+    Cam_img_iterator gs_itr;
 
     CHECK_FOR_NULL_PARAM(rgb_img);
     CHECK_FOR_NULL_PARAM(grayscale_img);
@@ -62,16 +62,21 @@ cam_img_rgb_2_grayscale(Wg_image *rgb_img, Wg_image *grayscale_img)
     if (CAM_SUCCESS != status){
         return CAM_FAILURE;
     }
-    for (row = 0; row < height; ++row){
-        cam_img_get_row(rgb_img, row, (wg_uchar**)&rgb_pixel);
-        cam_img_get_row(grayscale_img, row, (wg_uchar**)&gs_pixel);
-        for (col = 0; col < width; ++col, ++rgb_pixel, ++gs_pixel){
+
+    cam_img_get_iterator(rgb_img, &rgb_itr);
+    cam_img_get_iterator(grayscale_img, &gs_itr);
+
+    while (cam_img_iterator_has_next_row(&rgb_itr)){
+        cam_img_iterator_next_row(&rgb_itr);
+        cam_img_iterator_next_row(&gs_itr);
+        while (cam_img_iterator_has_next_col(&rgb_itr)){
+            rgb_pixel = (rgb24_pixel*)cam_img_iterator_next_col(&rgb_itr);
+            gs_pixel = (gray_pixel*)cam_img_iterator_next_col(&gs_itr);
             *gs_pixel = RGB_2_GS(
                     PIXEL_RED(*rgb_pixel),
                     PIXEL_GREEN(*rgb_pixel),
                     PIXEL_BLUE(*rgb_pixel)
                     );
-
         }
     }
 

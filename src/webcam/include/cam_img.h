@@ -12,6 +12,17 @@ typedef struct Wg_rgb{
     wg_uchar blue;
 }Wg_rgb;
 
+typedef struct Cam_img_iterator{
+    wg_uint width;
+    wg_uint height;
+    wg_uint row_distance;
+    wg_uchar **row;
+    wg_uchar *col;
+    wg_uint col_index;
+    wg_uint row_index;
+    wg_uint comp_per_pixel;
+}Cam_img_iterator;
+
 /**
  * @brief Get width of the image
  *
@@ -82,7 +93,7 @@ cam_img_get_row(Wg_image *img, wg_uint row_num, wg_uchar **row)
  * @return 
  */
 WG_INLINE cam_status
-cam_img_get_pixel(Wg_image *img, wg_uint row_off, wg_uint col_off, 
+cam_img_get_pixel(Wg_image *img, wg_uint col_off, wg_uint row_off, 
         wg_uchar **pixel)
 {
     CHECK_FOR_NULL_PARAM(img);
@@ -134,6 +145,65 @@ cam_img_get_components_per_pixel(Wg_image *img, wg_uint *comp_per_pixel)
 
     return CAM_SUCCESS;
 }
+
+WG_INLINE void 
+cam_img_get_iterator(Wg_image *img, Cam_img_iterator *itr)
+{
+    CHECK_FOR_NULL_PARAM(img);
+    CHECK_FOR_NULL_PARAM(itr);
+
+    itr->col_index = itr->row_index = 0;
+
+    itr->row = img->rows;
+    itr->col = 0;
+
+    cam_img_get_width(img, &itr->width);
+    cam_img_get_height(img, &itr->height);
+    cam_img_get_row_distance(img, &itr->row_distance);
+    cam_img_get_components_per_pixel(img, &itr->comp_per_pixel);
+
+    return;
+
+}
+
+WG_INLINE wg_boolean
+cam_img_iterator_has_next_row(Cam_img_iterator *iterator)
+{
+    register Cam_img_iterator *itr = iterator;
+
+    return (itr->row_index < itr->height);
+}
+
+WG_INLINE wg_uchar *
+cam_img_iterator_next_row(Cam_img_iterator *iterator)
+{
+    register Cam_img_iterator *itr = iterator;
+
+    itr->col_index = 0;
+    itr->col = *itr->row;
+
+    return itr->row_index++ < itr->height ? *itr->row++ : NULL;   
+}
+
+WG_INLINE wg_boolean
+cam_img_iterator_has_next_col(Cam_img_iterator *iterator)
+{
+    register Cam_img_iterator *itr = iterator;
+
+    return (itr->col_index < itr->width);
+}
+
+WG_INLINE wg_uchar *
+cam_img_iterator_next_col(Cam_img_iterator *iterator)
+{
+    register Cam_img_iterator *itr = iterator;
+    register wg_uchar *old_col = itr->col;
+
+    itr->col += itr->comp_per_pixel;
+
+    return itr->col_index++ < itr->width ?  old_col : NULL;   
+}
+
 
 /** @brief Get RED compontent of the pixel
  * @todo change names to RGB_R, RGB_G RGB_B

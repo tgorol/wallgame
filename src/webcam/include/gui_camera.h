@@ -43,7 +43,6 @@ WG_PUBLIC void         gui_camera_clear(Gui_camera *obj);
 WG_PUBLIC wg_status gui_camera_get(Gui_camera *obj, 
         wg_uint *width, wg_uint *height);
 
-
 WG_PUBLIC GtkWidget *
 gui_camera_get_device_widget(Gui_camera *obj);
 
@@ -59,8 +58,11 @@ gui_camera_get_capture_widget(Gui_camera *obj);
 WG_PUBLIC GtkWidget *
 gui_camera_get_resolution_widget(Gui_camera *obj);
 
-GtkWidget *
+WG_PUBLIC GtkWidget *
 gui_camera_add_checkbox(Gui_camera *obj, gchar *text);
+
+WG_PUBLIC void
+gui_camera_add(Gui_camera *obj, GtkWidget *comp);
 
 WG_PUBLIC GtkWidget *
 gui_camera_get_color_widget(Gui_camera *obj);
@@ -73,5 +75,9 @@ gui_camera_fps_stop(Gui_camera *obj);
 
 WG_PUBLIC void
 gui_camera_fps_start(Gui_camera *obj);
+
+WG_PUBLIC wg_status
+gui_camera_get_active_resolution(Gui_camera *obj, wg_uint *width, 
+		wg_uint *height);
 
 #endif

@@ -434,7 +434,7 @@ cam_set_resolution(Wg_camera *cam, wg_uint width, wg_uint height)
         capture.fmt.pix.width  = width;
         capture.fmt.pix.height = height;
 
-        WG_LOG("Trying new resolution w:%u h%u\n", width, height);
+        WG_LOG("Trying new resolution w:%u h:%u\n", width, height);
         status = cam_output_format_set(cam, &capture);
         if (CAM_SUCCESS != status){
             WG_LOG("%s: Can't change resolution \n", cam->dev_path);

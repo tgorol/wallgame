@@ -7,22 +7,6 @@
 
 #include "include/gui_resolution.h"
 
-typedef struct Resolution{
-    wg_char text[16];
-    wg_uint  width;
-    wg_uint  height;
-    wg_char  *id;
-}Resolution;
-
-#define RESOLUTION_DEFAULT_INDEX    1
-
-static const Resolution res_info[] = {
-    {"640x480", 640, 480, "1"} ,
-    {"352x288", 352, 288, "2"} ,
-    {"320x240", 320, 240, "3"} ,
-    {"176x144", 176, 144, "4"} ,
-    {"160x120", 160, 120, "5"}
-};
 
 static void
 gui_resolution_class_init(Gui_resolution_class *wclass)

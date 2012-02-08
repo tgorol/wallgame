@@ -14,8 +14,8 @@ SOURCE=cam.c                  \
 	   cam_img_rgb.c          \
 	   cam_img_grayscale.c    \
 	   gui_camera.c           \
-	   gui_resolution.c       \
-	   gui_screen.c  
+	   gui_screen.c           \
+           extraction_engine.c
 
 APP_NAME=webcam
 
@@ -23,8 +23,8 @@ MAIN_C=wg_cam_main.c
 
 INCLUDE=./include/
 
-EXTRA_CFLAGS+=-D_GNU_SOURCE -DGTK_DISABLE_DEPRECATED=1 \
-               `pkg-config --cflags gtk+-3.0`
+EXTRA_CFLAGS+=-D_GNU_SOURCE `pkg-config --cflags gtk+-3.0` \
+			  -DGTK_DISABLE_DEPRECATED=0 
 
 ifdef WG_DEBUG
 EXTRA_CFLAGS+=-DWGDEBUG

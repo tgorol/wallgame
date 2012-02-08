@@ -7,21 +7,42 @@
 #include <wgtypes.h>
 #include <wgmacros.h>
 
-#include "include/gui_camera.h"
+#include <wg_linked_list.h>
+#include <wg_iterator.h>
 
-#include "include/gui_resolution.h"
+#include <wg_lsdir.h>
+
+#include "include/gui_camera.h"
 
 #define ROW_SPACING    5
 #define COL_SPACING    5
 
-#define DEFAULT_DEVICE  "/dev/video0"
-
 #define FPS_INTERVAL   0.5
+
+#define DEVICE_PATH_MAX  64
+
+#define DEV_PATH  "/dev/"
 
 
 enum{
     CHANGED_SIGNAL,
     LAST_SIGNAL
+};
+
+typedef struct Resolution{
+    wg_char text[16];
+    wg_uint  width;
+    wg_uint  height;
+}Resolution;
+
+#define RESOLUTION_DEFAULT_INDEX    1
+
+static const Resolution res_info[] = {
+    {"640x480", 640, 480,} ,
+    {"352x288", 352, 288,} ,
+    {"320x240", 320, 240,} ,
+    {"176x144", 176, 144,} ,
+    {"160x120", 160, 120,}
 };
 
 static gint wsignals[LAST_SIGNAL] = {0};
@@ -63,6 +84,11 @@ static void
 gui_camera_init(Gui_camera *obj)
 {
     GtkWidget *label = 0;
+    List_head head;
+    Iterator itr;
+    wg_dirent *dir_entry;
+    wg_char full_path[DEVICE_PATH_MAX];
+    wg_int count = 0;
 
     init_row_count(obj);
 
@@ -73,14 +99,35 @@ gui_camera_init(Gui_camera *obj)
             1, 1
             );
 
-    obj->device = gtk_entry_new();
-    gtk_entry_set_text(GTK_ENTRY(obj->device), DEFAULT_DEVICE);
+    obj->device = gtk_combo_box_text_new();
     gtk_grid_attach(GTK_GRID(obj),
             obj->device,
             1, get_row_and_inc(obj),
             1, 1
             );
-    
+
+    list_init(&head);
+
+    wg_lsdir(DEV_PATH, "video", &head);
+
+    iterator_list_init(&itr, &head, GET_OFFSET(wg_dirent, list));
+
+    count = 0;
+    while ((dir_entry = iterator_list_next(&itr)) != NULL){
+        strcpy(full_path, DEV_PATH);
+        strcat(full_path, dir_entry->d_name);
+        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(obj->device),
+            full_path);
+        ++count;
+    }
+
+    if (count > 0){
+        gtk_combo_box_set_active(GTK_COMBO_BOX(obj->device), count - 1);
+    }
+
+    gtk_combo_box_set_focus_on_click(GTK_COMBO_BOX(obj->device), FALSE); 
+
+    wg_lsdir_cleanup(&head);
 
     label = gtk_label_new("Resolution");
     gtk_grid_attach(GTK_GRID(obj),
@@ -89,12 +136,22 @@ gui_camera_init(Gui_camera *obj)
             1, 1
             );
 
-    obj->resolution = gui_resolution_new();
+    obj->resolution = gtk_combo_box_text_new();
     gtk_grid_attach(GTK_GRID(obj),
             obj->resolution,
             1, get_row_and_inc(obj),
             1, 1
             );
+
+    for (count = 0; count < ELEMNUM(res_info); ++count){
+        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(obj->resolution),
+			res_info[count].text);
+    }
+
+    gtk_combo_box_set_active(GTK_COMBO_BOX(obj->resolution), 
+		    RESOLUTION_DEFAULT_INDEX);
+
+    gtk_combo_box_set_focus_on_click(GTK_COMBO_BOX(obj->resolution), FALSE); 
 
     label = gtk_label_new("fps");
     gtk_grid_attach(GTK_GRID(obj),
@@ -163,6 +220,18 @@ gui_camera_add_checkbox(Gui_camera *obj, gchar *text)
             );
 
     return button;
+}
+
+void
+gui_camera_add(Gui_camera *obj, GtkWidget *comp)
+{
+    gtk_grid_attach(GTK_GRID(obj),
+            comp,
+            0, get_row_and_inc(obj),
+            2, 1
+            );
+
+    return;
 }
 
 guint
@@ -237,6 +306,22 @@ GtkWidget *
 gui_camera_get_resolution_widget(Gui_camera *obj)
 {
     return obj->resolution;
+}
+
+wg_status
+gui_camera_get_active_resolution(Gui_camera *obj, wg_uint *width, 
+		wg_uint *height)
+{
+    gint res_index = 0;
+
+    res_index = gtk_combo_box_get_active(GTK_COMBO_BOX(obj->resolution));
+
+    CHECK_FOR_RANGE_GE(res_index, ELEMNUM(res_info));
+    
+    *width  = res_info[res_index].width;
+    *height = res_info[res_index].height;
+
+    return WG_SUCCESS;
 }
 
 static void 
