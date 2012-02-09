@@ -24,18 +24,24 @@
 #define NB_X2   4
 #define NB_Y2   4
 
-#define FPPOS  16
-#define FPPOS_MAX (1 << 16)
+#define FPPOS   16
+#define FPPOS_M ((FPPOS) >> 1) 
+#define FPPOS_MAX (1 << FPPOS)
 
 #define FPPOS_INC(val)  ((val) += (FPPOS_VAL(1)))
 #define FPPOS_VAL(val)  ((wg_int32)(((wg_uint32)(val)) << FPPOS))
+#define FPPOS_MUL(val1, val2)                  \
+                    ((val1) * FPPOS_INT(val2))
+
+#define FPPOS_DIV(num, dnum)                  \
+                    ((num / ((dnum) >> (FPPOS_M))) << (FPPOS_M))
 
 /*! @todo handle negative numbers properly */
 #define FPPOS_INT(val)  ((wg_int32)(((wg_int32)(val)) >> FPPOS))
 
-static wg_uint32 tan_c_array[2 * NB_X + 1][2 * NB_Y + 1];
+static wg_int32 tan_c_array[2 * NB_X + 1][2 * NB_Y + 1];
 
-static wg_float  tan_cache[CACHE_TAN_NUM];
+static wg_int32 tan_cache[CACHE_TAN_NUM];
 
 static wg_boolean ef_init_flag = WG_FALSE;
 
@@ -119,7 +125,7 @@ detect_circle(Wg_image *img, Wg_image *acc, wg_uint x1, wg_uint y1,
                             [FPPOS_INT(y2 - y1) + NB_Y];
                         if ((m > FPPOS_VAL(-1)) && (m < FPPOS_VAL(1))){
                             for (x0 = 0; x0 < width; FPPOS_INC(x0)){
-                                y0 = ym + m * (xm - x0);
+                                y0 = ym + FPPOS_MUL(m, (xm - x0));
                                 if ((y0 > 0) && (y0 < height)){
                                     cam_img_get_pixel(acc,
                                             FPPOS_INT(y0), FPPOS_INT(x0), 
@@ -129,7 +135,7 @@ detect_circle(Wg_image *img, Wg_image *acc, wg_uint x1, wg_uint y1,
                             }
                         }else{
                             for (y0 = 0; y0 < height; FPPOS_INC(y0)){
-                                x0 = xm + (ym - y0) / m;
+                                x0 = xm + FPPOS_DIV((ym - y0), m);
                                 if ((x0 > 0) && (x0 < width)){
                                     cam_img_get_pixel(acc, 
                                             FPPOS_INT(y0), FPPOS_INT(x0),
@@ -451,7 +457,7 @@ ef_hough_paint_long_lines(Wg_image *img, acc *width_acc, acc *height_acc)
         }
     }
 
-    ef_paint_line(img, tan_cache[max_m], max_c, 128);
+    ef_paint_line(img, tan_cache[max_m] / WG_FLOAT(FPPOS_MAX), max_c, 128);
 
     return WG_SUCCESS;
 }
@@ -484,8 +490,8 @@ ef_hough_lines(Wg_image *img, acc **width_acc, acc **height_acc)
 {
     wg_uint width;
     wg_uint height;
-    wg_uint row;
-    wg_uint col;
+    wg_int row;
+    wg_int col;
     gray_pixel *gs_pixel;
     wg_int  angle = 0; 
     wg_int b = 0;
@@ -508,20 +514,23 @@ ef_hough_lines(Wg_image *img, acc **width_acc, acc **height_acc)
     acc_row = WG_CALLOC(height, sizeof (acc));
     acc_col = WG_CALLOC(width, sizeof (acc));
 
-    for (row = 0; row < height; ++row){
-        cam_img_get_row(img, row, (wg_uchar**)&gs_pixel);
-        for (col = 0; col < width; ++col, ++gs_pixel){
+    width = FPPOS_VAL(width);
+    height = FPPOS_VAL(height);
+
+    for (row = 0; row < height; FPPOS_INC(row)){
+        cam_img_get_row(img, FPPOS_INT(row), (wg_uchar**)&gs_pixel);
+        for (col = 0; col < width; FPPOS_INC(col), ++gs_pixel){
             if (*gs_pixel != 0){
-                for (angle = -45; angle < 45; angle += 2){
-                    b = (wg_int)(row - tan_cache[angle + 45] * col);
+                for (angle = -45; angle < 45; angle += 1){
+                    b = row - FPPOS_MUL(tan_cache[angle + 45], col);
                     if ((b < height) && (b > 0)){
-                        ++acc_row[b][angle + 45];
+                        ++acc_row[FPPOS_INT(b)][angle + 45];
                     }
                 }
-                for (angle = 45; angle < 135; angle += 2){
-                    b = (wg_int)(col - row / tan_cache[angle + 45]);
+                for (angle = 45; angle < 135; angle += 1){
+                    b = col - FPPOS_DIV(row, tan_cache[angle + 45]);
                     if ((b < width) && (b > 0)){
-                        ++acc_col[b][angle - 45];
+                        ++acc_col[FPPOS_INT(b)][angle - 45];
                     }
                 }
             }
@@ -541,11 +550,22 @@ init_tan_cache(void)
     wg_int y;
     wg_int i = 0;
     wg_int tg = 0;
+    wg_float val;
 
+    /* cache tangents for line detector */
     for (i = 0; i < CACHE_TAN_NUM; ++i){
-        tan_cache[i] = tan(((i - 45) * M_PI) / 180.0);
+        val = tan(((i - 45) * M_PI) / 180.0) * WG_FLOAT(FPPOS_MAX);
+        tan_cache[i] = val;
+
+        /* if tangent equals 0 change to the smallest possible to 
+         * avoid dividing by 0
+         */
+        if (tan_cache[i] == 0){
+            tan_cache[i] = 1;
+        }
     }
 
+    /* cache tangents for circle detector */
     for (x = -NB_X ; x <= NB_X; ++x){
         for (y = -NB_Y ; y <= NB_Y; ++y){
             if (y != 0){

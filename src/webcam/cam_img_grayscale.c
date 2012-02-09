@@ -151,12 +151,15 @@ cam_img_grayscale_normalize(Wg_image* grayscale_img, gray_pixel new_max,
     gs_range = FF_FLOAT(gs_max - gs_min);
     new_range = FF_FLOAT(new_max - new_min);
 
-    for (row = 0; row < height; ++row){
-        cam_img_get_row(grayscale_img, row, (wg_uchar**)&gs_pixel);
-        for (col = 0; col < width; ++col, ++gs_pixel){
-            *gs_pixel = 
-               FF_INT((FF_FLOAT(*gs_pixel - gs_min) * new_range) / gs_range) 
-		 + new_min;
+    if (gs_range != 0){
+        for (row = 0; row < height; ++row){
+            cam_img_get_row(grayscale_img, row, (wg_uchar**)&gs_pixel);
+            for (col = 0; col < width; ++col, ++gs_pixel){
+                *gs_pixel = 
+                    FF_INT((
+                          FF_FLOAT(*gs_pixel - gs_min) * new_range) / gs_range
+                          ) + new_min;
+            }
         }
     }
 

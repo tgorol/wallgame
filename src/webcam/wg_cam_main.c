@@ -183,20 +183,20 @@ capture(gpointer data)
 
                          ef_threshold(image_sub, 255);
 
-//                       cam_img_grayscale_normalize(&hsv_img, 255, 0);
+                         cam_img_grayscale_normalize(&hsv_img, 255, 0);
 
                          ef_hough_lines(&hsv_img, &w_acc, &h_acc);
 
                          ef_hough_paint_long_lines(&hsv_img, w_acc, h_acc);
 
-//                         ef_hough_print_acc(&hsv_img, w_acc);
-                        
+                         ef_hough_print_acc(&hsv_img, w_acc);
+                       
                          WG_FREE(w_acc);
                          WG_FREE(h_acc);
 
-                         ef_detect_circle(&hsv_img, image_sub);
+//                         ef_detect_circle(&hsv_img, image_sub);
 
-                         cam_img_cleanup(image_sub);
+//                         cam_img_cleanup(image_sub);
 
                          cam_img_grayscale_2_rgb(&hsv_img, image_sub);
 
