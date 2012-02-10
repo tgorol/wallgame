@@ -34,12 +34,12 @@ cam_status
 cam_img_rgb_2_bgrx(Wg_image *rgb_img, Wg_image *bgrx_img)
 {
     cam_status status = CAM_FAILURE;
-    wg_uint width;
-    wg_uint height;
-    wg_uint row;
-    wg_uint col;
-    wg_uint32 *bgrx_pixel;
-    rgb24_pixel *rgb_pixel;
+    wg_uint32 *bgrx_pixel = NULL;
+    rgb24_pixel *rgb_pixel = NULL;
+    wg_uint width = 0;
+    wg_uint height = 0;
+    wg_uint row = 0;
+    wg_uint col = 0;
 
     CHECK_FOR_NULL_PARAM(rgb_img);
     CHECK_FOR_NULL_PARAM(bgrx_img);

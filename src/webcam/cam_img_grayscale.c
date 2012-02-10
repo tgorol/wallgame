@@ -42,8 +42,8 @@ cam_img_rgb_2_grayscale(Wg_image *rgb_img, Wg_image *grayscale_img)
     register gray_pixel *gs_pixel;
     register rgb24_pixel *rgb_pixel;
     cam_status status = CAM_FAILURE;
-    wg_uint width;
-    wg_uint height;
+    wg_uint width = 0;
+    wg_uint height = 0;
     Cam_img_iterator rgb_itr;
     Cam_img_iterator gs_itr;
 
@@ -89,12 +89,12 @@ cam_status
 cam_img_grayscale_histogram(Wg_image* grayscale_img, wg_int *histogram, 
         wg_size size)
 {
-    wg_uint width;
-    wg_uint height;
-    wg_uint row;
-    wg_uint col;
-    gray_pixel *gs_pixel;
-    wg_int i;
+    wg_uint width = 0;
+    wg_uint height = 0;
+    wg_uint row = 0;
+    wg_uint col = 0;
+    gray_pixel *gs_pixel = NULL;
+    wg_int i = 0;
 
     CHECK_FOR_NULL_PARAM(grayscale_img);
 
@@ -127,15 +127,15 @@ wg_status
 cam_img_grayscale_normalize(Wg_image* grayscale_img, gray_pixel new_max,
         gray_pixel new_min)
 {
-    wg_uint width;
-    wg_uint height;
-    wg_uint row;
-    wg_uint col;
-    gray_pixel *gs_pixel;
-    gray_pixel gs_max;
-    gray_pixel gs_min;
-    wg_uint gs_range;
-    wg_uint new_range;
+    gray_pixel *gs_pixel = NULL;
+    wg_uint width = 0;
+    wg_uint height = 0;
+    wg_uint row = 0;
+    wg_uint col = 0;
+    gray_pixel gs_max = 0;
+    gray_pixel gs_min = 0;
+    wg_uint gs_range = 0;
+    wg_uint new_range = 0;
 
     CHECK_FOR_NULL_PARAM(grayscale_img);
 
@@ -172,11 +172,11 @@ wg_status
 cam_img_grayscale_max_min(Wg_image* grayscale_img, gray_pixel *gs_max,
         gray_pixel *gs_min)
 {
-    gray_pixel *gs_pixel;
-    wg_uint width;
-    wg_uint height;
-    wg_uint row;
-    wg_uint col;
+    gray_pixel *gs_pixel = NULL;
+    wg_uint width = 0;
+    wg_uint height = 0;
+    wg_uint row = 0;
+    wg_uint col = 0;
     gray_pixel max_val = GS_PIXEL_MIN;
     gray_pixel min_val = GS_PIXEL_MAX;
 
@@ -211,7 +211,7 @@ cam_status
 cam_img_grayscale_save(Wg_image *img, wg_char *filename, wg_char *ext)
 {
     Wg_image rgb;
-    cam_status status;
+    cam_status status = WG_FAILURE;
     gboolean error_flag = FALSE;
     GdkPixbuf *pixbuf = NULL;
 

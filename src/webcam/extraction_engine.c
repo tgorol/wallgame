@@ -18,11 +18,11 @@
 
 #define   CACHE_TAN_NUM (135 + 45)
 
-#define NB_X   15
-#define NB_Y   15
+#define NB_X   6
+#define NB_Y   6
 
-#define NB_X2   10
-#define NB_Y2   10
+#define NB_X2   4
+#define NB_Y2   4
 
 #define FPPOS   4
 #define FPPOS_M ((FPPOS) >> 1) 
@@ -62,7 +62,7 @@ ef_init(void)
 wg_status
 ef_threshold(Wg_image *img, gray_pixel value)
 {
-    gray_pixel *gs_pixel;
+    gray_pixel *gs_pixel = NULL;
     Cam_img_iterator itr;
 
     CHECK_FOR_NULL_PARAM(img);
@@ -86,20 +86,20 @@ ef_threshold(Wg_image *img, gray_pixel value)
 
 
 WG_PRIVATE wg_status
-detect_circle(Wg_image *img, Wg_image *acc, wg_int x1, wg_int y1, 
+detect_circle(Wg_image *img, Wg_image *acc, wg_int y1, wg_int x1, 
         wg_uint nb_x, wg_uint nb_y)
 {
-    gray_pixel *gs_pixel;
-    wg_uint *acc_pixel;
-    wg_int x2;
-    wg_int y2;
-    wg_int x0;
-    wg_int y0;
-    wg_uint width;
-    wg_uint height;
-    wg_int xm;
-    wg_int ym;
-    wg_int m;
+    gray_pixel *gs_pixel = NULL;
+    wg_uint *acc_pixel = NULL;
+    wg_int x2 = 0;
+    wg_int y2 = 0;
+    wg_int x0 = 0;
+    wg_int y0 = 0;
+    wg_uint width = 0;
+    wg_uint height = 0;
+    wg_int xm = 0;
+    wg_int ym = 0;
+    wg_int m = 0;
 
     cam_img_get_width(img, &width);
     cam_img_get_height(img, &height);
@@ -157,11 +157,11 @@ wg_status
 ef_detect_circle(Wg_image *img, Wg_image *acc)
 {
     cam_status status = CAM_FAILURE;
-    gray_pixel *gs_pixel;
-    wg_uint width;
-    wg_uint height;
-    wg_uint row;
-    wg_uint col;
+    gray_pixel *gs_pixel = NULL;
+    wg_uint width = 0;
+    wg_uint height = 0;
+    wg_uint row = 0;
+    wg_uint col = 0;
 
     CHECK_FOR_NULL_PARAM(img);
     CHECK_FOR_NULL_PARAM(acc);
@@ -196,9 +196,9 @@ ef_detect_circle(Wg_image *img, Wg_image *acc)
 cam_status
 ef_paint_cross(Wg_image *img, wg_uint y, wg_uint x, gray_pixel color)
 {
-    wg_uint height;
-    wg_uint row;
-    gray_pixel *gs_pixel;
+    wg_uint height = 0;
+    wg_uint row = 0;
+    gray_pixel *gs_pixel = NULL;
 
     cam_img_get_height(img, &height);
 
@@ -215,15 +215,12 @@ ef_paint_cross(Wg_image *img, wg_uint y, wg_uint x, gray_pixel color)
 cam_status
 ef_acc_get_max(Wg_image *acc, wg_uint *row_par, wg_uint *col_par)
 {
-    cam_status status = WG_FAILURE;
-    wg_uint width;
-    wg_uint height;
-    wg_uint row;
-    wg_uint col;
+    wg_uint width = 0;
+    wg_uint height = 0;
+    wg_uint row = 0;
+    wg_uint col = 0 ;
     wg_uint *acc_pixel = NULL;
-    wg_int rd = 0;
     wg_uint max_value = 0;
-    Wg_image acc_gs;
 
 
     CHECK_FOR_NULL_PARAM(acc);
@@ -257,13 +254,12 @@ cam_status
 ef_acc_save(Wg_image *acc, wg_char *filename, wg_char *type)
 {
     cam_status status = WG_FAILURE;
-    wg_uint width;
-    wg_uint height;
-    wg_uint row;
-    wg_uint col;
+    wg_uint width = 0;
+    wg_uint height = 0;
+    wg_uint row = 0;
+    wg_uint col = 0;
     gray_pixel *gs_pixel = NULL;
     wg_uint *acc_pixel = NULL;
-    wg_int rd = 0;
     wg_uint max_val = 0;
     Wg_image acc_gs;
 
@@ -312,13 +308,16 @@ ef_acc_save(Wg_image *acc, wg_char *filename, wg_char *type)
 wg_status
 ef_smooth(Wg_image *img, Wg_image *new_img)
 {
-    wg_uint width;
-    wg_uint height;
-    wg_uint row;
-    wg_uint col;
-    gray_pixel *gs_pixel;
-    gray_pixel *gs_new_pixel;
+    wg_uint width = 0;
+    wg_uint height = 0;
+    wg_uint row = 0;
+    wg_uint col = 0;
+    gray_pixel *gs_pixel = NULL;
+    gray_pixel *gs_new_pixel = NULL;
     wg_int rd = 0;
+    wg_int rd2 = 0;
+    wg_int rd3 = 0;
+    wg_int rd4 = 0;
 
     CHECK_FOR_NULL_PARAM(img);
 
@@ -335,15 +334,36 @@ ef_smooth(Wg_image *img, Wg_image *new_img)
             new_img);
 
     rd = img->row_distance;
+    rd2 = rd + rd;
+    rd3 = rd2 + rd;
+    rd4 = rd3 + rd;
 
     for (row = 0; row < height - 4; ++row){
         cam_img_get_row(img, row, (wg_uchar**)&gs_pixel);
         cam_img_get_row(new_img, row, (wg_uchar**)&gs_new_pixel);
         for (col = 0; col < width - 4; ++col, ++gs_pixel, ++gs_new_pixel){
             *gs_new_pixel = 
-                (gs_pixel[0] + gs_pixel[1] + gs_pixel[2] + gs_pixel[3] + gs_pixel[4] +
-                 gs_pixel[rd] + gs_pixel[rd + 1] + gs_pixel[rd + 2] + gs_pixel[rd + 3] + gs_pixel[rd + 4] +
-                 gs_pixel[rd + rd] + gs_pixel[rd + rd + 1] + gs_pixel[rd + rd + 2] + gs_pixel[rd + rd + 3] + gs_pixel[rd + rd + 4]) / 25;
+                (
+                 /* 1st row */
+                 gs_pixel[0] + gs_pixel[1] + 
+                 gs_pixel[2] + gs_pixel[3] + 
+                 gs_pixel[4] +
+                 /* 2nd row */
+                 gs_pixel[rd + 0] + gs_pixel[rd + 1] + 
+                 gs_pixel[rd + 2] + gs_pixel[rd + 3] + 
+                 gs_pixel[rd + 4] +
+                 /* 3rd row */
+                 gs_pixel[rd2 + 0] + gs_pixel[rd2 + 1] + 
+                 gs_pixel[rd2 + 2] + gs_pixel[rd2 + 3] + 
+                 gs_pixel[rd2 + 4] +
+                 /* 4th row */
+                 gs_pixel[rd3 + 0] + gs_pixel[rd3 + 1] + 
+                 gs_pixel[rd3 + 2] + gs_pixel[rd3 + 3] + 
+                 gs_pixel[rd3 + 4] +
+                 /* 5th row */
+                 gs_pixel[rd4 + 0] + gs_pixel[rd4 + 1] + 
+                 gs_pixel[rd4 + 2] + gs_pixel[rd4 + 3] + 
+                 gs_pixel[rd4 + 4])/ 25;
 
         }
     }
@@ -354,13 +374,14 @@ ef_smooth(Wg_image *img, Wg_image *new_img)
 wg_status
 ef_detect_edge(Wg_image *img, Wg_image *new_img)
 {
-    wg_uint width;
-    wg_uint height;
-    wg_uint row;
-    wg_uint col;
-    gray_pixel *gs_pixel;
-    gray_pixel *gs_new_pixel;
-    wg_uint rd;
+    wg_uint width = 0;
+    wg_uint height = 0;
+    wg_uint row = 0;
+    wg_uint col = 0;
+    gray_pixel *gs_pixel = NULL;
+    gray_pixel *gs_new_pixel = NULL;
+    wg_uint rd = 0;
+    wg_uint rd2 = 0;
 
     CHECK_FOR_NULL_PARAM(img);
     CHECK_FOR_NULL_PARAM(new_img);
@@ -375,6 +396,8 @@ ef_detect_edge(Wg_image *img, Wg_image *new_img)
     cam_img_get_height(img, &height);
     cam_img_get_row_distance(img, &rd);
 
+    rd2 = rd + rd;
+
     cam_img_fill(width - 2, height - 2, GS_COMPONENT_NUM, IMG_GS,
             new_img);
 
@@ -385,10 +408,10 @@ ef_detect_edge(Wg_image *img, Wg_image *new_img)
             *gs_new_pixel = WG_MAX(
                     abs(gs_pixel[0] - gs_pixel[2] + 
                         (gs_pixel[rd] << 1) - (gs_pixel[rd + 2] << 1) +
-                        gs_pixel[rd + rd] - gs_pixel[rd + rd + 2]),
+                        gs_pixel[rd2] - gs_pixel[rd2 + 2]),
                     abs(gs_pixel[0] + (gs_pixel[1] << 1) + gs_pixel[2] -
-                        gs_pixel[rd + rd] - (gs_pixel[rd + rd + 1] << 1) - 
-                        gs_pixel[rd + rd + 2])
+                        gs_pixel[rd2] - (gs_pixel[rd2 + 1] << 1) - 
+                        gs_pixel[rd2 + 2])
                     );
         }
     }
@@ -399,8 +422,8 @@ ef_detect_edge(Wg_image *img, Wg_image *new_img)
 WG_PRIVATE wg_boolean
 hist_check(Wg_image *img, wg_uint row, wg_uint col)
 {
-    wg_uint width;
-    wg_uint height;
+    wg_uint width = 0;
+    wg_uint height = 0;
 
     cam_img_get_width(img, &width);
     cam_img_get_height(img, &height);
@@ -411,10 +434,10 @@ hist_check(Wg_image *img, wg_uint row, wg_uint col)
 WG_PRIVATE wg_status
 hist_connect(Wg_image *img, wg_uint row, wg_uint col, wg_uint low)
 {
-    wg_uint x1;
-    wg_uint y1;
-    gray_pixel *gs_pixel;
-    gray_pixel pix;
+    gray_pixel *gs_pixel = NULL;
+    wg_uint x1 = 0;
+    wg_uint y1 = 0;
+    gray_pixel pix = 0;
 
     for (x1 = col - 1; x1 <= col + 1; ++x1){
         for (y1 = row - 1; y1 <= row + 1; ++y1, ++gs_pixel){
@@ -433,12 +456,12 @@ hist_connect(Wg_image *img, wg_uint row, wg_uint col, wg_uint low)
 wg_status
 ef_hyst_thr(Wg_image *img, wg_uint upp, wg_uint low)
 {
-    wg_uint width;
-    wg_uint height;
-    wg_uint row;
-    wg_uint col;
-    gray_pixel *gs_pixel;
-    gray_pixel pix;
+    gray_pixel *gs_pixel = NULL;
+    wg_uint width = 0;
+    wg_uint height = 0;
+    wg_uint row = 0;
+    wg_uint col = 0;
+    gray_pixel pix = 0;
 
     CHECK_FOR_NULL_PARAM(img);
 
@@ -468,9 +491,9 @@ ef_hyst_thr(Wg_image *img, wg_uint upp, wg_uint low)
 wg_status
 ef_paint_pixel(Wg_image *img, wg_int x, wg_int y, gray_pixel value)
 {
-    wg_uint width;
-    wg_uint height;
-    gray_pixel *gs_pixel;
+    gray_pixel *gs_pixel = NULL;
+    wg_uint width = 0;
+    wg_uint height = 0;
 
     CHECK_FOR_NULL_PARAM(img);
 
@@ -495,8 +518,8 @@ ef_paint_pixel(Wg_image *img, wg_int x, wg_int y, gray_pixel value)
 wg_status
 ef_paint_line(Wg_image *img, wg_float m, wg_uint c, gray_pixel value)
 {
-    wg_uint width;
-    wg_uint height;
+    wg_uint width = 0;
+    wg_uint height = 0;
     wg_int ypos = 0;
     wg_int xpos = 0;
 
@@ -522,9 +545,10 @@ ef_paint_line(Wg_image *img, wg_float m, wg_uint c, gray_pixel value)
 wg_status
 ef_hough_print_acc(Wg_image *img, acc *width_acc)
 {
-    wg_uint width;
-    wg_uint height;
-    wg_uint c, m;
+    wg_uint width = 0;
+    wg_uint height = 0;
+    wg_uint c = 0;
+    wg_uint m = 0;
     FILE *f = NULL;
 
     f = fopen("log.out", "w");
@@ -548,8 +572,8 @@ ef_hough_print_acc(Wg_image *img, acc *width_acc)
 wg_status
 ef_hough_paint_long_lines(Wg_image *img, acc *width_acc, acc *height_acc)
 {
-    wg_uint width;
-    wg_uint height;
+    wg_uint width = 0;
+    wg_uint height = 0;
 
     wg_uint max_c = 0;
     wg_uint max_m = 0;
@@ -580,8 +604,8 @@ ef_hough_paint_long_lines(Wg_image *img, acc *width_acc, acc *height_acc)
 wg_status
 ef_hough_paint_lines(Wg_image *img, acc *width_acc, acc *height_acc, wg_uint value)
 {
-    wg_uint width;
-    wg_uint height;
+    wg_uint width = 0;
+    wg_uint height = 0;
 
     wg_uint c = 0;
     wg_uint m = 0;
@@ -603,15 +627,15 @@ ef_hough_paint_lines(Wg_image *img, acc *width_acc, acc *height_acc, wg_uint val
 wg_status
 ef_hough_lines(Wg_image *img, acc **width_acc, acc **height_acc)
 {
-    wg_uint width;
-    wg_uint height;
-    wg_int row;
-    wg_int col;
-    gray_pixel *gs_pixel;
-    wg_int  angle = 0; 
-    wg_int b = 0;
     acc *acc_col = NULL;
     acc *acc_row = NULL;
+    gray_pixel *gs_pixel = NULL;
+    wg_uint width = 0;
+    wg_uint height = 0;
+    wg_int row = 0;
+    wg_int col = 0;
+    wg_int  angle = 0; 
+    wg_int b = 0;
 
     CHECK_FOR_NULL_PARAM(img);
     CHECK_FOR_NULL_PARAM(width_acc);
@@ -661,11 +685,11 @@ ef_hough_lines(Wg_image *img, acc **width_acc, acc **height_acc)
     WG_PRIVATE void 
 init_tan_cache(void)
 {
-    wg_int x;
-    wg_int y;
+    wg_int x = 0;
+    wg_int y = 0;
     wg_int i = 0;
     wg_int tg = 0;
-    wg_float val;
+    wg_float val = WG_FLOAT(val);
 
     /* cache tangents for line detector */
     for (i = 0; i < CACHE_TAN_NUM; ++i){

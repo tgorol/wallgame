@@ -43,17 +43,17 @@ cam_status
 cam_img_rgb_2_hsv(Wg_image *rgb_img, Wg_image *hsv_img)
 {
     cam_status status = CAM_FAILURE;
-    wg_int row;
-    wg_int col;
-    wg_uint width;
-    wg_uint height;
-    rgb24_pixel  *rgb_pixel;
-    Hsv          *hsv_pixel;
-    wg_float rgb_max;
-    wg_float rgb_min;
-    wg_float r; 
-    wg_float g;
-    wg_float b;
+    rgb24_pixel  *rgb_pixel = NULL;
+    Hsv          *hsv_pixel = NULL;
+    wg_int row = 0;
+    wg_int col = 0;
+    wg_uint width = 0;
+    wg_uint height = 0;
+    wg_float rgb_max = WG_FLOAT(0.0);
+    wg_float rgb_min = WG_FLOAT(0.0);
+    wg_float r = WG_FLOAT(0.0); 
+    wg_float g = WG_FLOAT(0.0);
+    wg_float b = WG_FLOAT(0.0);
 
     CHECK_FOR_NULL_PARAM(rgb_img);
     CHECK_FOR_NULL_PARAM(hsv_img);
@@ -141,15 +141,17 @@ cam_img_rgb_2_hsv(Wg_image *rgb_img, Wg_image *hsv_img)
 cam_status
 cam_img_rgb_2_hsv_gtk(Wg_image *rgb_img, Wg_image *hsv_img)
 {
-    register rgb24_pixel  *rgb_pixel;
-    register Hsv          *hsv_pixel;
-    gdouble r, g, b;
-    wg_uchar *tmp_ptr;
     cam_status status = CAM_FAILURE;
-    wg_int row;
-    wg_int col;
-    wg_uint width;
-    wg_uint height;
+    register rgb24_pixel  *rgb_pixel = NULL;
+    register Hsv          *hsv_pixel = NULL;
+    wg_uchar *tmp_ptr = NULL;
+    gdouble r = 0.0;
+    gdouble g = 0.0;
+    gdouble b = 0.0;
+    wg_int row = 0;
+    wg_int col = 0;
+    wg_uint width = 0;
+    wg_uint height = 0;
 
     CHECK_FOR_NULL_PARAM(rgb_img);
     CHECK_FOR_NULL_PARAM(hsv_img);
@@ -205,21 +207,21 @@ cam_img_rgb_2_hsv_gtk(Wg_image *rgb_img, Wg_image *hsv_img)
 cam_status
 cam_img_rgb_2_hsv_fast(Wg_image *rgb_img, Wg_image *hsv_img)
 {
-    register rgb24_pixel  *rgb_pixel;
-    register Hsv          *hsv_pixel;
-    register wg_int32 r;
-    register wg_int32 g;
-    register wg_int32 b;
-    wg_uchar *tmp_ptr;
     cam_status status = CAM_FAILURE;
-    wg_int row;
-    wg_int col;
-    wg_uint width;
-    wg_uint height;
-    wg_float alpha;
-    wg_float beta;
-    wg_int   v1;
-    wg_int   v2;
+    register rgb24_pixel  *rgb_pixel = NULL;
+    register Hsv          *hsv_pixel = NULL;
+    wg_uchar *tmp_ptr = NULL;
+    wg_int32 r = 0;
+    wg_int32 g = 0;
+    wg_int32 b = 0;
+    wg_int row = 0;
+    wg_int col = 0;
+    wg_uint width = 0;
+    wg_uint height = 0;
+    wg_float alpha = WG_FLOAT(0.0);
+    wg_float beta = WG_FLOAT(0.0);
+    wg_int   v1 = 0;
+    wg_int   v2 = 0;
 
     /* sqrt(3.0) = 1.732050808  */
     static const wg_float coff_b = WG_FLOAT(1.732050808 / (2.0 * WG_UCHAR_MAX));
@@ -296,17 +298,19 @@ cam_img_rgb_2_hsv_fast(Wg_image *rgb_img, Wg_image *hsv_img)
 cam_status
 cam_img_bgrx_2_hsv_fast(Wg_image *bgrx_img, Wg_image *hsv_img)
 {
-    register bgrx_pixel  *bgrx_pix;
-    register Hsv         *hsv_pixel;
-    wg_uchar *tmp_ptr;
+    register bgrx_pixel  *bgrx_pix = NULL;
+    register Hsv         *hsv_pixel = NULL;
+    wg_uchar *tmp_ptr = NULL;
     cam_status status = CAM_FAILURE;
-    wg_int row;
-    wg_int col;
-    wg_uint width;
-    wg_uint height;
-    wg_float alpha;
-    wg_float beta;
-    wg_float r, g, b;
+    wg_int row = 0;
+    wg_int col = 0;
+    wg_uint width = 0;
+    wg_uint height = 0;
+    wg_float alpha = WG_FLOAT(0.0);
+    wg_float beta = WG_FLOAT(0.0);
+    wg_float r = WG_FLOAT(0.0);
+    wg_float g = WG_FLOAT(0.0);
+    wg_float b = WG_FLOAT(0.0);
 
     /* sqrt(3.0) = 1.732050808  */
     static const wg_float coff_b = WG_FLOAT(1.732050808 / (2.0 * WG_UCHAR_MAX));

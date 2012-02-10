@@ -35,12 +35,12 @@ cam_status
 cam_img_bgrx_2_rgb(Wg_image *bgrx_img, Wg_image *rgb_img)
 {
     cam_status status = CAM_FAILURE;
-    wg_uint width;
-    wg_uint height;
-    wg_uint row;
-    wg_uint col;
-    bgrx_pixel *bgrx_pixel;
-    rgb24_pixel *rgb_pixel;
+    bgrx_pixel *bgrx_pixel = NULL;
+    rgb24_pixel *rgb_pixel = NULL;
+    wg_uint width = 0;
+    wg_uint height = 0;
+    wg_uint row = 0;
+    wg_uint col = 0;
 
     CHECK_FOR_NULL_PARAM(rgb_img);
     CHECK_FOR_NULL_PARAM(bgrx_img);
@@ -74,12 +74,12 @@ wg_status
 cam_img_grayscale_2_rgb(Wg_image *grayscale_img, Wg_image *rgb_img)
 {
     cam_status status = CAM_FAILURE;
-    wg_uint width;
-    wg_uint height;
-    wg_uint row;
-    wg_uint col;
-    gray_pixel *gs_pixel;
-    rgb24_pixel *rgb_pixel;
+    gray_pixel *gs_pixel = NULL;
+    rgb24_pixel *rgb_pixel = NULL;
+    wg_uint width = 0;
+    wg_uint height = 0;
+    wg_uint row = 0;
+    wg_uint col = 0;
 
     CHECK_FOR_NULL_PARAM(rgb_img);
     CHECK_FOR_NULL_PARAM(grayscale_img);

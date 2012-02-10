@@ -163,9 +163,9 @@ capture(gpointer data)
                          if (gtk_toggle_button_get_active(
                                      GTK_TOGGLE_BUTTON(cam->normalize))){
 
-                             ef_smooth(&hsv_img, image_sub);
+                             cam_img_grayscale_normalize(&hsv_img, 255, 0);
 
-                             cam_img_grayscale_normalize(image_sub, 255, 0);
+                             ef_smooth(&hsv_img, image_sub);
 
                              cam_img_cleanup(&hsv_img);
 
@@ -173,8 +173,6 @@ capture(gpointer data)
                          }
 
                          ef_detect_edge(&hsv_img, image_sub);
-
-
 
                          cam_img_cleanup(&hsv_img);
 

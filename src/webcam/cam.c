@@ -93,7 +93,9 @@ cam_open(Wg_camera *cam, CAM_MODE mode, wg_uint flags)
 {
     cam_status status = CAM_FAILURE;
     struct stat st; 
+#ifdef WGDEBUG
     List_head desc_head;
+#endif
 
     CHECK_FOR_NULL_PARAM(cam);
 
@@ -162,6 +164,7 @@ cam_open(Wg_camera *cam, CAM_MODE mode, wg_uint flags)
     } while(status != CAM_SUCCESS);
 
 #ifdef WGDEBUG
+    list_init(&desc_head);
     status = cam_output_format_description_list(
             cam, CAM_OUT_VIDEO_CAPTURE, &desc_head);
     if (CAM_SUCCESS != status){
