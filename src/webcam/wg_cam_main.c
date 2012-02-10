@@ -115,6 +115,7 @@ capture(gpointer data)
     wg_uint height = 0;
     Wg_cam_decompressor decompressor;
     acc *w_acc, *h_acc;
+    wg_uint w, h;
 
     ef_init();
 
@@ -187,16 +188,22 @@ capture(gpointer data)
 
                          ef_hough_lines(&hsv_img, &w_acc, &h_acc);
 
-                         ef_hough_paint_long_lines(&hsv_img, w_acc, h_acc);
+//                       ef_hough_paint_long_lines(&hsv_img, w_acc, h_acc);
 
-                         ef_hough_print_acc(&hsv_img, w_acc);
+//                         ef_hough_print_acc(&hsv_img, w_acc);
                        
                          WG_FREE(w_acc);
                          WG_FREE(h_acc);
 
-//                         ef_detect_circle(&hsv_img, image_sub);
+                         ef_detect_circle(&hsv_img, image_sub);
 
-//                         cam_img_cleanup(image_sub);
+                         ef_acc_save(image_sub, "acc.png", "png");
+
+                         ef_acc_get_max(image_sub, &h, &w);
+
+                         cam_img_cleanup(image_sub);
+
+                         ef_paint_cross(&hsv_img, h, w, 128);
 
                          cam_img_grayscale_2_rgb(&hsv_img, image_sub);
 

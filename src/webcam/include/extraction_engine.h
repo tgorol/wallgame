@@ -38,6 +38,9 @@ ef_threshold(Wg_image *img, gray_pixel value);
 WG_PUBLIC wg_status
 ef_detect_circle(Wg_image *img, Wg_image *acc);
 
+WG_PUBLIC cam_status
+ef_acc_save(Wg_image *acc, wg_char *filename, wg_char *type);
+
 WG_PUBLIC wg_status
 ef_hyst_thr(Wg_image *img, wg_uint upp, wg_uint low);
 

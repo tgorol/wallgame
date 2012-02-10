@@ -206,6 +206,15 @@ cam_img_grayscale_histogram(Wg_image* grayscale_img, wg_int *histogram,
         wg_size size);
 
 WG_PUBLIC cam_status
+cam_img_grayscale_save(Wg_image *img, wg_char *filename, wg_char *ext);
+
+WG_PUBLIC cam_status
+ef_acc_get_max(Wg_image *acc, wg_uint *row_par, wg_uint *col_par);
+
+cam_status
+ef_paint_cross(Wg_image *img, wg_uint y, wg_uint x, gray_pixel color);
+
+WG_PUBLIC cam_status
 cam_set_resolution(Wg_camera *cam, wg_uint width, wg_uint height);
 
 #endif

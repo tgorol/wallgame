@@ -2,6 +2,8 @@
 #include <sys/types.h>
 #include <string.h>
 
+#include <gdk-pixbuf/gdk-pixbuf.h>
+
 #include <wgtypes.h>
 #include <wg.h>
 #include <wgmacros.h>
@@ -203,4 +205,35 @@ cam_img_grayscale_max_min(Wg_image* grayscale_img, gray_pixel *gs_max,
     *gs_min = min_val;
 
     return CAM_SUCCESS;
+}
+
+cam_status
+cam_img_grayscale_save(Wg_image *img, wg_char *filename, wg_char *ext)
+{
+    Wg_image rgb;
+    cam_status status;
+    gboolean error_flag = FALSE;
+    GdkPixbuf *pixbuf = NULL;
+
+    status = cam_img_grayscale_2_rgb(img, &rgb);
+    if (CAM_SUCCESS != status){
+        WG_LOG("GS to RGB conversion error\n");
+        return CAM_FAILURE;
+    }
+
+    pixbuf = gdk_pixbuf_new_from_data(rgb.image, GDK_COLORSPACE_RGB, FALSE, 8, 
+                rgb.width, rgb.height, rgb.row_distance, NULL, NULL);
+
+    error_flag = gdk_pixbuf_save(pixbuf, filename, ext, NULL, NULL);
+    if (TRUE != error_flag){
+        WG_LOG("GS to RGB conversion error\n");
+        /* pass through to release resources */
+        status = CAM_FAILURE;
+    }
+
+    g_object_unref(pixbuf);
+
+    cam_img_cleanup(&rgb);
+
+    return status;
 }

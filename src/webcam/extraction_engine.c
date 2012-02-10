@@ -18,20 +18,20 @@
 
 #define   CACHE_TAN_NUM (135 + 45)
 
-#define NB_X   6
-#define NB_Y   6
+#define NB_X   15
+#define NB_Y   15
 
-#define NB_X2   4
-#define NB_Y2   4
+#define NB_X2   10
+#define NB_Y2   10
 
-#define FPPOS   16
+#define FPPOS   4
 #define FPPOS_M ((FPPOS) >> 1) 
 #define FPPOS_MAX (1 << FPPOS)
 
 #define FPPOS_INC(val)  ((val) += (FPPOS_VAL(1)))
 #define FPPOS_VAL(val)  ((wg_int32)(((wg_uint32)(val)) << FPPOS))
 #define FPPOS_MUL(val1, val2)                  \
-                    ((val1) * FPPOS_INT(val2))
+                    (FPPOS_INT((val1) * (val2)))
 
 #define FPPOS_DIV(num, dnum)                  \
                     ((num / ((dnum) >> (FPPOS_M))) << (FPPOS_M))
@@ -86,7 +86,7 @@ ef_threshold(Wg_image *img, gray_pixel value)
 
 
 WG_PRIVATE wg_status
-detect_circle(Wg_image *img, Wg_image *acc, wg_uint x1, wg_uint y1, 
+detect_circle(Wg_image *img, Wg_image *acc, wg_int x1, wg_int y1, 
         wg_uint nb_x, wg_uint nb_y)
 {
     gray_pixel *gs_pixel;
@@ -189,6 +189,121 @@ ef_detect_circle(Wg_image *img, Wg_image *acc)
             }
         }
     }
+
+    return CAM_SUCCESS;
+}
+
+cam_status
+ef_paint_cross(Wg_image *img, wg_uint y, wg_uint x, gray_pixel color)
+{
+    wg_uint height;
+    wg_uint row;
+    gray_pixel *gs_pixel;
+
+    cam_img_get_height(img, &height);
+
+    ef_paint_line(img, 0, y, color);
+
+    for (row = 0; row < height; ++row){
+        cam_img_get_row(img, row, (wg_uchar**)&gs_pixel);
+        gs_pixel[x] = color;
+    }
+
+    return CAM_SUCCESS;
+}
+
+cam_status
+ef_acc_get_max(Wg_image *acc, wg_uint *row_par, wg_uint *col_par)
+{
+    cam_status status = WG_FAILURE;
+    wg_uint width;
+    wg_uint height;
+    wg_uint row;
+    wg_uint col;
+    wg_uint *acc_pixel = NULL;
+    wg_int rd = 0;
+    wg_uint max_value = 0;
+    Wg_image acc_gs;
+
+
+    CHECK_FOR_NULL_PARAM(acc);
+    CHECK_FOR_NULL_PARAM(row_par);
+    CHECK_FOR_NULL_PARAM(col_par);
+
+    if (acc->type != IMG_CIRCLE_ACC){
+        WG_ERROR("Invalig image format! Passed %d expect %d\n", 
+                acc->type, IMG_CIRCLE_ACC);
+        return CAM_FAILURE;
+    }
+
+    cam_img_get_width(acc, &width);
+    cam_img_get_height(acc, &height);
+
+    for (row = 0; row < height; ++row){
+        cam_img_get_row(acc, row, (wg_uchar**)&acc_pixel);
+        for (col = 0; col < width; ++col, ++acc_pixel){
+            if (*acc_pixel > max_value){
+                max_value = *acc_pixel;
+                *col_par = col;
+                *row_par = row;
+            }
+        }
+    }
+
+    return CAM_SUCCESS;
+}
+
+cam_status
+ef_acc_save(Wg_image *acc, wg_char *filename, wg_char *type)
+{
+    cam_status status = WG_FAILURE;
+    wg_uint width;
+    wg_uint height;
+    wg_uint row;
+    wg_uint col;
+    gray_pixel *gs_pixel = NULL;
+    wg_uint *acc_pixel = NULL;
+    wg_int rd = 0;
+    wg_uint max_val = 0;
+    Wg_image acc_gs;
+
+    CHECK_FOR_NULL_PARAM(acc);
+    CHECK_FOR_NULL_PARAM(filename);
+    CHECK_FOR_NULL_PARAM(type);
+
+    if (acc->type != IMG_CIRCLE_ACC){
+        WG_ERROR("Invalig image format! Passed %d expect %d\n", 
+                acc->type, IMG_CIRCLE_ACC);
+        return CAM_FAILURE;
+    }
+
+    cam_img_get_width(acc, &width);
+    cam_img_get_height(acc, &height);
+
+    status = cam_img_fill(width, height, GS_COMPONENT_NUM, IMG_GS,
+            &acc_gs);
+    if (CAM_SUCCESS != status){
+        return CAM_FAILURE;
+    }
+
+    for (row = 0; row < height; ++row){
+        cam_img_get_row(acc, row, (wg_uchar**)&acc_pixel);
+        for (col = 0; col < width; ++col, ++acc_pixel){
+            max_val = WG_MAX(max_val, *acc_pixel);
+        }
+    }
+
+    for (row = 0; row < height; ++row){
+        cam_img_get_row(acc, row, (wg_uchar**)&acc_pixel);
+        cam_img_get_row(&acc_gs, row, (wg_uchar**)&gs_pixel);
+        for (col = 0; col < width; ++col, ++gs_pixel, ++acc_pixel){
+            *gs_pixel = (255.0 * (*acc_pixel) / max_val);
+        }
+    }
+
+    cam_img_grayscale_save(&acc_gs, filename, type);
+
+    cam_img_cleanup(&acc_gs);
 
     return CAM_SUCCESS;
 
