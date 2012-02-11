@@ -5,14 +5,14 @@ SOURCE=cam.c                  \
 	   cam_readwrite.c        \
 	   cam_streaming.c        \
 	   cam_frame.c            \
-	   cam_img_yuyv.c         \
 	   cam_format_selector.c  \
-	   cam_img.c              \
-	   cam_img_jpeg.h         \
-	   cam_img_hsv.c          \
-	   cam_img_bgrx.c         \
-	   cam_img_rgb.c          \
-	   cam_img_grayscale.c    \
+	   img.c              \
+	   img_jpeg.h         \
+	   img_hsv.c          \
+	   img_bgrx.c         \
+	   img_rgb24.c          \
+	   img_gs.c    \
+	   img_yuyv.c         \
 	   gui_camera.c           \
 	   gui_screen.c           \
        extraction_engine.c

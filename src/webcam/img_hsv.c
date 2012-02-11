@@ -12,10 +12,10 @@
 #include <linux/videodev2.h>
 
 #include "include/cam.h"
-#include "include/cam_img.h"
-#include "include/cam_img_hsv.h"
-#include "include/cam_img_bgrx.h"
-#include "include/cam_img_rgb.h"
+#include "include/img.h"
+#include "include/img_hsv.h"
+#include "include/img_bgrx.h"
+#include "include/img_rgb24.h"
 
 
 #define MAX3(r, g, b) WG_MAX(b , WG_MAX(r, g))
@@ -40,7 +40,7 @@ WG_INLINE void update_hsv_uint_values(Hsv *restrict hsv);
 WG_STATIC float atan2_fast(float y, float x);
 
 cam_status
-cam_img_rgb_2_hsv(Wg_image *rgb_img, Wg_image *hsv_img)
+img_rgb_2_hsv(Wg_image *rgb_img, Wg_image *hsv_img)
 {
     cam_status status = CAM_FAILURE;
     rgb24_pixel  *rgb_pixel = NULL;
@@ -64,17 +64,17 @@ cam_img_rgb_2_hsv(Wg_image *rgb_img, Wg_image *hsv_img)
         return CAM_FAILURE;
     }
 
-    cam_img_get_width(rgb_img, &width);
-    cam_img_get_height(rgb_img, &height);
+    img_get_width(rgb_img, &width);
+    img_get_height(rgb_img, &height);
 
-    status = cam_img_fill(width, height, sizeof (Hsv), IMG_HSV, hsv_img);
+    status = img_fill(width, height, sizeof (Hsv), IMG_HSV, hsv_img);
     if (CAM_SUCCESS != status){
         return status;
     }
 
     for (row = 0; row < height; ++row){
-        cam_img_get_row(rgb_img, row, (wg_uchar**)&rgb_pixel);
-        cam_img_get_row(hsv_img, row, (wg_uchar**)&hsv_pixel);
+        img_get_row(rgb_img, row, (wg_uchar**)&rgb_pixel);
+        img_get_row(hsv_img, row, (wg_uchar**)&hsv_pixel);
         for (col = 0; col < width; ++col, ++hsv_pixel,
             update_hsv_uint_values(hsv_pixel)){
             rgb_max = MAX3(
@@ -139,7 +139,7 @@ cam_img_rgb_2_hsv(Wg_image *rgb_img, Wg_image *hsv_img)
  * @{ 
  */
 cam_status
-cam_img_rgb_2_hsv_gtk(Wg_image *rgb_img, Wg_image *hsv_img)
+img_rgb_2_hsv_gtk(Wg_image *rgb_img, Wg_image *hsv_img)
 {
     cam_status status = CAM_FAILURE;
     register rgb24_pixel  *rgb_pixel = NULL;
@@ -162,18 +162,18 @@ cam_img_rgb_2_hsv_gtk(Wg_image *rgb_img, Wg_image *hsv_img)
         return CAM_FAILURE;
     }
 
-    cam_img_get_width(rgb_img, &width);
-    cam_img_get_height(rgb_img, &height);
+    img_get_width(rgb_img, &width);
+    img_get_height(rgb_img, &height);
 
-    status = cam_img_fill(width, height, sizeof (Hsv), IMG_HSV, hsv_img);
+    status = img_fill(width, height, sizeof (Hsv), IMG_HSV, hsv_img);
     if (CAM_SUCCESS != status){
         return status;
     }
 
     for (row = 0; row < height; ++row){
-        cam_img_get_row(rgb_img, row, &tmp_ptr);
+        img_get_row(rgb_img, row, &tmp_ptr);
         rgb_pixel = (rgb24_pixel*)tmp_ptr;
-        cam_img_get_row(hsv_img, row, &tmp_ptr);
+        img_get_row(hsv_img, row, &tmp_ptr);
         hsv_pixel = (Hsv*)tmp_ptr;
 
         /* Calculate HSV value for each pixel and update uint values */
@@ -205,7 +205,7 @@ cam_img_rgb_2_hsv_gtk(Wg_image *rgb_img, Wg_image *hsv_img)
  * @retval CAM_FAILURE
  */
 cam_status
-cam_img_rgb_2_hsv_fast(Wg_image *rgb_img, Wg_image *hsv_img)
+img_rgb_2_hsv_fast(Wg_image *rgb_img, Wg_image *hsv_img)
 {
     cam_status status = CAM_FAILURE;
     register rgb24_pixel  *rgb_pixel = NULL;
@@ -236,18 +236,18 @@ cam_img_rgb_2_hsv_fast(Wg_image *rgb_img, Wg_image *hsv_img)
         return CAM_FAILURE;
     }
 
-    cam_img_get_width(rgb_img, &width);
-    cam_img_get_height(rgb_img, &height);
+    img_get_width(rgb_img, &width);
+    img_get_height(rgb_img, &height);
 
-    status = cam_img_fill(width, height, sizeof (Hsv), IMG_HSV, hsv_img);
+    status = img_fill(width, height, sizeof (Hsv), IMG_HSV, hsv_img);
     if (CAM_SUCCESS != status){
         return status;
     }
 
     for (row = 0; row < height; ++row){
-        cam_img_get_row(rgb_img, row, &tmp_ptr);
+        img_get_row(rgb_img, row, &tmp_ptr);
         rgb_pixel = (rgb24_pixel*)tmp_ptr;
-        cam_img_get_row(hsv_img, row, &tmp_ptr);
+        img_get_row(hsv_img, row, &tmp_ptr);
         hsv_pixel = (Hsv*)tmp_ptr;
 
         /* Calculate HSV value for each pixel and update uint values */
@@ -296,7 +296,7 @@ cam_img_rgb_2_hsv_fast(Wg_image *rgb_img, Wg_image *hsv_img)
  * @retval CAM_FAILURE
  */
 cam_status
-cam_img_bgrx_2_hsv_fast(Wg_image *bgrx_img, Wg_image *hsv_img)
+img_bgrx_2_hsv_fast(Wg_image *bgrx_img, Wg_image *hsv_img)
 {
     register bgrx_pixel  *bgrx_pix = NULL;
     register Hsv         *hsv_pixel = NULL;
@@ -325,18 +325,18 @@ cam_img_bgrx_2_hsv_fast(Wg_image *bgrx_img, Wg_image *hsv_img)
         return CAM_FAILURE;
     }
 
-    cam_img_get_width(bgrx_img, &width);
-    cam_img_get_height(bgrx_img, &height);
+    img_get_width(bgrx_img, &width);
+    img_get_height(bgrx_img, &height);
 
-    status = cam_img_fill(width, height, sizeof (Hsv), IMG_HSV, hsv_img);
+    status = img_fill(width, height, sizeof (Hsv), IMG_HSV, hsv_img);
     if (CAM_SUCCESS != status){
         return status;
     }
 
     for (row = 0; row < height; ++row){
-        cam_img_get_row(bgrx_img, row, &tmp_ptr);
+        img_get_row(bgrx_img, row, &tmp_ptr);
         bgrx_pix = (bgrx_pixel*)tmp_ptr;
-        cam_img_get_row(hsv_img, row, &tmp_ptr);
+        img_get_row(hsv_img, row, &tmp_ptr);
         hsv_pixel = (Hsv*)tmp_ptr;
 
         for (col = 0; col < width; ++col, ++hsv_pixel, ++bgrx_pix,

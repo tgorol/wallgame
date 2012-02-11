@@ -11,8 +11,8 @@
 #include <linux/videodev2.h>
 
 #include "include/cam.h"
-#include "include/cam_img_yuyv.h"
-#include "include/cam_img_jpeg.h"
+#include "include/img_yuyv.h"
+#include "include/img_jpeg.h"
 #include "include/cam_format_selector.h"
 #include "include/cam_output.h"
 
@@ -28,9 +28,9 @@ typedef struct Fmt_decomp{
 typedef wg_char u32str[sizeof (__u32) + 1]; 
 
 WG_STATIC Fmt_decomp supported_formats[] = {
-    {v4l2_fourcc('Y', 'U', 'Y', 'V'), {cam_img_yuyv_2_rgb24}},
-    {v4l2_fourcc('M', 'J', 'P', 'G'), {cam_img_jpeg_decompress}},
-    {v4l2_fourcc('J', 'P', 'E', 'G'), {cam_img_jpeg_decompress}}
+    {v4l2_fourcc('Y', 'U', 'Y', 'V'), {img_yuyv_2_rgb24}},
+    {v4l2_fourcc('M', 'J', 'P', 'G'), {img_jpeg_decompress}},
+    {v4l2_fourcc('J', 'P', 'E', 'G'), {img_jpeg_decompress}}
 };
 
 WG_PRIVATE void

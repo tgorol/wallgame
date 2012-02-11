@@ -21,9 +21,9 @@
 #include "include/cam_frame.h"
 #include "include/cam_output.h"
 #include "include/cam_readwrite.h"
-#include "include/cam_img_jpeg.h"
 #include "include/cam_format_selector.h"
-#include "include/cam_img.h"
+
+#include "include/img.h"
 #include "include/extraction_engine.h"
 
 #include "include/gui_resolution.h"
@@ -95,7 +95,7 @@ on_expose_event(GtkWidget *widget,
 void
 xbuf_free(guchar *pixels, gpointer data)
 {
-    cam_img_cleanup((Wg_image*)data);
+    img_cleanup((Wg_image*)data);
 
     WG_FREE(data);
 }
@@ -155,31 +155,31 @@ capture(gpointer data)
                 
                 cam_discard_frame(cam->camera, frame);
 
-//               cam_img_rgb_2_bgrx(image_sub, &hsv_img);
+//               img_rgb_2_bgrx(image_sub, &hsv_img);
 
-//               cam_img_cleanup(&hsv_img);
+//               img_cleanup(&hsv_img);
 //
                  if (gtk_toggle_button_get_active(
                              GTK_TOGGLE_BUTTON(cam->show_gray))){
-                         cam_img_rgb_2_grayscale(image_sub, &hsv_img);
+                         img_rgb_2_grayscale(image_sub, &hsv_img);
 
-                         cam_img_cleanup(image_sub);
+                         img_cleanup(image_sub);
 
                          if (gtk_toggle_button_get_active(
                                      GTK_TOGGLE_BUTTON(cam->normalize))){
 
-                             cam_img_grayscale_normalize(&hsv_img, 255, 0);
+                             img_grayscale_normalize(&hsv_img, 255, 0);
 
                              ef_smooth(&hsv_img, image_sub);
 
-                             cam_img_cleanup(&hsv_img);
+                             img_cleanup(&hsv_img);
 
                              hsv_img = *image_sub;
                          }
 
                          ef_detect_edge(&hsv_img, image_sub);
 
-                         cam_img_cleanup(&hsv_img);
+                         img_cleanup(&hsv_img);
 
                          hsv_img = *image_sub;
 
@@ -187,7 +187,7 @@ capture(gpointer data)
 
                          ef_threshold(image_sub, 255);
 
-                         cam_img_grayscale_normalize(&hsv_img, 255, 0);
+                         img_grayscale_normalize(&hsv_img, 255, 0);
 
 //                         ef_hough_lines(&hsv_img, &w_acc, &h_acc);
 
@@ -204,16 +204,16 @@ capture(gpointer data)
 
                          ef_acc_get_max(image_sub, &h, &w);
 
-                         cam_img_cleanup(image_sub);
+                         img_cleanup(image_sub);
 
                          ef_paint_cross(&hsv_img, h, w, 128);
 
-                         cam_img_grayscale_2_rgb(&hsv_img, image_sub);
+                         img_grayscale_2_rgb(&hsv_img, image_sub);
 
-                         cam_img_cleanup(&hsv_img);
+                         img_cleanup(&hsv_img);
                  }
 
-//               cam_img_rgb_2_hsv_gtk(image_sub, &hsv_img);
+//               img_rgb_2_hsv_gtk(image_sub, &hsv_img);
 
                 
                  gdk_threads_enter();

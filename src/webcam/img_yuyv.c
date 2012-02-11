@@ -10,8 +10,8 @@
 #include <linux/videodev2.h>
 
 #include "include/cam.h"
-#include "include/cam_img.h"
-#include "include/cam_img_yuyv.h"
+#include "include/img.h"
+#include "include/img_yuyv.h"
 
 /*! @defgroup webcam_yuyv Webcam YUYV Conversion Functions
  *  @ingroup webcam 
@@ -64,7 +64,7 @@ inline WG_PRIVATE wg_uchar clamp_0_255(wg_int value);
  * @retval CAM_FAILURE
  */
 cam_status
-cam_img_yuyv_2_rgb24(wg_uchar *in_buffer, wg_ssize in_size, 
+img_yuyv_2_rgb24(wg_uchar *in_buffer, wg_ssize in_size, 
         wg_uint width, wg_uint height, Wg_image *img)
 {
     register wg_uchar *outbuf = NULL;
@@ -77,7 +77,7 @@ cam_img_yuyv_2_rgb24(wg_uchar *in_buffer, wg_ssize in_size,
 
     pixbuf = (Component)in_buffer;
 
-    cam_img_fill(width, height, 3, IMG_RGB, img);
+    img_fill(width, height, 3, IMG_RGB, img);
 
     outbuf = img->image;
 

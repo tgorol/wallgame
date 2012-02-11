@@ -9,9 +9,9 @@
 #include <linux/videodev2.h>
 
 #include "include/cam.h"
-#include "include/cam_img.h"
-#include "include/cam_img_bgrx.h"
-#include "include/cam_img_rgb.h"
+#include "include/img.h"
+#include "include/img_bgrx.h"
+#include "include/img_rgb24.h"
 
 #define BGRX_COMPONENT_NUM    4
 
@@ -31,7 +31,7 @@
  * @retval CAM_SUCCESS
  */
 cam_status
-cam_img_rgb_2_bgrx(Wg_image *rgb_img, Wg_image *bgrx_img)
+img_rgb_2_bgrx(Wg_image *rgb_img, Wg_image *bgrx_img)
 {
     cam_status status = CAM_FAILURE;
     wg_uint32 *bgrx_pixel = NULL;
@@ -50,17 +50,17 @@ cam_img_rgb_2_bgrx(Wg_image *rgb_img, Wg_image *bgrx_img)
         return CAM_FAILURE;
     }
 
-    cam_img_get_width(rgb_img, &width);
-    cam_img_get_height(rgb_img, &height);
+    img_get_width(rgb_img, &width);
+    img_get_height(rgb_img, &height);
 
-    status = cam_img_fill(width, height, BGRX_COMPONENT_NUM, IMG_BGRX,
+    status = img_fill(width, height, BGRX_COMPONENT_NUM, IMG_BGRX,
             bgrx_img);
     if (CAM_SUCCESS != status){
         return CAM_FAILURE;
     }
     for (row = 0; row < height; ++row){
-        cam_img_get_row(rgb_img, row, (wg_uchar**)&rgb_pixel);
-        cam_img_get_row(bgrx_img, row, (wg_uchar**)&bgrx_pixel);
+        img_get_row(rgb_img, row, (wg_uchar**)&rgb_pixel);
+        img_get_row(bgrx_img, row, (wg_uchar**)&bgrx_pixel);
         for (col = 0; col < width; ++col, ++bgrx_pixel, ++rgb_pixel){
             *bgrx_pixel = RGB_2_BGRX(
                     PIXEL_RED(*rgb_pixel),

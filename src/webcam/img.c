@@ -10,12 +10,12 @@
 #include <linux/videodev2.h>
 
 #include "include/cam.h"
-#include "include/cam_img.h"
+#include "include/img.h"
 
 
 /*! @todo make cam_img.c independent feom any format */
-#include "include/cam_img_bgrx.h"
-#include "include/cam_img_rgb.h"
+#include "include/img_bgrx.h"
+#include "include/img_rgb24.h"
 
 /*! @defgroup image Image Manipulation
  */
@@ -84,7 +84,7 @@ WG_PRIVATE const Wg_rgb default_fg = {
  * @retval CAM_FAILURE
  */
 cam_status
-cam_img_fill(wg_uint width, wg_uint height, wg_uint comp_num, img_type type,
+img_fill(wg_uint width, wg_uint height, wg_uint comp_num, img_type type,
         Wg_image *img)
 {
     register JSAMPROW *tmp_raw_array = NULL;
@@ -141,7 +141,7 @@ cam_img_fill(wg_uint width, wg_uint height, wg_uint comp_num, img_type type,
  * @retval CAM_FAILURE
  */
 cam_status
-cam_img_cleanup(Wg_image *img)
+img_cleanup(Wg_image *img)
 {
     CHECK_FOR_NULL_PARAM(img);
 
@@ -156,7 +156,7 @@ cam_img_cleanup(Wg_image *img)
 /**
  * @brief Get subimage
  *
- * img_dest must be initialized with cam_img_fill()
+ * img_dest must be initialized with img_fill()
  *
  * @param img_src   source image
  * @param x         x
@@ -166,7 +166,7 @@ cam_img_cleanup(Wg_image *img)
  * @return 
  */
 cam_status
-cam_img_get_subimage(Wg_image *img_src, wg_uint x, wg_uint y, 
+img_get_subimage(Wg_image *img_src, wg_uint x, wg_uint y, 
         Wg_image *img_dest)
 {
     wg_uint row_index = 0; 
@@ -206,7 +206,7 @@ cam_img_get_subimage(Wg_image *img_src, wg_uint x, wg_uint y,
  * @retval CAM_FAILURE
  */
 cam_status
-cam_img_filter_color_threshold(const Wg_image *img, const Wg_rgb *base, 
+img_filter_color_threshold(const Wg_image *img, const Wg_rgb *base, 
         const Wg_rgb *threshold, const Wg_rgb *background, 
         const Wg_rgb *foreground)
 {

@@ -12,8 +12,8 @@
 #include <linux/videodev2.h>
 
 #include "include/cam.h"
-#include "include/cam_img.h"
-#include "include/cam_img_jpeg.h"
+#include "include/img.h"
+#include "include/img_jpeg.h"
 
 #define LINES_PER_READ 32
 
@@ -82,7 +82,7 @@ WG_PRIVATE void error_exit(j_common_ptr cinfo);
  * @retval CAM_FAILURE
  */
 cam_status
-cam_img_jpeg_decompress(wg_uchar *in_buffer, wg_ssize in_size, 
+img_jpeg_decompress(wg_uchar *in_buffer, wg_ssize in_size, 
         wg_uint width, wg_uint height, Wg_image *img)
 {
     Wg_src_mgr mgr;
@@ -132,7 +132,7 @@ cam_img_jpeg_decompress(wg_uchar *in_buffer, wg_ssize in_size,
 #if 0
     alloc_jrows(&jdecomp, img);
 #endif
-    cam_img_fill(jdecomp.output_width ,jdecomp.output_height, 
+    img_fill(jdecomp.output_width ,jdecomp.output_height, 
             jdecomp.output_components, IMG_RGB, img);
 
     /* read decompressed lines                    */
@@ -141,7 +141,7 @@ cam_img_jpeg_decompress(wg_uchar *in_buffer, wg_ssize in_size,
                 LINES_PER_READ);
         if (readed_lines == 0){
             jpeg_destroy_decompress(&jdecomp);
-            cam_img_cleanup(img);
+            img_cleanup(img);
             return CAM_FAILURE;
         }
         index += readed_lines;

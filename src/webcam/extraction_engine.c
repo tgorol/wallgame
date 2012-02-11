@@ -14,10 +14,10 @@
 #include <libavformat/avformat.h>
 
 #include "include/cam.h"
-#include "include/cam_img.h"
-#include "include/cam_img_grayscale.h"
-#include "include/cam_img_bgrx.h"
-#include "include/cam_img_rgb.h"
+#include "include/img.h"
+#include "include/img_gs.h"
+#include "include/img_bgrx.h"
+#include "include/img_rgb24.h"
 #include "include/extraction_engine.h"
  
  
@@ -72,7 +72,7 @@ wg_status
 ef_threshold(Wg_image *img, gray_pixel value)
 {
     gray_pixel *gs_pixel = NULL;
-    Cam_img_iterator itr;
+    Img_iterator itr;
 
     CHECK_FOR_NULL_PARAM(img);
 
@@ -82,10 +82,10 @@ ef_threshold(Wg_image *img, gray_pixel value)
         return CAM_FAILURE;
     }
 
-    cam_img_get_iterator(img, &itr);
+    img_get_iterator(img, &itr);
 
-    while (cam_img_iterator_next_row(&itr) != NULL){
-        while ((gs_pixel = cam_img_iterator_next_col(&itr)) != NULL){
+    while (img_iterator_next_row(&itr) != NULL){
+        while ((gs_pixel = img_iterator_next_col(&itr)) != NULL){
             *gs_pixel = *gs_pixel >= value ? 255 : 0;
         }
     }
@@ -110,8 +110,8 @@ detect_circle(Wg_image *img, Wg_image *acc, wg_int y1, wg_int x1,
     wg_int ym = 0;
     wg_int m = 0;
 
-    cam_img_get_width(img, &width);
-    cam_img_get_height(img, &height);
+    img_get_width(img, &width);
+    img_get_height(img, &height);
 
     x1     = FPPOS_VAL(x1);;
     y1     = FPPOS_VAL(y1);
@@ -125,7 +125,7 @@ detect_circle(Wg_image *img, Wg_image *acc, wg_int y1, wg_int x1,
             if ((abs(x2 - x1) > FPPOS_VAL(NB_X2)) | 
                     (abs(y2 - y1) > FPPOS_VAL(NB_Y2))){
                 if ((x2 > 0) && (y2 > 0) && (x2 < width) && (y2 < height)){
-                    cam_img_get_pixel(img, FPPOS_INT(y2), FPPOS_INT(x2),
+                    img_get_pixel(img, FPPOS_INT(y2), FPPOS_INT(x2),
                             (wg_uchar**)&gs_pixel);
                     if (*gs_pixel == 255){
                         xm = (x1 + x2) >> 1;
@@ -136,7 +136,7 @@ detect_circle(Wg_image *img, Wg_image *acc, wg_int y1, wg_int x1,
                             for (x0 = 0; x0 < width; FPPOS_INC(x0)){
                                 y0 = ym + FPPOS_MUL(m, (xm - x0));
                                 if ((y0 > 0) && (y0 < height)){
-                                    cam_img_get_pixel(acc,
+                                    img_get_pixel(acc,
                                             FPPOS_INT(y0), FPPOS_INT(x0), 
                                             (wg_uchar**)&acc_pixel);
                                     ++*acc_pixel;
@@ -146,7 +146,7 @@ detect_circle(Wg_image *img, Wg_image *acc, wg_int y1, wg_int x1,
                             for (y0 = 0; y0 < height; FPPOS_INC(y0)){
                                 x0 = xm + FPPOS_DIV((ym - y0), m);
                                 if ((x0 > 0) && (x0 < width)){
-                                    cam_img_get_pixel(acc, 
+                                    img_get_pixel(acc, 
                                             FPPOS_INT(y0), FPPOS_INT(x0),
                                             (wg_uchar**)&acc_pixel);
                                     ++*acc_pixel;
@@ -181,17 +181,17 @@ ef_detect_circle(Wg_image *img, Wg_image *acc)
         return CAM_FAILURE;
     }
 
-    cam_img_get_width(img, &width);
-    cam_img_get_height(img, &height);
+    img_get_width(img, &width);
+    img_get_height(img, &height);
 
-    status = cam_img_fill(width, height, sizeof (wg_uint), IMG_CIRCLE_ACC,
+    status = img_fill(width, height, sizeof (wg_uint), IMG_CIRCLE_ACC,
             acc);
     if (CAM_SUCCESS != status){
         return CAM_FAILURE;
     }
 
     for (row = 0; row < height; ++row){
-        cam_img_get_row(img, row, (wg_uchar**)&gs_pixel);
+        img_get_row(img, row, (wg_uchar**)&gs_pixel);
         for (col = 0; col < width; ++col, ++gs_pixel){
             if (*gs_pixel == 255){
                 detect_circle(img, acc, row, col, NB_X, NB_Y);
@@ -209,12 +209,12 @@ ef_paint_cross(Wg_image *img, wg_uint y, wg_uint x, gray_pixel color)
     wg_uint row = 0;
     gray_pixel *gs_pixel = NULL;
 
-    cam_img_get_height(img, &height);
+    img_get_height(img, &height);
 
     ef_paint_line(img, 0, y, color);
 
     for (row = 0; row < height; ++row){
-        cam_img_get_pixel(img, row, x, (wg_uchar**)&gs_pixel);
+        img_get_pixel(img, row, x, (wg_uchar**)&gs_pixel);
         *gs_pixel = color;
     }
 
@@ -244,11 +244,11 @@ ef_acc_get_max(Wg_image *acc, wg_uint *row_par, wg_uint *col_par)
         return CAM_FAILURE;
     }
 
-    cam_img_get_width(acc, &width);
-    cam_img_get_height(acc, &height);
+    img_get_width(acc, &width);
+    img_get_height(acc, &height);
 
     for (row = 0; row < height; ++row){
-        cam_img_get_row(acc, row, (wg_uchar**)&acc_pixel);
+        img_get_row(acc, row, (wg_uchar**)&acc_pixel);
         for (col = 0; col < width; ++col, ++acc_pixel){
             if (*acc_pixel > max_value){
                 max_value = *acc_pixel;
@@ -287,33 +287,33 @@ ef_acc_save(Wg_image *acc, wg_char *filename, wg_char *type)
         return CAM_FAILURE;
     }
 
-    cam_img_get_width(acc, &width);
-    cam_img_get_height(acc, &height);
+    img_get_width(acc, &width);
+    img_get_height(acc, &height);
 
-    status = cam_img_fill(width, height, GS_COMPONENT_NUM, IMG_GS,
+    status = img_fill(width, height, GS_COMPONENT_NUM, IMG_GS,
             &acc_gs);
     if (CAM_SUCCESS != status){
         return CAM_FAILURE;
     }
 
     for (row = 0; row < height; ++row){
-        cam_img_get_row(acc, row, (wg_uchar**)&acc_pixel);
+        img_get_row(acc, row, (wg_uchar**)&acc_pixel);
         for (col = 0; col < width; ++col, ++acc_pixel){
             max_val = WG_MAX(max_val, *acc_pixel);
         }
     }
 
     for (row = 0; row < height; ++row){
-        cam_img_get_row(acc, row, (wg_uchar**)&acc_pixel);
-        cam_img_get_row(&acc_gs, row, (wg_uchar**)&gs_pixel);
+        img_get_row(acc, row, (wg_uchar**)&acc_pixel);
+        img_get_row(&acc_gs, row, (wg_uchar**)&gs_pixel);
         for (col = 0; col < width; ++col, ++gs_pixel, ++acc_pixel){
             *gs_pixel = (255.0 * (*acc_pixel) / max_val);
         }
     }
 
-    cam_img_grayscale_save(&acc_gs, filename, type);
+    img_grayscale_save(&acc_gs, filename, type);
 
-    cam_img_cleanup(&acc_gs);
+    img_cleanup(&acc_gs);
 
     return CAM_SUCCESS;
 
@@ -341,10 +341,10 @@ ef_smooth(Wg_image *img, Wg_image *new_img)
         return CAM_FAILURE;
     }
 
-    cam_img_get_width(img, &width);
-    cam_img_get_height(img, &height);
+    img_get_width(img, &width);
+    img_get_height(img, &height);
 
-    cam_img_fill(width - 4, height - 4, GS_COMPONENT_NUM, IMG_GS,
+    img_fill(width - 4, height - 4, GS_COMPONENT_NUM, IMG_GS,
             new_img);
 
     rd = img->row_distance;
@@ -353,8 +353,8 @@ ef_smooth(Wg_image *img, Wg_image *new_img)
     rd4 = rd3 + rd;
 
     for (row = 0; row < height - 4; ++row){
-        cam_img_get_row(img, row, (wg_uchar**)&gs_pixel);
-        cam_img_get_row(new_img, row, (wg_uchar**)&gs_new_pixel);
+        img_get_row(img, row, (wg_uchar**)&gs_pixel);
+        img_get_row(new_img, row, (wg_uchar**)&gs_new_pixel);
         for (col = 0; col < width - 4; ++col, ++gs_pixel, ++gs_new_pixel){
             *gs_new_pixel = 
                 (
@@ -406,18 +406,18 @@ ef_detect_edge(Wg_image *img, Wg_image *new_img)
         return CAM_FAILURE;
     }
 
-    cam_img_get_width(img, &width);
-    cam_img_get_height(img, &height);
-    cam_img_get_row_distance(img, &rd);
+    img_get_width(img, &width);
+    img_get_height(img, &height);
+    img_get_row_distance(img, &rd);
 
     rd2 = rd + rd;
 
-    cam_img_fill(width - 2, height - 2, GS_COMPONENT_NUM, IMG_GS,
+    img_fill(width - 2, height - 2, GS_COMPONENT_NUM, IMG_GS,
             new_img);
 
     for (row = 0; row < height - 2; ++row){
-        cam_img_get_row(img, row, (wg_uchar**)&gs_pixel);
-        cam_img_get_row(new_img, row, (wg_uchar**)&gs_new_pixel);
+        img_get_row(img, row, (wg_uchar**)&gs_pixel);
+        img_get_row(new_img, row, (wg_uchar**)&gs_new_pixel);
         for (col = 0; col < width - 2; ++col, ++gs_pixel, ++gs_new_pixel){
             *gs_new_pixel = WG_MAX(
                     abs(gs_pixel[0] - gs_pixel[2] + 
@@ -439,8 +439,8 @@ hist_check(Wg_image *img, wg_uint row, wg_uint col)
     wg_uint width = 0;
     wg_uint height = 0;
 
-    cam_img_get_width(img, &width);
-    cam_img_get_height(img, &height);
+    img_get_width(img, &width);
+    img_get_height(img, &height);
 
     return (col >= 1) && (col < width - 2) && (row >= 1) && (row < height - 2);
 }
@@ -455,7 +455,7 @@ hist_connect(Wg_image *img, wg_uint row, wg_uint col, wg_uint low)
 
     for (x1 = col - 1; x1 <= col + 1; ++x1){
         for (y1 = row - 1; y1 <= row + 1; ++y1, ++gs_pixel){
-            cam_img_get_pixel(img, y1, x1, (wg_uchar**)&gs_pixel);
+            img_get_pixel(img, y1, x1, (wg_uchar**)&gs_pixel);
             pix = *gs_pixel;
             if ((pix >= low) && (pix != 255) && hist_check(img, y1, x1)){
                 *gs_pixel = 255;
@@ -485,11 +485,11 @@ ef_hyst_thr(Wg_image *img, wg_uint upp, wg_uint low)
         return CAM_FAILURE;
     }
 
-    cam_img_get_width(img, &width);
-    cam_img_get_height(img, &height);
+    img_get_width(img, &width);
+    img_get_height(img, &height);
 
     for (row = 1; row < height - 2; ++row){
-        cam_img_get_row(img, row, (wg_uchar**)&gs_pixel);
+        img_get_row(img, row, (wg_uchar**)&gs_pixel);
         for (col = 1; col < width - 2; ++col, ++gs_pixel){
             pix = *gs_pixel;
             if ((pix >= upp) && (pix !=255)){
@@ -517,11 +517,11 @@ ef_paint_pixel(Wg_image *img, wg_int x, wg_int y, gray_pixel value)
         return CAM_FAILURE;
     }
 
-    cam_img_get_width(img, &width);
-    cam_img_get_height(img, &height);
+    img_get_width(img, &width);
+    img_get_height(img, &height);
 
     if ((x < width) && (y < height) && (x >= 0) && (y >= 0)){
-        cam_img_get_pixel(img, y, x, &gs_pixel);
+        img_get_pixel(img, y, x, &gs_pixel);
         *gs_pixel = value;
     }
 
@@ -545,8 +545,8 @@ ef_paint_line(Wg_image *img, wg_float m, wg_uint c, gray_pixel value)
         return CAM_FAILURE;
     }
 
-    cam_img_get_width(img, &width);
-    cam_img_get_height(img, &height);
+    img_get_width(img, &width);
+    img_get_height(img, &height);
 
     for (xpos = 0; xpos < width; ++xpos){
         ypos = m * xpos + c;
@@ -567,8 +567,8 @@ ef_hough_print_acc(Wg_image *img, acc *width_acc)
 
     f = fopen("log.out", "w");
 
-    cam_img_get_width(img, &width);
-    cam_img_get_height(img, &height);
+    img_get_width(img, &width);
+    img_get_height(img, &height);
 
     for (c = 0; c < height; ++c){
         fprintf(f, "%3d |", c);
@@ -597,8 +597,8 @@ ef_hough_paint_long_lines(Wg_image *img, acc *width_acc, acc *height_acc)
 
     wg_uint max_value = 0;
 
-    cam_img_get_width(img, &width);
-    cam_img_get_height(img, &height);
+    img_get_width(img, &width);
+    img_get_height(img, &height);
 
     for (c = 0; c < height; ++c){
         for (m = 0; m < 90; ++m){
@@ -624,8 +624,8 @@ ef_hough_paint_lines(Wg_image *img, acc *width_acc, acc *height_acc, wg_uint val
     wg_uint c = 0;
     wg_uint m = 0;
 
-    cam_img_get_width(img, &width);
-    cam_img_get_height(img, &height);
+    img_get_width(img, &width);
+    img_get_height(img, &height);
 
     for (c = 0; c < height; ++c){
         for (m = 0; m < 90; ++m){
@@ -661,8 +661,8 @@ ef_hough_lines(Wg_image *img, acc **width_acc, acc **height_acc)
         return CAM_FAILURE;
     }
 
-    cam_img_get_width(img, &width);
-    cam_img_get_height(img, &height);
+    img_get_width(img, &width);
+    img_get_height(img, &height);
 
     acc_row = WG_CALLOC(height, sizeof (acc));
     acc_col = WG_CALLOC(width, sizeof (acc));
@@ -671,7 +671,7 @@ ef_hough_lines(Wg_image *img, acc **width_acc, acc **height_acc)
     height = FPPOS_VAL(height);
 
     for (row = 0; row < height; FPPOS_INC(row)){
-        cam_img_get_row(img, FPPOS_INT(row), (wg_uchar**)&gs_pixel);
+        img_get_row(img, FPPOS_INT(row), (wg_uchar**)&gs_pixel);
         for (col = 0; col < width; FPPOS_INC(col), ++gs_pixel){
             if (*gs_pixel != 0){
                 for (angle = -45; angle < 45; angle += 1){

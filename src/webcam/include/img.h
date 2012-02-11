@@ -12,7 +12,7 @@ typedef struct Wg_rgb{
     wg_uchar blue;
 }Wg_rgb;
 
-typedef struct Cam_img_iterator{
+typedef struct Img_iterator{
     wg_uint width;
     wg_uint height;
     wg_uint row_distance;
@@ -21,7 +21,7 @@ typedef struct Cam_img_iterator{
     wg_uint col_index;
     wg_uint row_index;
     wg_uint comp_per_pixel;
-}Cam_img_iterator;
+}Img_iterator;
 
 /**
  * @brief Get width of the image
@@ -33,7 +33,7 @@ typedef struct Cam_img_iterator{
  * @retval CAM_FAILURE
  */
 WG_INLINE wg_uint
-cam_img_get_width(Wg_image *img, wg_uint *width)
+img_get_width(Wg_image *img, wg_uint *width)
 {
     CHECK_FOR_NULL_PARAM(img);
 
@@ -52,7 +52,7 @@ cam_img_get_width(Wg_image *img, wg_uint *width)
  * @retval CAM_FAILURE
  */
 WG_INLINE wg_uint
-cam_img_get_height(Wg_image *img, wg_uint *height)
+img_get_height(Wg_image *img, wg_uint *height)
 {
     CHECK_FOR_NULL_PARAM(img);
 
@@ -72,7 +72,7 @@ cam_img_get_height(Wg_image *img, wg_uint *height)
  * @retval CAM_FAILURE
  */
 WG_INLINE cam_status
-cam_img_get_row(Wg_image *img, wg_uint row_num, wg_uchar **row)
+img_get_row(Wg_image *img, wg_uint row_num, wg_uchar **row)
 {
     CHECK_FOR_NULL_PARAM(img);
     CHECK_FOR_RANGE_GE(row_num, img->height);
@@ -93,7 +93,7 @@ cam_img_get_row(Wg_image *img, wg_uint row_num, wg_uchar **row)
  * @return 
  */
 WG_INLINE cam_status
-cam_img_get_pixel(Wg_image *img, wg_uint row_off, wg_uint col_off, 
+img_get_pixel(Wg_image *img, wg_uint row_off, wg_uint col_off, 
         wg_uchar **pixel)
 {
     CHECK_FOR_NULL_PARAM(img);
@@ -116,7 +116,7 @@ cam_img_get_pixel(Wg_image *img, wg_uint row_off, wg_uint col_off,
  * @return CAM_FAILURE
  */
 WG_INLINE cam_status
-cam_img_get_row_distance(Wg_image *img, wg_uint *row_distance)
+img_get_row_distance(Wg_image *img, wg_uint *row_distance)
 {
     CHECK_FOR_NULL_PARAM(img);
     CHECK_FOR_NULL_PARAM(row_distance);
@@ -136,7 +136,7 @@ cam_img_get_row_distance(Wg_image *img, wg_uint *row_distance)
  * @retval CAM_FAILURE
  */
 WG_INLINE cam_status
-cam_img_get_components_per_pixel(Wg_image *img, wg_uint *comp_per_pixel)
+img_get_components_per_pixel(Wg_image *img, wg_uint *comp_per_pixel)
 {
     CHECK_FOR_NULL_PARAM(img);
     CHECK_FOR_NULL_PARAM(comp_per_pixel);
@@ -147,7 +147,7 @@ cam_img_get_components_per_pixel(Wg_image *img, wg_uint *comp_per_pixel)
 }
 
 WG_INLINE void 
-cam_img_get_iterator(Wg_image *img, Cam_img_iterator *itr)
+img_get_iterator(Wg_image *img, Img_iterator *itr)
 {
     CHECK_FOR_NULL_PARAM(img);
     CHECK_FOR_NULL_PARAM(itr);
@@ -157,27 +157,27 @@ cam_img_get_iterator(Wg_image *img, Cam_img_iterator *itr)
     itr->row = img->rows;
     itr->col = 0;
 
-    cam_img_get_width(img, &itr->width);
-    cam_img_get_height(img, &itr->height);
-    cam_img_get_row_distance(img, &itr->row_distance);
-    cam_img_get_components_per_pixel(img, &itr->comp_per_pixel);
+    img_get_width(img, &itr->width);
+    img_get_height(img, &itr->height);
+    img_get_row_distance(img, &itr->row_distance);
+    img_get_components_per_pixel(img, &itr->comp_per_pixel);
 
     return;
 
 }
 
 WG_INLINE wg_boolean
-cam_img_iterator_has_next_row(Cam_img_iterator *iterator)
+img_iterator_has_next_row(Img_iterator *iterator)
 {
-    register Cam_img_iterator *itr = iterator;
+    register Img_iterator *itr = iterator;
 
     return (itr->row_index < itr->height);
 }
 
 WG_INLINE wg_uchar *
-cam_img_iterator_next_row(Cam_img_iterator *iterator)
+img_iterator_next_row(Img_iterator *iterator)
 {
-    register Cam_img_iterator *itr = iterator;
+    register Img_iterator *itr = iterator;
 
     itr->col_index = 0;
     itr->col = *itr->row;
@@ -186,17 +186,17 @@ cam_img_iterator_next_row(Cam_img_iterator *iterator)
 }
 
 WG_INLINE wg_boolean
-cam_img_iterator_has_next_col(Cam_img_iterator *iterator)
+img_iterator_has_next_col(Img_iterator *iterator)
 {
-    register Cam_img_iterator *itr = iterator;
+    register Img_iterator *itr = iterator;
 
     return (itr->col_index < itr->width);
 }
 
 WG_INLINE wg_uchar *
-cam_img_iterator_next_col(Cam_img_iterator *iterator)
+img_iterator_next_col(Img_iterator *iterator)
 {
-    register Cam_img_iterator *itr = iterator;
+    register Img_iterator *itr = iterator;
     register wg_uchar *old_col = itr->col;
 
     itr->col += itr->comp_per_pixel;
@@ -219,18 +219,18 @@ cam_img_iterator_next_col(Cam_img_iterator *iterator)
 #define PIXEL_BLUE(pixel)  (pixel)[RGB24_B]
 
 cam_status
-cam_img_fill(wg_uint width, wg_uint height, wg_uint comp_num, img_type,
+img_fill(wg_uint width, wg_uint height, wg_uint comp_num, img_type,
         Wg_image *img);
 
 WG_PUBLIC cam_status
-cam_img_cleanup(Wg_image *img);
+img_cleanup(Wg_image *img);
 
 WG_PUBLIC cam_status
-cam_img_get_subimage(Wg_image *img_src, wg_uint x, wg_uint y, 
+img_get_subimage(Wg_image *img_src, wg_uint x, wg_uint y, 
         Wg_image *img_dest);
 
 WG_PUBLIC cam_status
-cam_img_filter_color_threshold(const Wg_image *img, const Wg_rgb *base, 
+img_filter_color_threshold(const Wg_image *img, const Wg_rgb *base, 
         const Wg_rgb *threshold, const Wg_rgb *background, 
         const Wg_rgb *foreground);
 

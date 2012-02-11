@@ -9,10 +9,10 @@
 #include <linux/videodev2.h>
 
 #include "include/cam.h"
-#include "include/cam_img.h"
-#include "include/cam_img_bgrx.h"
-#include "include/cam_img_rgb.h"
-#include "include/cam_img_grayscale.h"
+#include "include/img.h"
+#include "include/img_bgrx.h"
+#include "include/img_rgb24.h"
+#include "include/img_gs.h"
 
 WG_INLINE void
 gs_2_rgb(gray_pixel gs, rgb24_pixel rgb)
@@ -32,7 +32,7 @@ gs_2_rgb(gray_pixel gs, rgb24_pixel rgb)
  * @retval CAM_SUCCESS
  */
 cam_status
-cam_img_bgrx_2_rgb(Wg_image *bgrx_img, Wg_image *rgb_img)
+img_bgrx_2_rgb(Wg_image *bgrx_img, Wg_image *rgb_img)
 {
     cam_status status = CAM_FAILURE;
     bgrx_pixel *bgrx_pixel = NULL;
@@ -51,17 +51,17 @@ cam_img_bgrx_2_rgb(Wg_image *bgrx_img, Wg_image *rgb_img)
         return CAM_FAILURE;
     }
 
-    cam_img_get_width(bgrx_img, &width);
-    cam_img_get_height(bgrx_img, &height);
+    img_get_width(bgrx_img, &width);
+    img_get_height(bgrx_img, &height);
 
-    status = cam_img_fill(width, height, RGB24_COMPONENT_NUM, IMG_BGRX,
+    status = img_fill(width, height, RGB24_COMPONENT_NUM, IMG_BGRX,
             rgb_img);
     if (CAM_SUCCESS != status){
         return CAM_FAILURE;
     }
     for (row = 0; row < height; ++row){
-        cam_img_get_row(rgb_img, row, (wg_uchar**)&rgb_pixel);
-        cam_img_get_row(bgrx_img, row, (wg_uchar**)&bgrx_pixel);
+        img_get_row(rgb_img, row, (wg_uchar**)&rgb_pixel);
+        img_get_row(bgrx_img, row, (wg_uchar**)&bgrx_pixel);
         for (col = 0; col < width; ++col, ++bgrx_pixel, ++rgb_pixel){
             bgrx_2_rgb(*bgrx_pixel, *rgb_pixel);
         }
@@ -71,7 +71,7 @@ cam_img_bgrx_2_rgb(Wg_image *bgrx_img, Wg_image *rgb_img)
 }
 
 wg_status
-cam_img_grayscale_2_rgb(Wg_image *grayscale_img, Wg_image *rgb_img)
+img_grayscale_2_rgb(Wg_image *grayscale_img, Wg_image *rgb_img)
 {
     cam_status status = CAM_FAILURE;
     gray_pixel *gs_pixel = NULL;
@@ -90,17 +90,17 @@ cam_img_grayscale_2_rgb(Wg_image *grayscale_img, Wg_image *rgb_img)
         return CAM_FAILURE;
     }
 
-    cam_img_get_width(grayscale_img, &width);
-    cam_img_get_height(grayscale_img, &height);
+    img_get_width(grayscale_img, &width);
+    img_get_height(grayscale_img, &height);
 
-    status = cam_img_fill(width, height, RGB24_COMPONENT_NUM, IMG_RGB,
+    status = img_fill(width, height, RGB24_COMPONENT_NUM, IMG_RGB,
             rgb_img);
     if (CAM_SUCCESS != status){
         return CAM_FAILURE;
     }
     for (row = 0; row < height; ++row){
-        cam_img_get_row(rgb_img, row, (wg_uchar**)&rgb_pixel);
-        cam_img_get_row(grayscale_img, row, (wg_uchar**)&gs_pixel);
+        img_get_row(rgb_img, row, (wg_uchar**)&rgb_pixel);
+        img_get_row(grayscale_img, row, (wg_uchar**)&gs_pixel);
         for (col = 0; col < width; ++col, ++rgb_pixel, ++gs_pixel){
             gs_2_rgb(*gs_pixel, *rgb_pixel);
 
