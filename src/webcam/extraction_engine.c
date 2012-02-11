@@ -9,16 +9,14 @@
 
 #include <linux/videodev2.h>
 
-#include <libswscale/swscale.h>
-#include <libavcodec/avcodec.h>
-#include <libavformat/avformat.h>
-
 #include "include/cam.h"
 #include "include/img.h"
 #include "include/img_gs.h"
 #include "include/img_bgrx.h"
 #include "include/img_rgb24.h"
+#include "include/img_draw.h"
 #include "include/extraction_engine.h"
+
  
  
 #define INBUF_SIZE 4096
@@ -202,24 +200,6 @@ ef_detect_circle(Wg_image *img, Wg_image *acc)
     return CAM_SUCCESS;
 }
 
-cam_status
-ef_paint_cross(Wg_image *img, wg_uint y, wg_uint x, gray_pixel color)
-{
-    wg_uint height = 0;
-    wg_uint row = 0;
-    gray_pixel *gs_pixel = NULL;
-
-    img_get_height(img, &height);
-
-    ef_paint_line(img, 0, y, color);
-
-    for (row = 0; row < height; ++row){
-        img_get_pixel(img, row, x, (wg_uchar**)&gs_pixel);
-        *gs_pixel = color;
-    }
-
-    return CAM_SUCCESS;
-}
 
 cam_status
 ef_acc_get_max(Wg_image *acc, wg_uint *row_par, wg_uint *col_par)
@@ -502,59 +482,7 @@ ef_hyst_thr(Wg_image *img, wg_uint upp, wg_uint low)
     return WG_SUCCESS;
 }
 
-wg_status
-ef_paint_pixel(Wg_image *img, wg_int x, wg_int y, gray_pixel value)
-{
-    gray_pixel *gs_pixel = NULL;
-    wg_uint width = 0;
-    wg_uint height = 0;
 
-    CHECK_FOR_NULL_PARAM(img);
-
-    if (img->type != IMG_GS){
-        WG_ERROR("Invalig image format! Passed %d expect %d\n", 
-                img->type, IMG_GS);
-        return CAM_FAILURE;
-    }
-
-    img_get_width(img, &width);
-    img_get_height(img, &height);
-
-    if ((x < width) && (y < height) && (x >= 0) && (y >= 0)){
-        img_get_pixel(img, y, x, &gs_pixel);
-        *gs_pixel = value;
-    }
-
-    return WG_SUCCESS;
-
-}
-
-wg_status
-ef_paint_line(Wg_image *img, wg_float m, wg_uint c, gray_pixel value)
-{
-    wg_uint width = 0;
-    wg_uint height = 0;
-    wg_int ypos = 0;
-    wg_int xpos = 0;
-
-    CHECK_FOR_NULL_PARAM(img);
-
-    if (img->type != IMG_GS){
-        WG_ERROR("Invalig image format! Passed %d expect %d\n", 
-                img->type, IMG_GS);
-        return CAM_FAILURE;
-    }
-
-    img_get_width(img, &width);
-    img_get_height(img, &height);
-
-    for (xpos = 0; xpos < width; ++xpos){
-        ypos = m * xpos + c;
-        ef_paint_pixel(img, xpos, ypos, value);
-    }
-
-    return WG_SUCCESS;
-}
 
 wg_status
 ef_hough_print_acc(Wg_image *img, acc *width_acc)
@@ -610,7 +538,7 @@ ef_hough_paint_long_lines(Wg_image *img, acc *width_acc, acc *height_acc)
         }
     }
 
-    ef_paint_line(img, tan_cache[max_m] / WG_FLOAT(FPPOS_MAX), max_c, 128);
+    img_draw_line(img, tan_cache[max_m] / WG_FLOAT(FPPOS_MAX), max_c, 128);
 
     return WG_SUCCESS;
 }
@@ -630,7 +558,7 @@ ef_hough_paint_lines(Wg_image *img, acc *width_acc, acc *height_acc, wg_uint val
     for (c = 0; c < height; ++c){
         for (m = 0; m < 90; ++m){
             if (value < height_acc[c][m]){
-                ef_paint_line(img, tan_cache[m], c, 128);
+                img_draw_line(img, tan_cache[m], c, 128);
             }
         }
     }
@@ -731,140 +659,5 @@ init_tan_cache(void)
     }
 
     return;
-}
-
-wg_status
-video_open_output_stream(const char *filename, Wg_video_out *vid, 
-        wg_uint width, wg_uint height)
-{
-    AVCodec *codec = NULL;
-    AVCodecContext *c = NULL;
-    FILE *f = NULL;
-    static wg_boolean init_flag = WG_FALSE;
-
-    if (WG_FALSE == init_flag){
-        avcodec_init();
-        /* register all the codecs */
-        avcodec_register_all();
-
-        init_flag = WG_TRUE;
-    }
-
-    codec = avcodec_find_encoder(CODEC_ID_MPEG1VIDEO);
-    if (!codec) {
-        fprintf(stderr, "codec not found\n");
-        exit(1);
-    }
-
-    c= avcodec_alloc_context();
-    /* put sample parameters */
-    c->bit_rate = 400000;
-    /* resolution must be a multiple of two */
-    c->width = width;
-    c->height = height;
-    /* frames per second */
-    c->time_base= (AVRational){1,25};
-    c->gop_size = 10; /* emit one intra frame every ten frames */
-    c->max_b_frames=1;
-    c->pix_fmt = PIX_FMT_YUV420P;
-
-    if (avcodec_open(c, codec) < 0) {
-        fprintf(stderr, "could not open codec\n");
-        exit(1);
-    }
-
-    f = fopen(filename, "wb");
-    vid->codec = codec;
-    vid->c = c;
-    vid->f = f;
-
-    return WG_SUCCESS;
-}
-
-    void
-video_close_output_stream(Wg_video_out *vid)
-{
-    uint8_t outbuf[4];
-
-    /* add sequence end code to have a real mpeg file */
-    outbuf[0] = 0x00;
-    outbuf[1] = 0x00;
-    outbuf[2] = 0x01;
-    outbuf[3] = 0xb7;
-    fwrite(outbuf, 1, 4, vid->f);
-    fclose(vid->f);
-
-    avcodec_close(vid->c);
-    av_free(vid->c);
-
-    return;
-}
-
-wg_status
-video_encode_frame(Wg_video_out *vid, Wg_image *img)
-{
-    uint8_t *outbuf;
-    uint8_t *picture_buf;
-    int out_size;
-    int outbuf_size;
-    AVFrame *rgb24_pix;
-    AVFrame *yuv420_pix;
-    wg_uint num_bytes = 0;
-    struct SwsContext *img_convert_ctx = NULL;
-    const uint8_t* const* src_data = NULL;
-    uint8_t* const* dest_data = NULL;
-
-    /* allocate memory for frames */
-    rgb24_pix  = avcodec_alloc_frame();
-    yuv420_pix = avcodec_alloc_frame();
-
-    /* initialize av picture with data from img */
-    avpicture_fill((AVPicture*)rgb24_pix, img->rows[0], PIX_FMT_RGB24,
-                                img->width, img->height);
-
-    /* get number of bytes needed for YUV420 picture */
-    num_bytes = avpicture_get_size(vid->c->pix_fmt, img->width,
-                                img->height);
-
-    /* alloc image and output buffer */
-    outbuf_size = 100000;
-    outbuf =av_malloc(outbuf_size);
-
-    /* allocate data for YUV420 picture */
-    picture_buf = av_malloc(num_bytes); /* size for YUV 420 */
-
-    /* fill YUV420 picture with allocated data */
-    avpicture_fill((AVPicture*)yuv420_pix, picture_buf, vid->c->pix_fmt,
-                                img->width, img->height);
-
-    /* convert RGB24 to image supported by codec */
-    img_convert_ctx = sws_getContext(
-             img->width, img->height, PIX_FMT_RGB24, 
-             img->width, img->height, vid->c->pix_fmt,
-             SWS_BICUBIC, NULL, NULL, NULL);
-    if(img_convert_ctx == NULL) {
-        WG_ERROR("Cannot initialize the conversion context!\n");
-        return WG_FAILURE;
-    }
-
-    src_data = (const uint8_t* const*)rgb24_pix->data;
-    dest_data = (uint8_t * const *)yuv420_pix->data;
-
-    sws_scale(img_convert_ctx,
-            src_data, rgb24_pix->linesize, 0,
-            img->height, dest_data, yuv420_pix->linesize);
-
-    /* encode frame */
-    out_size = avcodec_encode_video(vid->c, outbuf, outbuf_size, 
-            yuv420_pix);
-
-    fwrite(outbuf, 1, out_size, vid->f);
-
-    av_free(picture_buf);
-    av_free(rgb24_pix);
-    av_free(yuv420_pix);
-    av_free(outbuf);
-
-    return WG_SUCCESS;
 }
 

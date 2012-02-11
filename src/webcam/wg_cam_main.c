@@ -22,8 +22,10 @@
 #include "include/cam_output.h"
 #include "include/cam_readwrite.h"
 #include "include/cam_format_selector.h"
+#include "include/vid.h"
 
 #include "include/img.h"
+#include "include/img_draw.h"
 #include "include/extraction_engine.h"
 
 #include "include/gui_resolution.h"
@@ -206,7 +208,7 @@ capture(gpointer data)
 
                          img_cleanup(image_sub);
 
-                         ef_paint_cross(&hsv_img, h, w, 128);
+                         img_draw_cross(&hsv_img, h, w, 128);
 
                          img_grayscale_2_rgb(&hsv_img, image_sub);
 

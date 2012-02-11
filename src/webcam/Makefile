@@ -13,9 +13,11 @@ SOURCE=cam.c                  \
 	   img_rgb24.c          \
 	   img_gs.c    \
 	   img_yuyv.c         \
+       img_draw.c         \
 	   gui_camera.c           \
 	   gui_screen.c           \
-       extraction_engine.c
+       extraction_engine.c    \
+       vid.c
 
 APP_NAME=webcam
 
