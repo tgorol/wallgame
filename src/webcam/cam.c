@@ -424,6 +424,20 @@ cam_decompressor(Wg_camera *cam, Wg_cam_decompressor *dcomp)
 }
 
 cam_status
+cam_get_resolution(Wg_camera *cam, wg_uint *width, wg_uint *height)
+{
+    CHECK_FOR_NULL_PARAM(cam);
+    CHECK_FOR_NULL_PARAM(width);
+    CHECK_FOR_NULL_PARAM(height);
+
+    *width = cam->fmt[CAM_FMT_CAPTURE].fmt.pix.width;
+    *height = cam->fmt[CAM_FMT_CAPTURE].fmt.pix.height;
+
+    return CAM_SUCCESS;
+}
+
+
+cam_status
 cam_set_resolution(Wg_camera *cam, wg_uint width, wg_uint height)
 {
     struct v4l2_format capture;

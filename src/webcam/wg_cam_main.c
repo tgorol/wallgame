@@ -43,6 +43,7 @@ typedef struct Camera{
     Wg_camera *camera;
     gint fps;
     gint frame_count;
+    Wg_video_out vid;
 }Camera;
 
 static gboolean
@@ -114,7 +115,7 @@ capture(gpointer data)
     wg_uint width = 0;
     wg_uint height = 0;
     Wg_cam_decompressor decompressor;
-    acc *w_acc, *h_acc;
+//    acc *w_acc, *h_acc;
     wg_uint w, h;
 
     ef_init();
@@ -131,9 +132,13 @@ capture(gpointer data)
 		    &width, &height);
     cam_set_resolution(cam->camera, width, height);
 
+    cam_get_resolution(cam->camera, &width, &height);
+
     cam_start(cam->camera);
 
     gui_camera_fps_start(GUI_CAMERA(cam->gui_camera));
+
+    video_open_output_stream("text.mpg", &cam->vid, width, height);
 
     for(;;){
         gdk_threads_enter();
@@ -184,18 +189,18 @@ capture(gpointer data)
 
                          cam_img_grayscale_normalize(&hsv_img, 255, 0);
 
-                         ef_hough_lines(&hsv_img, &w_acc, &h_acc);
+//                         ef_hough_lines(&hsv_img, &w_acc, &h_acc);
 
 //                       ef_hough_paint_long_lines(&hsv_img, w_acc, h_acc);
 
 //                         ef_hough_print_acc(&hsv_img, w_acc);
                        
-                         WG_FREE(w_acc);
-                         WG_FREE(h_acc);
+//                         WG_FREE(w_acc);
+//                         WG_FREE(h_acc);
 
                          ef_detect_circle(&hsv_img, image_sub);
 
-                         ef_acc_save(image_sub, "acc.png", "png");
+//                         ef_acc_save(image_sub, "acc.png", "png");
 
                          ef_acc_get_max(image_sub, &h, &w);
 
@@ -212,6 +217,8 @@ capture(gpointer data)
 
                 
                  gdk_threads_enter();
+
+                 video_encode_frame(&cam->vid, image_sub);
 
                  if (cam->pixbuf != NULL){
                      g_object_unref(cam->pixbuf);
@@ -239,6 +246,8 @@ capture(gpointer data)
             g_thread_exit(data);
         }
     }
+
+    video_close_output_stream(&cam->vid);
 
     gui_camera_fps_stop(GUI_CAMERA(cam->gui_camera));
 
@@ -413,7 +422,6 @@ int main(int argc, char *argv[])
     wg_lsdir("/dev/", "video", &video);
 
     wg_lsdir_cleanup(&video);
-
 
     if (!g_thread_supported()){
         g_thread_init(NULL);

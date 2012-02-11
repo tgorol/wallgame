@@ -217,4 +217,8 @@ ef_paint_cross(Wg_image *img, wg_uint y, wg_uint x, gray_pixel color);
 WG_PUBLIC cam_status
 cam_set_resolution(Wg_camera *cam, wg_uint width, wg_uint height);
 
+WG_PUBLIC cam_status
+cam_get_resolution(Wg_camera *cam, wg_uint *width, wg_uint *height);
+
+
 #endif

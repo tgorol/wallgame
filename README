@@ -5,8 +5,12 @@ Instal following packages
 * libreadline-dev
 * libjpeg8-dev
 * gtk-3.0
+* libavcodec-dev
+* libavformat-dev
+* libswscale-dev
 
-sudo apt-get install tcl8.4-dev libreadline-dev libjpeg8-dev gtk-3.0
+sudo apt-get install tcl8.4-dev libreadline-dev libjpeg8-dev gtk-3.0  \
+                 libavcodec-dev  libavformat-dev libswscale-dev
 
 then compile libini and libghthash as follows
 

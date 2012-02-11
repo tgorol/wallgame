@@ -15,7 +15,7 @@ SOURCE=cam.c                  \
 	   cam_img_grayscale.c    \
 	   gui_camera.c           \
 	   gui_screen.c           \
-           extraction_engine.c
+       extraction_engine.c
 
 APP_NAME=webcam
 
@@ -32,7 +32,7 @@ endif
 
 include $(BUILD_PATH)/env.mk
 
-LIB_LIST+=./build/lib/lib.a ../build/libwg.a -ljpeg -lm -lgthread-2.0 `pkg-config --libs gtk+-3.0`
+LIB_LIST+=./build/lib/lib.a ../build/libwg.a -ljpeg -lm -lgthread-2.0 `pkg-config --libs gtk+-3.0` -lavcodec -lavutil -lswscale
 
 all: clean lib app
 
