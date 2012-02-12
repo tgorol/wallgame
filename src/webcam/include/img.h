@@ -1,6 +1,8 @@
 #ifndef _CAM_IMG_H
 #define _CAM_IMG_H
 
+#include <gdk/gdk.h>
+
 /*! @addtogroup image
  * @{
  */
@@ -233,6 +235,10 @@ WG_PUBLIC cam_status
 img_filter_color_threshold(const Wg_image *img, const Wg_rgb *base, 
         const Wg_rgb *threshold, const Wg_rgb *background, 
         const Wg_rgb *foreground);
+
+wg_status
+img_convert_to_pixbuf(Wg_image *img, GdkPixbuf **pixbuf,
+        void (*free_cb)(guchar *, gpointer));
 
 /*! @} */
 

@@ -14,9 +14,27 @@
 
 #include <wg_lsdir.h>
 
+/*! @defgroup misc Miscelaous modules
+ */
+
+/*! @defgroup dir files manupulations
+ *  @ingroup misc
+ */
+
+/*! @{ */
 
 WG_PRIVATE wg_dirent* create_dirent(const wg_char *text);
 
+/** 
+* @brief Find a file with prefix
+* 
+* @param path    directory path
+* @param prefix  file prefix to find in directory
+* @param head    linked list to store found files
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
 wg_lsdir(const wg_char *path, const wg_char *prefix, List_head *head)
 {
@@ -60,6 +78,14 @@ wg_lsdir(const wg_char *path, const wg_char *prefix, List_head *head)
     return status;
 }
 
+/** 
+* @brief Release memory allocated by wg_lsdir_cleanup()
+* 
+* @param head  linked list returned by wg_lsdir_cleanup()
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
 wg_lsdir_cleanup(List_head *head)
 {
@@ -94,3 +120,5 @@ create_dirent(const wg_char *text)
 
     return dirent;
 }
+
+/*! @} */

@@ -2,9 +2,12 @@
 #define WG_LSDIR_H
 
 
+/** 
+* @brief Directory instance
+*/
 typedef struct wg_dirent{
-    wg_char *d_name;
-    List_head list;
+    wg_char *d_name;      /*!< name of a file in directory */
+    List_head list;       /*!< linked list head            */
 }wg_dirent;
 
 WG_PUBLIC wg_status

@@ -23,7 +23,7 @@
 #include "include/cam_cap.h"
 #include "include/cam_readwrite.h"
 
-/*! @defgroup webcam_readwrite Webcam Read/Write
+/*! @defgroup webcam_readwrite read/write mode
  * @ingroup webcam 
  */
 

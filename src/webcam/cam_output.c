@@ -23,7 +23,7 @@
 #include "include/cam_cap.h"
 #include "include/cam_output.h"
 
-/*! @defgroup webcam_format Webcam Capture Output Format
+/*! @defgroup webcam_format capture Output Format
  *  @ingroup webcam 
  */
 

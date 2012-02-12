@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <string.h>
+#include <stdarg.h>
 
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
@@ -236,4 +237,34 @@ img_grayscale_save(Wg_image *img, wg_char *filename, wg_char *ext)
     img_cleanup(&rgb);
 
     return status;
+}
+
+wg_status
+img_gs_draw_pixel(Wg_image *img, wg_int y, wg_int x, va_list args)
+{
+    gray_pixel *gs_pixel = NULL;
+    wg_uint width = 0;
+    wg_uint height = 0;
+    wg_uint value;
+
+    CHECK_FOR_NULL_PARAM(img);
+
+    if (img->type != IMG_GS){
+        WG_ERROR("Invalig image format! Passed %d expect %d\n", 
+                img->type, IMG_GS);
+        return CAM_FAILURE;
+    }
+
+    value = (gray_pixel)va_arg(args, wg_uint);
+
+    img_get_width(img, &width);
+    img_get_height(img, &height);
+
+    if ((x < width) && (y < height) && (x >= 0) && (y >= 0)){
+        img_get_pixel(img, y, x, &gs_pixel);
+        *gs_pixel = (gray_pixel)value;
+    }
+
+    return WG_SUCCESS;
+
 }

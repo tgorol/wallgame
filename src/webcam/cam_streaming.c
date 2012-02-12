@@ -24,7 +24,7 @@
 #include "include/cam_cap.h"
 #include "include/cam_streaming.h"
 
-/*! @defgroup webcam_streaming Webcam Streaming Mode
+/*! @defgroup webcam_streaming streaming mode
  * @ingroup webcam 
  */
 

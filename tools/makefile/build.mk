@@ -1,5 +1,5 @@
 
-.PHONY: clean mkdir lib app mkonelib
+.PHONY: clean mkdir lib app mkonelib doc
 
 lib: mkdir $(OBJ)
 	$(AR) -rc $(OUT_DIR)/$(OUT_NAME).a  $(foreach obj, $(OBJ), $(OUT_DIR)/$(obj))
@@ -19,4 +19,7 @@ clean:
 
 app:
 	$(CC) $(EXTRA_CFLAGS) $(CFLAGS) $(MAIN_C) -o $(APP_NAME) $(LIB_PATH) $(INC_PATH)  $(LIB_LIST)
+
+doc:
+	cd ${ROOT_DIR};$(DOXYGEN);cd -
 

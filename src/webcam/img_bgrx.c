@@ -17,8 +17,9 @@
 
 /*! @defgroup image_bgrx BGRX manipulation
  * @ingroup image
- * @{ 
  */
+
+/*! @{ */
 
 
 /**

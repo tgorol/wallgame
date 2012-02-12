@@ -16,7 +16,7 @@
 #include "include/cam_cap.h"
 #include "include/cam_output.h"
 
-/*! @defgroup webcam_capabilities Webcam Capabilities
+/*! @defgroup webcam_capabilities capabilities
  * @ingroup webcam 
  */
 

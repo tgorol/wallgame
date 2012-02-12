@@ -514,6 +514,7 @@ ef_hough_print_acc(Wg_image *img, acc *width_acc)
 wg_status
 ef_hough_paint_long_lines(Wg_image *img, acc *width_acc, acc *height_acc)
 {
+    Img_draw ctx;
     wg_uint width = 0;
     wg_uint height = 0;
 
@@ -538,7 +539,12 @@ ef_hough_paint_long_lines(Wg_image *img, acc *width_acc, acc *height_acc)
         }
     }
 
-    img_draw_line(img, tan_cache[max_m] / WG_FLOAT(FPPOS_MAX), max_c, 128);
+    img_draw_get_context(img->type, &ctx);
+
+    img_draw_line(&ctx, img, 
+            tan_cache[max_m] / WG_FLOAT(FPPOS_MAX), max_c, 128);
+
+    img_draw_cleanup_context(&ctx);
 
     return WG_SUCCESS;
 }
@@ -546,8 +552,10 @@ ef_hough_paint_long_lines(Wg_image *img, acc *width_acc, acc *height_acc)
 wg_status
 ef_hough_paint_lines(Wg_image *img, acc *width_acc, acc *height_acc, wg_uint value)
 {
+    Img_draw ctx;
     wg_uint width = 0;
     wg_uint height = 0;
+
 
     wg_uint c = 0;
     wg_uint m = 0;
@@ -555,13 +563,17 @@ ef_hough_paint_lines(Wg_image *img, acc *width_acc, acc *height_acc, wg_uint val
     img_get_width(img, &width);
     img_get_height(img, &height);
 
+    img_draw_get_context(img->type, &ctx);
+
     for (c = 0; c < height; ++c){
         for (m = 0; m < 90; ++m){
             if (value < height_acc[c][m]){
-                img_draw_line(img, tan_cache[m], c, 128);
+                img_draw_line(&ctx, img, tan_cache[m], c, 128);
             }
         }
     }
+
+    img_draw_cleanup_context(&ctx);
 
     return WG_SUCCESS;
 }

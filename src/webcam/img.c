@@ -7,6 +7,7 @@
 #include <wg.h>
 #include <wgmacros.h>
 
+#include <gdk/gdk.h>
 #include <linux/videodev2.h>
 
 #include "include/cam.h"
@@ -50,14 +51,18 @@ typedef struct Threshold{
 } Threshold;
 
 
-WG_STATIC void
+WG_PRIVATE void
 fast_memcpy(wg_uchar *restrict dest, wg_uchar *restrict src, wg_size size);
 
 WG_PRIVATE cam_status
 row_filter_color_threshold(wg_uchar *row, wg_uint width, Threshold *threshold);
 
-inline WG_PRIVATE wg_uchar
+WG_PRIVATE void
+xfree_cb(guchar *pixels, gpointer data);
+
+WG_INLINE wg_uchar
 crop_color(wg_int color, wg_int value);
+
 
 WG_PRIVATE const Wg_rgb default_bg = {
     .red   = BG_DEFAULT_RED     ,
@@ -304,6 +309,53 @@ row_filter_color_threshold(wg_uchar *row, wg_uint width, Threshold *threshold)
     }
 
     return CAM_SUCCESS;
+}
+
+/** 
+* @brief Convert WG_image to GdkPixbuf
+* 
+* @param img             image
+* @param pixbuf[out]     new GdkPixbuf object
+* @param free_cb         release function for img
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
+wg_status
+img_convert_to_pixbuf(Wg_image *img, GdkPixbuf **pixbuf,
+        void (*free_cb)(guchar *, gpointer))
+{
+    GdkPixbuf *pix = NULL;
+
+    if (IMG_RGB != img->type){
+        WG_LOG("Only RGB24 supported\n");
+        return WG_FAILURE;
+    }
+
+    free_cb = ((free_cb == NULL) ? xfree_cb : free_cb);
+
+    pix = gdk_pixbuf_new_from_data(img->image, 
+            GDK_COLORSPACE_RGB, FALSE, 8, 
+            img->width, img->height, 
+            img->row_distance, 
+            free_cb, img);
+
+    if (NULL == pixbuf){
+        WG_LOG("Wg_image -> GdkPixbuf conversion error\n");
+        return WG_FAILURE;
+    }
+
+    *pixbuf = pix;
+
+    return WG_SUCCESS;
+}
+
+WG_PRIVATE void
+xfree_cb(guchar *pixels, gpointer data)
+{
+    img_cleanup((Wg_image*)data);
+
+    WG_FREE(data);
 }
 
 inline WG_PRIVATE wg_uchar

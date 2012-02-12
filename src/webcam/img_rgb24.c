@@ -14,6 +14,12 @@
 #include "include/img_rgb24.h"
 #include "include/img_gs.h"
 
+/*! @defgroup webcam_rgb24 RGB24 Conversion Functions
+ *  @ingroup image
+ */
+
+/*! @{ */
+
 WG_INLINE void
 gs_2_rgb(gray_pixel gs, rgb24_pixel rgb)
 {
@@ -70,6 +76,15 @@ img_bgrx_2_rgb(Wg_image *bgrx_img, Wg_image *rgb_img)
     return CAM_SUCCESS;
 }
 
+/** 
+* @brief Convert grayscale image to rgb24
+* 
+* @param grayscale_img grayscale image
+* @param rgb_img       memory to store rgb24 picture
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
 img_grayscale_2_rgb(Wg_image *grayscale_img, Wg_image *rgb_img)
 {

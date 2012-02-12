@@ -2,6 +2,8 @@ OUT_DIR?=$(CURDIR)/build/lib/
 CPU_ARCH?=i686
 C_STD?=gnu99
 
+DOXYGEN=doxygen
+
 ifndef OUT_NAME
 OUT_NAME=lib
 endif

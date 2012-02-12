@@ -7,6 +7,12 @@
 
 #include <wg_string.h>
 
+/*! @defgroup string string manupulations
+ *  @ingroup misc
+ */
+
+/*! @{ */
+
 WG_PRIVATE wg_status
 count_subs(const wg_char *string, wg_char subsym, const wg_char *subsymtext,
         wg_int *short_count, wg_int *long_count, wg_int *esc_count);
@@ -15,12 +21,27 @@ WG_PRIVATE wg_status
 substitute(const wg_char *string, wg_char subsym, const wg_char *subsymtext, 
         const wg_char *text, wg_char *outstr);
 
+/** 
+* @brief Return string length
+* 
+* @param string
+* 
+* @return number of characters in the string
+*/
 wg_size
 wg_strlen(const wg_char *string)
 {
     return strlen(string);
 }
 
+/** 
+* @brief Copy string
+* 
+* @param dest  destination string
+* @param src   source string
+* 
+* @retval WG_SUCCESS
+*/
 wg_status
 wg_strcpy(wg_char *dest, const wg_char *src)
 {
@@ -29,6 +50,15 @@ wg_strcpy(wg_char *dest, const wg_char *src)
     return WG_SUCCESS;
 }
 
+/** 
+* @brief Duplicate a string
+* 
+* @param string source string
+* @param copied memory to store pointer to copt of source string
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
 wg_strdup(const wg_char *string, wg_char **copied)
 {
@@ -77,6 +107,26 @@ wg_fptr_2_str(fvoid ptr, wg_char *cstr)
     return;
 }
 
+/** 
+* @brief Substitute 
+* @code 
+* wg_char *ret_str = NULL;
+
+* wg_substitute("This is example file : %name",
+*                 "%", "name", "Desktop/example.file", &ret_str);
+* @endcode
+*
+* ret_str will contain "This is example file : Desktop/example.file"
+* 
+* @param string        source string 
+* @param subsym        substitution marker
+* @param subsymtext    substitution text
+* @param subtext       substitution text
+* @param new_string    returned string
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
 wg_substitute(const wg_char *string, wg_char subsym, const wg_char *subsymtext, 
         const wg_char *subtext, wg_char **new_string)
@@ -109,6 +159,16 @@ wg_substitute(const wg_char *string, wg_char subsym, const wg_char *subsymtext,
     return WG_SUCCESS;
 }
 
+/** 
+* @brief Compare n number of charactes in strings
+* 
+* @param str1  first string
+* @param str2  second string
+* @param len   number of character to compare
+* @param last[out]  pointer to first not  compared character in str1
+* 
+* @return 
+*/
 wg_boolean
 wg_strncmp(const wg_char *str1, const wg_char *str2, 
         wg_size len, const wg_char **last)
@@ -125,6 +185,18 @@ wg_strncmp(const wg_char *str1, const wg_char *str2,
     return status;
 }
 
+/** 
+* @brief Compare a character with first character of a string
+* 
+* @param string  input string
+* @param c       character to compare
+* @param last[out] pointer to first not  compared character in str1
+* 
+* @retval WG_TRUE 
+* @retval WG_FALSE
+*
+* @todo add index parameter to be able compare chosen character in a string
+*/
 wg_boolean
 wg_strcmpchar(const wg_char *string, wg_char c, const wg_char **last)
 {
@@ -181,6 +253,7 @@ substitute(const wg_char *string, wg_char subsym, const wg_char *subsymtext,
 
     return WG_SUCCESS;
 }
+
 WG_PRIVATE wg_status
 count_subs(const wg_char *string, wg_char subsym, const wg_char *subsymtext, 
         wg_int *short_count, wg_int *long_count, wg_int *esc_count)
@@ -225,3 +298,4 @@ count_subs(const wg_char *string, wg_char subsym, const wg_char *subsymtext,
     return WG_SUCCESS;
 }
 
+/*! @} */

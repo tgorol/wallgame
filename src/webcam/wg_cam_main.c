@@ -54,15 +54,6 @@ camera_is_active(Camera *cam)
     return cam->camera != NULL ? TRUE : FALSE;
 }
 
-static void
-set_pixbuf(Camera *cam, GdkPixbuf *pixbuf)
-{
-    cam->pixbuf = pixbuf;
-
-    return;
-}
-
-
 static gboolean
 on_expose_event(GtkWidget *widget,
         cairo_t *cr,
@@ -119,6 +110,7 @@ capture(gpointer data)
     Wg_cam_decompressor decompressor;
 //    acc *w_acc, *h_acc;
     wg_uint w, h;
+    Img_draw draw;
 
     ef_init();
 
@@ -208,7 +200,11 @@ capture(gpointer data)
 
                          img_cleanup(image_sub);
 
-                         img_draw_cross(&hsv_img, h, w, 128);
+                         img_draw_get_context(hsv_img.type, &draw);
+
+                         img_draw_cross(&draw, &hsv_img, h, w, 128);
+
+                         img_draw_cleanup_context(&draw);
 
                          img_grayscale_2_rgb(&hsv_img, image_sub);
 
@@ -218,26 +214,23 @@ capture(gpointer data)
 //               img_rgb_2_hsv_gtk(image_sub, &hsv_img);
 
                 
-                 gdk_threads_enter();
-
                  video_encode_frame(&cam->vid, image_sub);
+
+                 gdk_threads_enter();
 
                  if (cam->pixbuf != NULL){
                      g_object_unref(cam->pixbuf);
                      cam->pixbuf = NULL;
                  }
 
-                 set_pixbuf(cam,  gdk_pixbuf_new_from_data(image_sub->image, 
-                        GDK_COLORSPACE_RGB, FALSE, 8, 
-                        image_sub->width, image_sub->height, 
-                        image_sub->row_distance, 
-                        xbuf_free, image_sub));
+                 img_convert_to_pixbuf(image_sub, &cam->pixbuf, NULL);
 
                  gtk_widget_queue_draw(cam->area);
 
                  gui_camera_fps_update(GUI_CAMERA(cam->gui_camera), 1);
 
                  gdk_threads_leave();
+
             }else{
                  cam_discard_frame(cam->camera, frame);
 

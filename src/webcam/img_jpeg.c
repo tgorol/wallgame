@@ -17,8 +17,8 @@
 
 #define LINES_PER_READ 32
 
-/*! @defgroup webcam_jpeg Webcam JPEG Conversion Functions
- *  @ingroup webcam 
+/*! @defgroup image_jpeg JPEG Conversion Functions
+ *  @ingroup image
  */
 
 /*! @{ */

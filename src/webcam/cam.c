@@ -295,6 +295,7 @@ cam_read(Wg_camera *cam, Wg_frame *frame)
 {
     struct pollfd fds;
     cam_status status = CAM_FAILURE;
+
     CHECK_FOR_NULL_PARAM(cam);
     CHECK_FOR_NULL_PARAM(frame);
 

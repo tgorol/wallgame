@@ -11,7 +11,7 @@
 #include "include/cam.h"
 #include "include/cam_frame.h"
 
-/*! @defgroup webcam_frame Webcam Frame
+/*! @defgroup webcam_frame frame
  *  @ingroup webcam
  */
 

@@ -103,7 +103,7 @@ typedef enum img_type {
  * @brief Represents an image returned by a decompressor
  */
 typedef struct Wg_image{
-    img_type type;
+    img_type type;         /*!< type of image                          */
     wg_uchar **rows;       /*!< array of rows                          */
     wg_uchar *image;       /*!< start of the image                     */
     wg_ssize size;         /*!< number of bytes in the image           */
@@ -130,7 +130,7 @@ typedef struct Wg_cam_decompressor{
  */
 struct Wg_camera{
     CAM_MODE mode;                         /*!< Working mode              */
-    cam_state state;
+    cam_state state;                       /*!< camera state              */
     char dev_path[DEV_PATH_MAX + 1];       /*!< Device path               */
     int fd_cam;                            /*!< Device handler            */
     struct v4l2_capability cap;            /*!< Capabilities              */
