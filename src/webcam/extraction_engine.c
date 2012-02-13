@@ -245,6 +245,57 @@ ef_acc_get_max(Wg_image *acc, wg_uint *row_par, wg_uint *col_par)
 }
 
 cam_status
+ef_acc_2_gs(Wg_image *acc, Wg_image *acc_gs)
+{
+    cam_status status = WG_FAILURE;
+    wg_uint width = 0;
+    wg_uint height = 0;
+    wg_uint row = 0;
+    wg_uint col = 0;
+    gray_pixel *gs_pixel = NULL;
+    wg_uint *acc_pixel = NULL;
+    wg_uint max_val = 0;
+
+    CHECK_FOR_NULL_PARAM(acc);
+    CHECK_FOR_NULL_PARAM(filename);
+    CHECK_FOR_NULL_PARAM(type);
+
+    if (acc->type != IMG_CIRCLE_ACC){
+        WG_ERROR("Invalig image format! Passed %d expect %d\n", 
+                acc->type, IMG_CIRCLE_ACC);
+        return CAM_FAILURE;
+    }
+
+    img_get_width(acc, &width);
+    img_get_height(acc, &height);
+
+    status = img_fill(width, height, GS_COMPONENT_NUM, IMG_GS,
+            acc_gs);
+    if (CAM_SUCCESS != status){
+        return CAM_FAILURE;
+    }
+
+    for (row = 0; row < height; ++row){
+        img_get_row(acc, row, (wg_uchar**)&acc_pixel);
+        for (col = 0; col < width; ++col, ++acc_pixel){
+            max_val = WG_MAX(max_val, *acc_pixel);
+        }
+    }
+
+    if (max_val != 0){
+        for (row = 0; row < height; ++row){
+            img_get_row(acc, row, (wg_uchar**)&acc_pixel);
+            img_get_row(acc_gs, row, (wg_uchar**)&gs_pixel);
+            for (col = 0; col < width; ++col, ++gs_pixel, ++acc_pixel){
+                *gs_pixel = (GS_PIXEL_MAX * (*acc_pixel) / max_val);
+            }
+        }
+    }
+
+    return CAM_SUCCESS;
+}
+
+cam_status
 ef_acc_save(Wg_image *acc, wg_char *filename, wg_char *type)
 {
     cam_status status = WG_FAILURE;
@@ -296,7 +347,6 @@ ef_acc_save(Wg_image *acc, wg_char *filename, wg_char *type)
     img_cleanup(&acc_gs);
 
     return CAM_SUCCESS;
-
 }
 
 wg_status
@@ -541,7 +591,7 @@ ef_hough_paint_long_lines(Wg_image *img, acc *width_acc, acc *height_acc)
 
     img_draw_get_context(img->type, &ctx);
 
-    img_draw_line(&ctx, img, 
+    img_draw_line_mc(&ctx, img, 
             tan_cache[max_m] / WG_FLOAT(FPPOS_MAX), max_c, 128);
 
     img_draw_cleanup_context(&ctx);
@@ -568,7 +618,7 @@ ef_hough_paint_lines(Wg_image *img, acc *width_acc, acc *height_acc, wg_uint val
     for (c = 0; c < height; ++c){
         for (m = 0; m < 90; ++m){
             if (value < height_acc[c][m]){
-                img_draw_line(&ctx, img, tan_cache[m], c, 128);
+                img_draw_line_mc(&ctx, img, tan_cache[m], c, 128);
             }
         }
     }

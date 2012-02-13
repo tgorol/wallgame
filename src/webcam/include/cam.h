@@ -210,7 +210,7 @@ img_grayscale_normalize(Wg_image* grayscale_img, gray_pixel new_max,
         gray_pixel new_min);
 
 WG_PUBLIC cam_status
-img_grayscale_histogram(Wg_image* grayscale_img, wg_int *histogram, 
+img_grayscale_histogram(Wg_image* grayscale_img, wg_uint *histogram, 
         wg_size size);
 
 WG_PUBLIC cam_status

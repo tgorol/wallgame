@@ -86,9 +86,18 @@ img_rgb_2_grayscale(Wg_image *rgb_img, Wg_image *grayscale_img)
     return CAM_SUCCESS;
 }
 
+/** 
+* @brief Get histogram of the image
+* 
+* @param grayscale_img  input image
+* @param histogram      array to store histogram
+* @param size           minimum must GS_PIXEL_MAX
+* 
+* @return 
+*/
 cam_status
-img_grayscale_histogram(Wg_image* grayscale_img, wg_int *histogram, 
-        wg_size size)
+img_grayscale_histogram(Wg_image* grayscale_img, wg_uint *histogram,
+        wg_uint size)
 {
     wg_uint width = 0;
     wg_uint height = 0;
