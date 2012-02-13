@@ -29,7 +29,6 @@
 #include "include/img_gs.h"
 #include "include/extraction_engine.h"
 
-#include "include/gui_resolution.h"
 #include "include/gui_camera.h"
 
 #include <gdk-pixbuf/gdk-pixbuf.h>

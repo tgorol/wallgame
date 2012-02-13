@@ -4,36 +4,47 @@
 #include <gdk/gdk.h>
 #include <gtk/gtk.h>
 
+/** @brief Gui_camera cating macro                */
 #define GUI_CAMERA(obj)    \
     G_TYPE_CHECK_INSTANCE_CAST((obj), gui_camera_get_type (), Gui_camera)
 
+/** @brief Get gui_camera class                   */
 #define GUI_CAMERA_CLASS(klass)                                     \
     G_TYPE_CHECK_CLASS_CAST ((klass), gui_camera_get_type (), \
             Gui_camera_class)
 
+/** @brief Check if object is a Gui_camera object */
 #define IS_GUI_CAMERA(obj)      \
     G_TYPE_CHECK_INSTANCE_TYPE ((obj), gui_camera_get_type ())
 
+/** 
+* @brief Gui_camera instance structure
+*/
 typedef struct Gui_camera{
-    GtkGrid    parent;
-    GtkWidget  *resolution;
-    GtkWidget  *start_button;
-    GtkWidget  *stop_button;
-    GtkWidget  *capture_button;
-    GtkWidget  *color_button;
-    GtkWidget  *device;
-    GtkWidget  *fps;
+    GtkGrid    parent;             /*!< parent structure        */
+    GtkWidget  *resolution;        /*!< resolution selector     */
+    GtkWidget  *start_button;      /*!< start capturing button  */
+    GtkWidget  *stop_button;       /*!< stop capturing button   */
+    GtkWidget  *capture_button;    /*!< capture a frame button  */
+    GtkWidget  *color_button;      /*!< color selector button   */
+    GtkWidget  *device;            /*!< device selector         */
+    GtkWidget  *fps;               /*!< FPS display label       */
 
-    GTimer *fps_timer;
-    gint    frame_counter;
-    gfloat  fps_val;
+    /* Frame per secount counter */
+    GTimer *fps_timer;             /*!< timer used by fps counter */
+    gint    frame_counter;         /*!< number of counted frames  */
+    gfloat  fps_val;               /*!< fps value                 */
 
-    guint row_count;
+    /* Layout row counter */ 
+    guint row_count;               /*!< row counter               */
 }Gui_camera;
 
+/** 
+* @brief Gui_camera class structure
+*/
 typedef struct Gui_camera_class{
-    GtkGridClass parent_class;
-    void (*res_selected) (Gui_camera *obj);
+    GtkGridClass parent_class;              /*!< parent class structure */
+    void (*res_selected) (Gui_camera *obj); /*!< resolution selected signal */
 }Gui_camera_class;
 
 WG_PUBLIC guint        gui_camera_get_type(void);
