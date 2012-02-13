@@ -424,6 +424,16 @@ cam_decompressor(Wg_camera *cam, Wg_cam_decompressor *dcomp)
     return status;
 }
 
+/** 
+* @brief Get camera resolution
+* 
+* @param cam     webcam instance
+* @param width   memory to store current width
+* @param height  memory to store current height
+* 
+* @retval CAM_SUCCESS
+* @retval CAM_FAILURE
+*/
 cam_status
 cam_get_resolution(Wg_camera *cam, wg_uint *width, wg_uint *height)
 {
@@ -438,6 +448,16 @@ cam_get_resolution(Wg_camera *cam, wg_uint *width, wg_uint *height)
 }
 
 
+/** 
+* @brief Set camera resolution
+* 
+* @param cam     webcam instance
+* @param width   new width
+* @param height  new height
+* 
+* @retval CAM_SUCCESS
+* @retval CAM_FAILURE
+*/
 cam_status
 cam_set_resolution(Wg_camera *cam, wg_uint width, wg_uint height)
 {

@@ -26,19 +26,22 @@
 
 #define CART_2_RAD_COFF  WG_FLOAT(57.29577951)
 
-typedef struct Hsv{
-    wg_double hue;
-    wg_double sat;
-    wg_double val;
-    wg_uint hue_uint;
-    wg_uint sat_uint;
-    wg_uint val_uint;
-}Hsv;
+WG_PRIVATE float atan2_fast(float y, float x);
 
-WG_INLINE void update_hsv_uint_values(Hsv *restrict hsv);
+/*! @defgroup image_hsv HSV manipulation
+ * @ingroup image
+ * @{ 
+ */
 
-WG_STATIC float atan2_fast(float y, float x);
-
+/**
+ * @brief Convert BGRX to HSV
+ *
+ * @param rgb_img  BGRX image
+ * @param hsv_img   Memory to store HSV image
+ *
+ * @retval CAM_SUCCESS
+ * @retval CAM_FAILURE
+ */
 cam_status
 img_rgb_2_hsv(Wg_image *rgb_img, Wg_image *hsv_img)
 {
@@ -134,9 +137,15 @@ img_rgb_2_hsv(Wg_image *rgb_img, Wg_image *hsv_img)
     return CAM_SUCCESS;
 }
 
-/*! @defgroup image_hsv HSV manipulation
- * @ingroup image
- * @{ 
+
+/**
+ * @brief Convert BGRX to HSV
+ *
+ * @param rgb_img  BGRX image
+ * @param hsv_img   Memory to store HSV image
+ *
+ * @retval CAM_SUCCESS
+ * @retval CAM_FAILURE
  */
 cam_status
 img_rgb_2_hsv_gtk(Wg_image *rgb_img, Wg_image *hsv_img)
@@ -369,19 +378,7 @@ img_bgrx_2_hsv_fast(Wg_image *bgrx_img, Wg_image *hsv_img)
     return CAM_SUCCESS;
 }
 
-WG_INLINE void
-update_hsv_uint_values(Hsv *restrict hsv)
-{
-    CHECK_FOR_NULL_PARAM(hsv);
-
-    hsv->hue_uint = (wg_uint)hsv->hue;
-    hsv->sat_uint = (wg_uint)hsv->sat;
-    hsv->val_uint = (wg_uint)hsv->val;
-
-    return;
-}
-
-WG_STATIC wg_float 
+WG_PRIVATE wg_float 
 atan2_fast(wg_float y, wg_float x)
 {
     wg_float r;

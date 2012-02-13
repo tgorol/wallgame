@@ -165,7 +165,7 @@ wg_substitute(const wg_char *string, wg_char subsym, const wg_char *subsymtext,
 * @param str1  first string
 * @param str2  second string
 * @param len   number of character to compare
-* @param last[out]  pointer to first not  compared character in str1
+* @param[out] last pointer to first not  compared character in str1
 * 
 * @return 
 */
@@ -190,7 +190,7 @@ wg_strncmp(const wg_char *str1, const wg_char *str2,
 * 
 * @param string  input string
 * @param c       character to compare
-* @param last[out] pointer to first not  compared character in str1
+* @param[out] last pointer to first not  compared character in str1
 * 
 * @retval WG_TRUE 
 * @retval WG_FALSE

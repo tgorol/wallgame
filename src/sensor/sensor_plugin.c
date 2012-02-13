@@ -29,16 +29,17 @@ static const wg_char * const func[] = {
 WG_STATIC wg_status
 get_function_address(void *lib, const wg_char *func_name, void **address);
 
-WG_STATIC wg_status
+WG_PRIVATE wg_status
 fill_functions(Wgp_plugin *plugin);
 
 /**
  * @brief Load plugin.
  *
- * @param name
- * @param plugin
+ * @param name   name of the plugin
+ * @param[out] plugin memory to store plugin instance   
  *
- * @return 
+ * @retval WG_SUCCESS
+ * @retval WG_FAILURE
  */
 wg_status
 wgp_load(const wg_char *name, Wgp_plugin *plugin)

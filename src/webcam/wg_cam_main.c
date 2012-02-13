@@ -50,7 +50,7 @@ typedef struct Camera{
     GtkWidget *normalize;
     GtkWidget *threshold;
     GThread   *thread;
-    volatile Wg_camera *camera;
+    Wg_camera *camera;
     gint fps;
     gint frame_count;
     Wg_video_out vid;

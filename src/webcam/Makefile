@@ -15,7 +15,6 @@ SOURCE=cam.c                  \
 	   img_yuyv.c         \
        img_draw.c         \
 	   gui_camera.c           \
-	   gui_screen.c           \
        extraction_engine.c    \
        vid.c
 

@@ -14,40 +14,72 @@
 
 #include "include/gui_camera.h"
 
+/*! @defgroup gui GUI components
+*/
+
+/*! @defgroup gui_camera camera panel components
+ * @ingroup gui
+ */
+
+/*! @{ */
+
+/** @brief Row spacing              */
 #define ROW_SPACING    5
+
+/** @brief Column spacing           */
 #define COL_SPACING    5
 
+/** @brief FPS interwal counter     */
 #define FPS_INTERVAL   0.5
 
+/** @brief maximum devixe path size */
 #define DEVICE_PATH_MAX  64
 
+/** @brief device path 
+ *
+ * @todo find a way to get it from the system
+ */
 #define DEV_PATH  "/dev/"
 
+/** @brief Default resolution */
+#define RESOLUTION_DEFAULT_INDEX    1
 
 enum{
     CHANGED_SIGNAL,
     LAST_SIGNAL
 };
 
+/** 
+* @brief Resolution
+*/
 typedef struct Resolution{
-    wg_char text[16];
-    wg_uint  width;
-    wg_uint  height;
+    wg_char text[16];        /*!< text of the resolution */
+    wg_uint  width;          /*!< width in pixels        */
+    wg_uint  height;         /*!< height in pixels       */
 }Resolution;
 
-#define RESOLUTION_DEFAULT_INDEX    1
 
+
+/** 
+* @brief List of supported resolutions
+*/
 static const Resolution res_info[] = {
-    {"640x480", 640, 480,} ,
+    {"640x480", 640, 480,} , 
     {"352x288", 352, 288,} ,
     {"320x240", 320, 240,} ,
     {"176x144", 176, 144,} ,
     {"160x120", 160, 120,}
 };
 
+/** 
+* @brief Signals emited by gui_camera
+*/
 static gint wsignals[LAST_SIGNAL] = {0};
 
-static void
+WG_PRIVATE void 
+update_fps(Gui_camera *obj);
+
+WG_PRIVATE void
 gui_camera_class_init(Gui_camera_class *wclass)
 {
     wsignals[CHANGED_SIGNAL] = g_signal_new("changed",
@@ -61,26 +93,26 @@ gui_camera_class_init(Gui_camera_class *wclass)
             0);
 }
 
-WG_INLINE guint
+WG_PRIVATE guint
 get_row_and_inc(Gui_camera *obj)
 {
     return obj->row_count++;
 }
 
-WG_INLINE guint
+WG_PRIVATE guint
 get_row(Gui_camera *obj)
 {
     return obj->row_count;
 }
 
-WG_INLINE void
+WG_PRIVATE void
 init_row_count(Gui_camera *obj)
 {
     obj->row_count = 0;
 }
 
 
-static void
+WG_PRIVATE void
 gui_camera_init(Gui_camera *obj)
 {
     GtkWidget *label = 0;
@@ -206,6 +238,25 @@ gui_camera_init(Gui_camera *obj)
     return;
 }
 
+/** 
+* @brief Create new gui_camera object
+* 
+* @return pointer to new object or NULL if error
+*/
+GtkWidget*
+gui_camera_new(void)
+{
+    return GTK_WIDGET(g_object_new(gui_camera_get_type(), NULL));
+}
+
+/** 
+* @brief Add new check box
+* 
+* @param obj    wg_camera widget
+* @param text   checkbock text
+* 
+* @return pointer to created checkbox
+*/
 GtkWidget *
 gui_camera_add_checkbox(Gui_camera *obj, gchar *text)
 {
@@ -222,6 +273,12 @@ gui_camera_add_checkbox(Gui_camera *obj, gchar *text)
     return button;
 }
 
+/** 
+* @brief Add widget
+* 
+* @param obj   wg_camera widget
+* @param comp  widget to add
+*/
 void
 gui_camera_add(Gui_camera *obj, GtkWidget *comp)
 {
@@ -234,6 +291,11 @@ gui_camera_add(Gui_camera *obj, GtkWidget *comp)
     return;
 }
 
+/** 
+* @brief Get type
+* 
+* @return type
+*/
 guint
 gui_camera_get_type()
 {
@@ -258,56 +320,93 @@ gui_camera_get_type()
     return obj_type;
 }
 
-
-GtkWidget*
-gui_camera_new(void)
-{
-    return GTK_WIDGET(g_object_new(gui_camera_get_type(), NULL));
-}
-
-wg_status
-gui_camera_get(Gui_camera *obj, wg_uint *width, wg_uint *height)
-{
-
-    return WG_SUCCESS;
-}
-
+/** 
+* @brief Get start widget
+* 
+* @param obj wg_camera widget
+* 
+* @return start widget
+*/
 GtkWidget *
 gui_camera_get_start_widget(Gui_camera *obj)
 {
     return obj->start_button;
 }
 
+/** 
+* @brief Get start capture widget
+* 
+* @param obj wg_camera widget
+* 
+* @return start capturet widget
+*/
 GtkWidget *
 gui_camera_get_capture_widget(Gui_camera *obj)
 {
     return obj->capture_button;
 }
 
+/** 
+* @brief Get stop widget
+* 
+* @param obj wg_camera widget
+* 
+* @return stop widget
+*/
 GtkWidget *
 gui_camera_get_stop_widget(Gui_camera *obj)
 {
     return obj->stop_button;
 }
 
+/** 
+* @brief Get color select widget
+* 
+* @param obj wg_camera widget
+* 
+* @return color select widget
+*/
 GtkWidget *
 gui_camera_get_color_widget(Gui_camera *obj)
 {
     return obj->color_button;
 }
 
+/** 
+* @brief Get device path widget
+* 
+* @param obj wg_camera widget
+* 
+* @return device path widget
+*/
 GtkWidget *
 gui_camera_get_device_widget(Gui_camera *obj)
 {
     return obj->device;
 }
 
+/** 
+* @brief Get resolution widget
+* 
+* @param obj wg_camera widget
+* 
+* @return resolution widget
+*/
 GtkWidget *
 gui_camera_get_resolution_widget(Gui_camera *obj)
 {
     return obj->resolution;
 }
 
+/** 
+* @brief Get selected resolution
+* 
+* @param obj wg_camera widget
+* @param[out] width memory to store selected width
+* @param[out] height memory to store selected height
+* 
+* @return start widget
+*/
 wg_status
 gui_camera_get_active_resolution(Gui_camera *obj, wg_uint *width, 
 		wg_uint *height)
@@ -324,28 +423,23 @@ gui_camera_get_active_resolution(Gui_camera *obj, wg_uint *width,
     return WG_SUCCESS;
 }
 
-static void 
-update_fps(Gui_camera *obj)
-{
-    char text[32];
-
-    sprintf(text, "%.1f", (float)obj->fps_val);
-
-    gtk_label_set_text(GTK_LABEL(obj->fps), text);
-}
-
+/** 
+* @brief Start fps counter
+* 
+* @param obj wg_camera widget
+*/
 void
 gui_camera_fps_start(Gui_camera *obj)
 {
     g_timer_start(obj->fps_timer);
 }
 
-void
-gui_camera_fps_stop(Gui_camera *obj)
-{
-    g_timer_stop(obj->fps_timer);
-}
-
+/** 
+* @brief Update fps counter
+* 
+* @param obj wg_camera widget
+* @param val number of frames to update
+*/
 void
 gui_camera_fps_update(Gui_camera *obj, int val)
 {
@@ -361,3 +455,26 @@ gui_camera_fps_update(Gui_camera *obj, int val)
         update_fps(obj);
     }
 }
+
+/** 
+* @brief Stop fps counter
+* 
+* @param obj wg_camera widget
+*/
+void
+gui_camera_fps_stop(Gui_camera *obj)
+{
+    g_timer_stop(obj->fps_timer);
+}
+
+WG_PRIVATE void 
+update_fps(Gui_camera *obj)
+{
+    char text[32];
+
+    sprintf(text, "%.1f", (float)obj->fps_val);
+
+    gtk_label_set_text(GTK_LABEL(obj->fps), text);
+}
+
+/*! @} */

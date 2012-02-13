@@ -8,26 +8,46 @@
  */
 
 /* 8 means bits in 1 bytes */
+
+/** Maximum value of gray scale pixel */
 #define  GS_PIXEL_MAX    ((sizeof(gray_pixel) << 8) - 1)
+
+/** Minimum value of gray scale pixel */
 #define  GS_PIXEL_MIN    (0)
 
-#define GS_COMPONENT_NUM   (sizeof(gray_pixel))
+/** 
+* @brief Gray scale pixel components layout
+*/
+enum {
+    GS_PIXEL,           /*!< pixel value    */
+    GS_COMPONENT_NUM    /*!< number of components in gray scale pixel format */
+};
 
-typedef struct Wg_rgb{
-    wg_uchar red;
-    wg_uchar green;
-    wg_uchar blue;
-}Wg_rgb;
+/** @brief Get RED compontent of the pixel
+ * @todo change names to RGB_R, RGB_G RGB_B
+ */
+#define PIXEL_RED(pixel)   (pixel)[RGB24_R]
 
+/** @brief Get GREEN component of the pixel
+ */
+#define PIXEL_GREEN(pixel) (pixel)[RGB24_G]
+
+/** @brief Get BLUE component of the pixel
+ */
+#define PIXEL_BLUE(pixel)  (pixel)[RGB24_B]
+
+/** 
+* @brief Image iterator
+*/
 typedef struct Img_iterator{
-    wg_uint width;
-    wg_uint height;
-    wg_uint row_distance;
-    wg_uchar **row;
-    wg_uchar *col;
-    wg_uint col_index;
-    wg_uint row_index;
-    wg_uint comp_per_pixel;
+    wg_uint width;                /*!< width of the image              */
+    wg_uint height;               /*!< height of the image             */
+    wg_uint row_distance;         /*!< distance in bytes between rows  */
+    wg_uchar **row;               /*!< array of rows                   */
+    wg_uchar *col;                /*!< selected column                 */
+    wg_uint col_index;            /*!< column index                    */
+    wg_uint row_index;            /*!< row index                       */
+    wg_uint comp_per_pixel;       /*!< components per pixel            */
 }Img_iterator;
 
 /**
@@ -153,6 +173,12 @@ img_get_components_per_pixel(Wg_image *img, wg_uint *comp_per_pixel)
     return CAM_SUCCESS;
 }
 
+/** 
+* @brief Get image iterator
+* 
+* @param img image to get iterator for
+* @param itr memory to store iterator
+*/
 WG_INLINE void 
 img_get_iterator(Wg_image *img, Img_iterator *itr)
 {
@@ -173,6 +199,14 @@ img_get_iterator(Wg_image *img, Img_iterator *itr)
 
 }
 
+/** 
+* @brief Check if there are more rows
+* 
+* @param iterator iterator instance
+* 
+* @retval TRUE more rows available
+* @retval FALSE no more rows
+*/
 WG_INLINE wg_boolean
 img_iterator_has_next_row(Img_iterator *iterator)
 {
@@ -181,6 +215,13 @@ img_iterator_has_next_row(Img_iterator *iterator)
     return (itr->row_index < itr->height);
 }
 
+/** 
+* @brief Get next row
+* 
+* @param iterator iterator instance
+* 
+* @return pointer on next row in a row or NULL if no more rows
+*/
 WG_INLINE wg_uchar *
 img_iterator_next_row(Img_iterator *iterator)
 {
@@ -192,6 +233,14 @@ img_iterator_next_row(Img_iterator *iterator)
     return itr->row_index++ < itr->height ? *itr->row++ : NULL;   
 }
 
+/** 
+* @brief Check if there are more columns
+* 
+* @param iterator iterator instance
+* 
+* @retval TRUE more columns available
+* @retval FALSE no more columns
+*/
 WG_INLINE wg_boolean
 img_iterator_has_next_col(Img_iterator *iterator)
 {
@@ -200,6 +249,13 @@ img_iterator_has_next_col(Img_iterator *iterator)
     return (itr->col_index < itr->width);
 }
 
+/** 
+* @brief Get next column
+* 
+* @param iterator iterator instance
+* 
+* @return pointer on next column in a row or NULL if no more columns
+*/
 WG_INLINE wg_uchar *
 img_iterator_next_col(Img_iterator *iterator)
 {
@@ -211,20 +267,6 @@ img_iterator_next_col(Img_iterator *iterator)
     return itr->col_index++ < itr->width ?  old_col : NULL;   
 }
 
-
-/** @brief Get RED compontent of the pixel
- * @todo change names to RGB_R, RGB_G RGB_B
- */
-#define PIXEL_RED(pixel)   (pixel)[RGB24_R]
-
-/** @brief Get GREEN component of the pixel
- */
-#define PIXEL_GREEN(pixel) (pixel)[RGB24_G]
-
-/** @brief Get BLUE component of the pixel
- */
-#define PIXEL_BLUE(pixel)  (pixel)[RGB24_B]
-
 cam_status
 img_fill(wg_uint width, wg_uint height, wg_uint comp_num, img_type,
         Wg_image *img);
@@ -235,11 +277,6 @@ img_cleanup(Wg_image *img);
 WG_PUBLIC cam_status
 img_get_subimage(Wg_image *img_src, wg_uint x, wg_uint y, 
         Wg_image *img_dest);
-
-WG_PUBLIC cam_status
-img_filter_color_threshold(const Wg_image *img, const Wg_rgb *base, 
-        const Wg_rgb *threshold, const Wg_rgb *background, 
-        const Wg_rgb *foreground);
 
 wg_status
 img_convert_to_pixbuf(Wg_image *img, GdkPixbuf **pixbuf,

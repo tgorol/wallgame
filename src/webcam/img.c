@@ -23,14 +23,6 @@
 
 /*! @{ */
 
-#define BG_DEFAULT_RED      0
-#define BG_DEFAULT_GREEN    0
-#define BG_DEFAULT_BLUE     0
-
-#define FG_DEFAULT_RED      255
-#define FG_DEFAULT_GREEN    255
-#define FG_DEFAULT_BLUE     255
-
 #define MAX_COLOR_VALUE     255
 
 /**
@@ -43,51 +35,27 @@ typedef wg_uchar JSAMPLE;
  */
 typedef JSAMPLE* JSAMPROW;
 
-typedef struct Threshold{
-    Wg_rgb base;
-    Wg_rgb threshold;
-    Wg_rgb background;
-    Wg_rgb foreground;
-} Threshold;
-
-
 WG_PRIVATE void
 fast_memcpy(wg_uchar *restrict dest, wg_uchar *restrict src, wg_size size);
-
-WG_PRIVATE cam_status
-row_filter_color_threshold(wg_uchar *row, wg_uint width, Threshold *threshold);
 
 WG_PRIVATE void
 xfree_cb(guchar *pixels, gpointer data);
 
-WG_INLINE wg_uchar
+WG_PRIVATE wg_uchar
 crop_color(wg_int color, wg_int value);
 
-
-WG_PRIVATE const Wg_rgb default_bg = {
-    .red   = BG_DEFAULT_RED     ,
-    .green = BG_DEFAULT_GREEN   ,
-    .blue  = BG_DEFAULT_BLUE    
-};
-
-WG_PRIVATE const Wg_rgb default_fg = {
-    .red   = FG_DEFAULT_RED     ,
-    .green = FG_DEFAULT_GREEN   ,
-    .blue  = FG_DEFAULT_BLUE    
-};
-    
-
-/**
- * @brief Fill image structure
- *
- * @param height   height of the image in pixels
- * @param width    width of the image in pixels
- * @param comp_num number of compenents per pixel
- * @param img      image structure
- *
- * @retval CAM_SUCCESS
- * @retval CAM_FAILURE
- */
+/** 
+* @brief Create new image instance
+*  
+* @param width     width in pixels
+* @param height    height in pixels
+* @param comp_num  number of components per pixel
+* @param type  type of the image
+* @param img       memory to store image instance
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 cam_status
 img_fill(wg_uint width, wg_uint height, wg_uint comp_num, img_type type,
         Wg_image *img)
@@ -137,14 +105,14 @@ img_fill(wg_uint width, wg_uint height, wg_uint comp_num, img_type type,
     return CAM_SUCCESS;
 }
 
-/**
- * @brief Cleanup decompressed image buffers
- *
- * @param img  decomressed image after decompression
- *
- * @retval CAM_SUCCESS
- * @retval CAM_FAILURE
- */
+/** 
+* @brief Clean all resources allocated by img_fill()
+* 
+* @param img  imge instance
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 cam_status
 img_cleanup(Wg_image *img)
 {
@@ -158,18 +126,19 @@ img_cleanup(Wg_image *img)
     return CAM_SUCCESS;
 }
 
-/**
- * @brief Get subimage
- *
- * img_dest must be initialized with img_fill()
- *
- * @param img_src   source image
- * @param x         x
- * @param y         y
- * @param img_dest  destination image
- *
- * @return 
- */
+/** 
+* @brief Get the subimage from an image
+*  If subimage exceeds source image it will be croped. img_dec must be 
+* initialized by img_fill() to set dimenstion of the subimage.
+* 
+* @param img_src  source image instance
+* @param x        x position in source
+* @param y        y position in source image
+* @param img_dest
+* 
+* @retval CAM_SUCCESS
+* @retval CAM_FAILURE
+*/
 cam_status
 img_get_subimage(Wg_image *img_src, wg_uint x, wg_uint y, 
         Wg_image *img_dest)
@@ -197,126 +166,18 @@ img_get_subimage(Wg_image *img_src, wg_uint x, wg_uint y,
     return CAM_SUCCESS;
 }
 
-/**
- * @brief Filter image using color threshold method
- *
- * If background is NULL then default background is used (Black).
- *
- * @param img         image instance
- * @param base        threshold base color
- * @param threshold   threshold color range
- * @param background  background color
- *
- * @retval CAM_SUCCESS
- * @retval CAM_FAILURE
- */
-cam_status
-img_filter_color_threshold(const Wg_image *img, const Wg_rgb *base, 
-        const Wg_rgb *threshold, const Wg_rgb *background, 
-        const Wg_rgb *foreground)
-{
-    wg_int      i = 0;
-    Threshold th;
-
-    CHECK_FOR_NULL_PARAM(img);
-    CHECK_FOR_NULL_PARAM(base);
-    CHECK_FOR_NULL_PARAM(threshold);
-
-    th.base       = *base;
-    th.background = background != NULL ? *background : default_bg;
-    th.foreground = foreground != NULL ? *foreground : default_fg;
-
-    /* crop each color component value at MAX_COLOR_VALUE   */
-    th.threshold.red = 
-        crop_color(base->red + threshold->red, MAX_COLOR_VALUE);
-
-    th.threshold.green = 
-        crop_color(base->green + threshold->green, MAX_COLOR_VALUE);
-
-    th.threshold.blue = 
-        crop_color(base->blue + threshold->blue, MAX_COLOR_VALUE);
-
-    /* filter all rows */
-    for (i = 0; i < img->height; ++i){
-        row_filter_color_threshold(img->rows[i], img->width, &th);
-    }
-
-    return CAM_SUCCESS;
-}
-
-/**
- * @brief Filter row of the image using color threshold method
- *
- * @param row         row to filter
- * @param width       number of color components in the row
- * @param base        threshold base color
- * @param threshold   threshold color range
- * @param background  background color
- *
- * @retval CAM_SUCCESS
- * @retval CAM_FAILURE
- */
-WG_PRIVATE cam_status
-row_filter_color_threshold(wg_uchar *row, wg_uint width, Threshold *threshold)
-{
-    register Threshold *th = NULL;
-    register rgb24_pixel *component = NULL;
-    wg_int R = 0;
-    wg_int G = 0;
-    wg_int B = 0;
-    wg_boolean put_through = WG_FALSE;
-
-    CHECK_FOR_NULL_PARAM(row);
-    CHECK_FOR_NULL_PARAM(threshold);
-
-    component = (rgb24_pixel*) row;
-
-    th = threshold;
-
-    /* loop through all pixels in the row */
-    while (width-- != 0){
-        R = PIXEL_RED(component[width]);
-        G = PIXEL_GREEN(component[width]);
-        B = PIXEL_BLUE(component[width]);
-
-        put_through = WG_FALSE;
-
-        /* check if pixel inside defined range */
-        do{
-            if ((R < th->base.red) || (R > th->threshold.red)){
-                break;
-            }
-
-            if ((G < th->base.green) || (G > th->threshold.green)){
-                break;
-            }
-
-            if ((B < th->base.blue) || (B > th->threshold.blue)){
-                break;
-            }
-            put_through = WG_TRUE;
-        }while(0);
-        /* if pixel outside the range overwrite it with background color */
-        if (put_through == WG_FALSE){
-            PIXEL_RED(component[width])   = th->background.red;
-            PIXEL_GREEN(component[width]) = th->background.green;
-            PIXEL_BLUE(component[width])  = th->background.blue;
-        }else{
-            PIXEL_RED(component[width])   = th->foreground.red;
-            PIXEL_GREEN(component[width]) = th->foreground.green;
-            PIXEL_BLUE(component[width])  = th->foreground.blue;
-        }
-    }
-
-    return CAM_SUCCESS;
-}
-
 /** 
-* @brief Convert WG_image to GdkPixbuf
+* @brief Convert Wg_image instance into GdkPixbuf
+*
+*    This function binds Wg_image with GdkPixbuf. After this call source image 
+*    should not be used. Before pixbuf is released a free callback is called to
+*    free all resources allocated by img. If free_cb is NULL then a default
+*    callback is used which assumes that Wg_image was allocated using
+*    WG_MALLOC/WG_CALLOC.
 * 
-* @param img             image
-* @param pixbuf[out]     new GdkPixbuf object
-* @param free_cb         release function for img
+* @param img        source image
+* @param pixbuf     memory to store GdkPixbuf object
+* @param free_cb    callback used to free source image before pixbuf
 * 
 * @retval WG_SUCCESS
 * @retval WG_FAILURE
@@ -358,7 +219,7 @@ xfree_cb(guchar *pixels, gpointer data)
     WG_FREE(data);
 }
 
-inline WG_PRIVATE wg_uchar
+WG_PRIVATE wg_uchar
 crop_color(wg_int color, wg_int value)
 {
     return color > value ? value : color;

@@ -19,37 +19,40 @@
 
 /*! @{ */
 
-
+/** @brief interlan use */
 #define C(Y)    ((Y) - 16)
 
+/** @brief interlan use */
 #define D(U)    ((U) - 128)
 
+/** @brief interlan use */
 #define E(V)    ((V) - 128)
 
+/** @brief interlan use */
 #define BLUE_E(E)         (             409 * (E) + 128)
+
+/** @brief interlan use */
 #define GREEN_DE(D, E)    (-100 * (D) - 208 * (E) + 128)
+
+/** @brief interlan use */
 #define RED_D(D)          ( 516 * (D)             + 128)
 
+/** @brief interlan use */
 #define BLUE(C, BE)                                             \
     clamp_0_255(((298 * (C) + (BE)) >> 8))
 
+/** @brief interlan use */
 #define GREEN(C, GDE)                                            \
     clamp_0_255(((298 * (C) + (GDE)) >> 8))
 
+/** @brief interlan use */
 #define RED(C, RD)                                              \
     clamp_0_255(((298 * (C) + (RD)) >> 8))
 
-enum {
-    POS_Y0 = 0,
-    POS_V     ,
-    POS_Y1    ,
-    POS_U     ,
-    COMPONENT_NUM
-};
+/** Pointer to the yuyv component */
+typedef wg_uchar (*Component)[YUYV_COMPONENT_NUM];
 
-typedef wg_uchar (*Component)[COMPONENT_NUM];
-
-inline WG_PRIVATE wg_uchar clamp_0_255(wg_int value);
+WG_PRIVATE wg_uchar clamp_0_255(wg_int value);
 
 /**
  * @brief Convert YUYV(YUV4:2:2) to RGB888
