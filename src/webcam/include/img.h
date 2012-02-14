@@ -228,9 +228,14 @@ img_iterator_next_row(Img_iterator *iterator)
     register Img_iterator *itr = iterator;
 
     itr->col_index = 0;
-    itr->col = *itr->row;
 
-    return itr->row_index++ < itr->height ? *itr->row++ : NULL;   
+    if (itr->row_index++ < itr->height){
+        itr->col = *itr->row++;
+    }else{
+        itr->col = NULL;
+    }
+
+    return itr->col;
 }
 
 /** 

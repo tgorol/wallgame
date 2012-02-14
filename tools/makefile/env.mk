@@ -60,3 +60,7 @@ endif
 ifdef PROF
 	CFLAGS+=-pg
 endif
+
+ifdef MEMLEAK_CHECK
+    CFLAGS+=-DMEMLEAK_CHECK
+endif

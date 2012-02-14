@@ -3,7 +3,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
- 
+#include <wg_memleak.h>
+
 /** @brief Print message on stdout */
 #define WG_PRINT(...)                                     \
     fprintf(stdout, __VA_ARGS__)                      
@@ -107,16 +108,52 @@
         return WG_FAILURE;                         \
     }
 
-#define WG_MALLOC(size)                                    \
-    malloc(size)
+#ifdef MEMLEAK_CHECK
+#define MEMLEAK_START wg_memleak_start()
+#else
+#define MEMLEAK_START
+#endif
 
+#ifdef MEMLEAK_CHECK
+#define MEMLEAK_STOP wg_memleak_stop()
+#else
+#define MEMLEAK_STOP
+#endif
+
+#ifdef MEMLEAK_CHECK
+#define WG_MALLOC(size)  wg_malloc(size, __FILE__, __LINE__)
+#else
+#define WG_MALLOC(size)  malloc(size)
+#endif
+
+#ifdef MEMLEAK_CHECK
+#define WG_MALLOC_PTR (&wg_malloc)
+#else
 #define WG_MALLOC_PTR (&malloc)
+#endif
 
-#define WG_CALLOC(num, size)                               \
-    calloc(num, size)
+#ifdef MEMLEAK_CHECK
+#define WG_CALLOC(num, size)  wg_calloc(num, size,  __FILE__, __LINE__)
+#else
+#define WG_CALLOC(num, size) calloc(num, size)
+#endif
 
+#ifdef MEMLEAK_CHECK
+#define WG_CALLOC_PTR (&wg_calloc)
+#else
 #define WG_CALLOC_PTR (&calloc)
+#endif
 
+#ifdef MEMLEAK_CHECK
+#define WG_FREE(ptr)                                       \
+    do{                                                    \
+        __typeof__ (ptr) p = ptr;                          \
+        if (NULL != p){                                    \
+            wg_free(p);                                       \
+            p = NULL;                                      \
+        }                                                  \
+    }while (0)
+#else
 #define WG_FREE(ptr)                                       \
     do{                                                    \
         __typeof__ (ptr) p = ptr;                          \
@@ -125,11 +162,16 @@
             p = NULL;                                      \
         }                                                  \
     }while (0)
+#endif
 
 #define WG_ALLOCA(size)                                    \
     alloca(size)
 
+#ifdef MEMLEAK_CHECK
+#define WG_FREE_PTR (&wg_free)
+#else
 #define WG_FREE_PTR (&free)
+#endif
 
 #define WG_ZERO_STRUCT(p)                                  \
     memset(p, '\0', sizeof (*p))

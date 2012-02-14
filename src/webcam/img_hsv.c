@@ -78,8 +78,7 @@ img_rgb_2_hsv(Wg_image *rgb_img, Wg_image *hsv_img)
     for (row = 0; row < height; ++row){
         img_get_row(rgb_img, row, (wg_uchar**)&rgb_pixel);
         img_get_row(hsv_img, row, (wg_uchar**)&hsv_pixel);
-        for (col = 0; col < width; ++col, ++hsv_pixel,
-            update_hsv_uint_values(hsv_pixel)){
+        for (col = 0; col < width; ++col, ++hsv_pixel){
             rgb_max = MAX3(
                     PIXEL_RED(rgb_pixel[col]),
                     PIXEL_GREEN(rgb_pixel[col]),
@@ -348,8 +347,7 @@ img_bgrx_2_hsv_fast(Wg_image *bgrx_img, Wg_image *hsv_img)
         img_get_row(hsv_img, row, &tmp_ptr);
         hsv_pixel = (Hsv*)tmp_ptr;
 
-        for (col = 0; col < width; ++col, ++hsv_pixel, ++bgrx_pix,
-            update_hsv_uint_values(hsv_pixel)){
+        for (col = 0; col < width; ++col, ++hsv_pixel, ++bgrx_pix){
 
             r = WG_FLOAT(BGRX_R(bgrx_pix));
             g = WG_FLOAT(BGRX_G(bgrx_pix));

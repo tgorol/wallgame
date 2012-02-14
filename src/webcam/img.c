@@ -206,6 +206,11 @@ img_convert_to_pixbuf(Wg_image *img, GdkPixbuf **pixbuf,
         return WG_FAILURE;
     }
 
+//    img->image = NULL;
+
+//    img_cleanup(img);
+//    WG_FREE(img);
+
     *pixbuf = pix;
 
     return WG_SUCCESS;
@@ -214,7 +219,7 @@ img_convert_to_pixbuf(Wg_image *img, GdkPixbuf **pixbuf,
 WG_PRIVATE void
 xfree_cb(guchar *pixels, gpointer data)
 {
-    img_cleanup((Wg_image*)data);
+    img_cleanup(data);
 
     WG_FREE(data);
 }

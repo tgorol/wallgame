@@ -125,4 +125,33 @@ img_grayscale_2_rgb(Wg_image *grayscale_img, Wg_image *rgb_img)
     return CAM_SUCCESS;
 }
 
+wg_status
+img_rgb_draw_pixel(Wg_image *img, wg_int y, wg_int x, va_list args)
+{
+    rgb24_pixel *rgb_pixel = NULL;
+    rgb24_pixel *new_pixel = NULL;
+    wg_uint width = 0;
+    wg_uint height = 0;
+
+    if (img->type != IMG_RGB){
+        WG_ERROR("Invalig image format! Passed %d expect %d\n", 
+                img->type, IMG_RGB);
+        return WG_FAILURE;
+    }
+
+    new_pixel = (rgb24_pixel*)va_arg(args, rgb24_pixel*);
+
+    img_get_width(img, &width);
+    img_get_height(img, &height);
+
+    if ((x < width) && (y < height) && (x >= 0) && (y >= 0)){
+        img_get_pixel(img, y, x, (wg_uint8**)&rgb_pixel);
+        rgb_pixel[0][RGB24_R] = new_pixel[0][RGB24_R];
+        rgb_pixel[0][RGB24_G] = new_pixel[0][RGB24_G];
+        rgb_pixel[0][RGB24_B] = new_pixel[0][RGB24_B];
+    }
+
+    return WG_SUCCESS;
+}
+
 /*! @} */

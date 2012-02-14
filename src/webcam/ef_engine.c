@@ -15,7 +15,7 @@
 #include "include/img_bgrx.h"
 #include "include/img_rgb24.h"
 #include "include/img_draw.h"
-#include "include/extraction_engine.h"
+#include "include/ef_engine.h"
 
  
  
@@ -25,11 +25,11 @@
 
 #define   CACHE_TAN_NUM (135 + 45)
 
-#define NB_X   12
-#define NB_Y   12
+#define NB_X   25
+#define NB_Y   25
 
-#define NB_X2   10
-#define NB_Y2   10
+#define NB_X2   23
+#define NB_Y2   23
 
 #define FPPOS   8
 #define FPPOS_M ((FPPOS) >> 1) 

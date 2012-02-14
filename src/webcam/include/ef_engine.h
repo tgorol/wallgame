@@ -1,5 +1,5 @@
-#ifndef EXTRACTION_ENGINE_H
-#define EXTRACTION_ENGINE_H
+#ifndef EF_ENGINE_H
+#define EF_ENGINE_H
 
 #include <libavcodec/avcodec.h>
 #include <libavutil/mathematics.h>
@@ -46,4 +46,4 @@ ef_hyst_thr(Wg_image *img, wg_uint upp, wg_uint low);
 WG_PUBLIC cam_status
 ef_acc_2_gs(Wg_image *acc, Wg_image *acc_gs);
 
-#endif
+#endif /* EF_ENGINE_H */

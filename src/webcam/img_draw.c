@@ -15,7 +15,6 @@
 #include "include/img_gs.h"
 #include "include/img_bgrx.h"
 #include "include/img_rgb24.h"
-#include "include/extraction_engine.h"
 
 #include "include/img_draw.h"
 
@@ -29,6 +28,9 @@ img_draw_get_context(img_type type, Img_draw *draw_ctx)
     switch (type){
     case IMG_GS:
         draw_ctx->draw_pixel = (put_pix)img_gs_draw_pixel;
+        break;
+    case IMG_RGB:
+        draw_ctx->draw_pixel = (put_pix)img_rgb_draw_pixel;
         break;
     default:
         status = WG_FAILURE;
@@ -65,7 +67,7 @@ img_draw_cross(Img_draw *ctx, Wg_image *img, wg_uint y, wg_uint x, ...)
     img_get_width(img, &width);
 
     for (col = 0; col < width; ++col){
-        img_gs_draw_pixel(img, y, col, arg_lst);
+        ctx->draw_pixel(img, y, col, arg_lst);
     }
 
     va_start(arg_lst, x);
