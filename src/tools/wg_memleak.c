@@ -26,6 +26,9 @@ typedef struct Memleak{
     List_head leaf;
 }Memleak;
 
+WG_PRIVATE
+wg_boolean is_started(void);
+
 pthread_mutex_t memleak_lock = PTHREAD_MUTEX_INITIALIZER;
 
 List_head first;
@@ -33,11 +36,21 @@ wg_uint alloc_num = 0;
 wg_uint free_num = 0;
 wg_uint max_allocated_size = 0;
 wg_uint allocated_size = 0;
+wg_boolean init_flag = WG_FALSE;
 
 void
 wg_memleak_start()
 {
-    list_init(&first);
+    pthread_mutex_lock(&memleak_lock);
+    if (WG_FALSE == init_flag){
+        list_init(&first);
+        init_flag = WG_TRUE;
+        pthread_mutex_unlock(&memleak_lock);
+
+        WG_LOG("Memleak checking starded\n");
+    }else{
+        pthread_mutex_unlock(&memleak_lock);
+    }
 
     return;
 }
@@ -48,13 +61,19 @@ wg_memleak_stop()
     Iterator itr;
     Memleak *leak = NULL;
 
+    if (! is_started()){
+        return;
+    }
+
     iterator_list_init(&itr, &first, GET_OFFSET(Memleak, leaf));
 
     WG_DEBUG("Memleak Report\n"
              "Allocated memory blocks : %u\n"
              "Freed memory blocks     : %u\n" 
-             "Maximum alloc size      : %u [B]\n" ,
-             alloc_num, free_num, max_allocated_size);
+             "Maximum alloc size      : %u [B]\n" 
+             "Maximum alloc size      : %u [kB]\n" ,
+             alloc_num, free_num, max_allocated_size, 
+             max_allocated_size / SIZE_1KB);
 
     while ((leak = iterator_list_next(&itr))){
         switch (leak->allocation_type){
@@ -83,7 +102,11 @@ wg_calloc(size_t num, size_t size, const wg_char *filename, wg_uint line)
     void *mem_block = NULL;
     Memleak *ml = NULL;
     size_t s = 0;
-    
+
+    if (! is_started()){
+        return calloc(num, size);
+    }
+
     s = (size * num) + sizeof (Memleak);
     mem_block = malloc(s);
     memset(mem_block, '\0', s);
@@ -117,6 +140,10 @@ wg_malloc(size_t size, const wg_char *filename, wg_uint line)
 {
     void *mem_block = NULL;
     Memleak *ml = NULL;
+
+    if (! is_started()){
+        return malloc(size);
+    }
     
     mem_block = malloc(size + sizeof (Memleak));
 
@@ -147,6 +174,11 @@ void
 wg_free(void *ptr)
 {
     Memleak *ml = NULL;
+    
+    if (! is_started()){
+         free(ptr);
+         return;
+    }
 
     if (NULL != ptr){
         ml = ptr;
@@ -167,4 +199,16 @@ wg_free(void *ptr)
     }
 
     return;
+}
+
+WG_PRIVATE
+wg_boolean is_started(void)
+{
+    wg_boolean flag = WG_FALSE;
+
+    pthread_mutex_lock(&memleak_lock);
+    flag = (WG_TRUE == init_flag);
+    pthread_mutex_unlock(&memleak_lock);
+
+    return flag;
 }

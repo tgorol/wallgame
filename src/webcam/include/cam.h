@@ -217,7 +217,8 @@ WG_PUBLIC cam_status
 img_grayscale_save(Wg_image *img, wg_char *filename, wg_char *ext);
 
 WG_PUBLIC cam_status
-ef_acc_get_max(Wg_image *acc, wg_uint *row_par, wg_uint *col_par);
+ef_acc_get_max(Wg_image *acc, wg_uint *row_par, wg_uint *col_par, 
+        wg_uint *votes);
 
 cam_status
 ef_paint_cross(Wg_image *img, wg_uint y, wg_uint x, gray_pixel color);

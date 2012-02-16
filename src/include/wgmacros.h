@@ -193,6 +193,19 @@
 #define ELEMNUM(array)                                    \
     (sizeof (array) / sizeof (array[0]))
 
+
+#define SIZE_1B     (1 << 0)
+#define SIZE_2B     (1 << 1)
+#define SIZE_4B     (1 << 2)
+#define SIZE_8B     (1 << 3)
+#define SIZE_16B    (1 << 4)
+#define SIZE_32B    (1 << 5)
+#define SIZE_64B    (1 << 6)
+#define SIZE_128B   (1 << 7)
+#define SIZE_256B   (1 << 8)
+#define SIZE_512B   (1 << 9)
+#define SIZE_1KB    (1 << 10)
+
 WG_INLINE void
 char_2_hex(wg_char c, wg_char *ret)
 {

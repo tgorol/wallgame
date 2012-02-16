@@ -48,8 +48,9 @@ typedef struct Camera{
     GtkWidget *area;
     GtkWidget *gui_camera;
     GtkWidget *show_gray;
-    GtkWidget *normalize;
-    GtkWidget *threshold;
+    GtkWidget *smooth;
+    GtkWidget *threshold_low;
+    GtkWidget *threshold_high;
     GThread   *thread;
     Wg_camera *camera;
     gint fps;
@@ -167,6 +168,7 @@ capture(gpointer data)
     wg_uint height = 0;
     wg_uint w = 0;
     wg_uint h = 0;
+    wg_uint votes = 0;
     Wg_image  acc_img_gs;
     Wg_image  gs_img;
     Wg_image  rgb_img;
@@ -228,7 +230,7 @@ capture(gpointer data)
                 img_cleanup(&hist_img);
 
                 if (gtk_toggle_button_get_active(
-                            GTK_TOGGLE_BUTTON(cam->normalize))){
+                            GTK_TOGGLE_BUTTON(cam->smooth))){
 
                     img_grayscale_normalize(&gs_img, NORM_RANGE_MAX,
                             NORM_RANGE_MIN);
@@ -248,7 +250,9 @@ capture(gpointer data)
 
                 ef_hyst_thr(&gs_img,
                         (gray_pixel)gtk_range_get_value(
-                            GTK_RANGE(cam->threshold)), 100
+                            GTK_RANGE(cam->threshold_high)),
+                        (gray_pixel)gtk_range_get_value(
+                            GTK_RANGE(cam->threshold_low))
                         );
 
                 ef_threshold(&gs_img, 255);
@@ -263,7 +267,11 @@ capture(gpointer data)
 
                 img_cleanup(&acc_img_gs);
 
-                ef_acc_get_max(image_sub, &h, &w);
+                ef_acc_get_max(image_sub, &h, &w, &votes);
+                if (votes < 100){
+                    h = 0;
+                    w = 0;
+                }
 
                 img_cleanup(image_sub);
 
@@ -489,7 +497,8 @@ int main(int argc, char *argv[])
     GtkWidget *hbox = NULL;
     GtkWidget *area = NULL;
     GtkWidget *color_button = NULL;
-    GtkWidget *thres = NULL;
+    GtkWidget *thres_low = NULL;
+    GtkWidget *thres_high = NULL;
     GtkWidget *display_box = NULL;
     Camera    *camera = NULL;
     GtkWidget *gtk_cam = NULL;
@@ -515,7 +524,8 @@ int main(int argc, char *argv[])
     }
 
     gtk_init(&argc, &argv);
-    thres =  gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 0.0, 255.0, 1.0);
+    thres_low =  gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 0.0, 255.0, 1.0);
+    thres_high =  gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 0.0, 255.0, 1.0);
 
     camera = WG_CALLOC(1, sizeof (Camera));
 
@@ -534,7 +544,8 @@ int main(int argc, char *argv[])
     camera->window = window;
     camera->fps = 0;
     camera->frame_count = 0;
-    camera->threshold = thres;
+    camera->threshold_low = thres_low;
+    camera->threshold_high = thres_high;
 
     gtk_widget_set_app_paintable(camera->hist_area, TRUE);
     gtk_widget_set_double_buffered(camera->hist_area, FALSE);
@@ -551,13 +562,19 @@ int main(int argc, char *argv[])
     capture_button  = gui_camera_get_capture_widget(GUI_CAMERA(gtk_cam));
     color_button = gui_camera_get_color_widget(GUI_CAMERA(gtk_cam));
 
-    camera->normalize = gui_camera_add_checkbox(GUI_CAMERA(gtk_cam), 
-            "Contract normalization");
+    camera->smooth = gui_camera_add_checkbox(GUI_CAMERA(gtk_cam), 
+            "Smoothing");
 
     camera->show_gray = gui_camera_add_checkbox(GUI_CAMERA(gtk_cam), 
             "Show gray scale");
 
-    gui_camera_add(GUI_CAMERA(gtk_cam), thres);
+    gui_camera_add(GUI_CAMERA(gtk_cam), gtk_label_new("High threshold"));
+    gui_camera_add(GUI_CAMERA(gtk_cam), thres_high);
+    gui_camera_add(GUI_CAMERA(gtk_cam), gtk_label_new("Low threshold"));
+    gui_camera_add(GUI_CAMERA(gtk_cam), thres_low);
+
+    gtk_range_set_value(GTK_RANGE(thres_low),  100.0); 
+    gtk_range_set_value(GTK_RANGE(thres_high), 200.0); 
 
     gtk_widget_set_sensitive(button_start, TRUE);
     gtk_widget_set_sensitive(button_stop, FALSE);

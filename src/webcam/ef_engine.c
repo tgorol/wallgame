@@ -202,7 +202,8 @@ ef_detect_circle(Wg_image *img, Wg_image *acc)
 
 
 cam_status
-ef_acc_get_max(Wg_image *acc, wg_uint *row_par, wg_uint *col_par)
+ef_acc_get_max(Wg_image *acc, wg_uint *row_par, wg_uint *col_par, 
+        wg_uint *votes)
 {
     wg_uint width = 0;
     wg_uint height = 0;
@@ -211,12 +212,13 @@ ef_acc_get_max(Wg_image *acc, wg_uint *row_par, wg_uint *col_par)
     wg_uint *acc_pixel = NULL;
     wg_uint max_value = 0;
     wg_uint x = 0;
-    wg_uint y = 0 ;
+    wg_uint y = 0;
 
 
     CHECK_FOR_NULL_PARAM(acc);
     CHECK_FOR_NULL_PARAM(row_par);
     CHECK_FOR_NULL_PARAM(col_par);
+    CHECK_FOR_NULL_PARAM(votes);
 
     if (acc->type != IMG_CIRCLE_ACC){
         WG_ERROR("Invalig image format! Passed %d expect %d\n", 
@@ -240,6 +242,7 @@ ef_acc_get_max(Wg_image *acc, wg_uint *row_par, wg_uint *col_par)
 
     *col_par = x;
     *row_par = y;
+    *votes   = max_value;
 
     return CAM_SUCCESS;
 }
