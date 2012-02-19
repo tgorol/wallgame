@@ -3,6 +3,8 @@
 #include <string.h>
 #include <math.h>
 #include <errno.h>
+#include <pthread.h>
+#include <stdarg.h>
 
 #include <cairo.h>
 #include <gtk/gtk.h>
@@ -13,6 +15,7 @@
 #include <wgmacros.h>
 #include <wg_linked_list.h>
 #include <wg_lsdir.h>
+#include <wg_workqueue.h>
 
 #include <linux/videodev2.h>
 
@@ -33,10 +36,13 @@
 
 #include "include/gui_camera.h"
 
+#include "include/sensor.h"
+
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
 #define NORM_RANGE_MIN 0
 #define NORM_RANGE_MAX 255
+
 
 typedef struct Camera{
     GtkWidget *window;
@@ -51,21 +57,60 @@ typedef struct Camera{
     GtkWidget *smooth;
     GtkWidget *threshold_low;
     GtkWidget *threshold_high;
-    GThread   *thread;
-    Wg_camera *camera;
+    GtkWidget *status_bar;
+    pthread_t  thread;
+    Sensor    *sensor;
     gint fps;
     gint frame_count;
     Wg_video_out vid;
 }Camera;
 
+typedef enum Event_type {
+    EVENT_PAINT        = 0,
+    EVENT_UPDATE_FPS      ,
+    EVENT_PRINT_MSG 
+}Event_type;
+
+typedef struct Event_paint{
+    GtkWidget *widget;
+    GdkPixbuf *pixbuf;
+    GdkPixbuf **pixbuf_dest;
+}Event_paint;
+
+typedef struct Event_print_msg{
+    GtkWidget *widget;
+    wg_char msg[64];
+}Event_print_msg;
+
+typedef struct Event_update_fps{
+    GtkWidget *widget;
+    wg_uint frame_inc;
+}Event_update_fps;
+
+typedef struct Event{
+    List_head leaf;
+    Event_type type;
+    union{
+        Event_paint paint;
+        Event_update_fps update_fps;
+        Event_print_msg print_msg;
+    }event;
+}Event;
+
+pthread_t control_thread;
+WorkQ workq;
+
 wg_status
 create_histogram(Wg_image *img, wg_uint width, wg_uint height, Wg_image *hist);
 
-static gboolean
-camera_is_active(Camera *cam)
-{
-    return cam->camera != NULL ? TRUE : FALSE;
-}
+WG_PRIVATE void
+start_control_thread();
+
+WG_PRIVATE Event*
+create_event(Event_type type, ...);
+
+WG_PRIVATE void
+destroy_event(Event *event);
 
 static gboolean
 on_expose_hist(GtkWidget *widget,
@@ -145,6 +190,7 @@ on_expose_event(GtkWidget *widget,
         cairo_paint(cr);
     }
 
+
     return TRUE;
 }
 
@@ -156,10 +202,18 @@ xbuf_free(guchar *pixels, gpointer data)
     WG_FREE(data);
 }
 
-gpointer
-capture(gpointer data)
+void *
+capture(void *data)
 {
-    Camera * volatile cam = NULL;
+#if 0
+
+    cam = (Camera*)data;
+
+    sensor_start(cam->sensor);
+
+    pthread_exit(NULL);
+#endif
+    Camera *cam = NULL;
     Wg_frame *frame = NULL;
     Wg_image *image_sub = NULL;
     Wg_image *tmp_img = NULL;
@@ -344,27 +398,29 @@ capture(gpointer data)
     cam_free_frame(cam->camera, frame);
 
     WG_FREE(frame);
-
-    return data;
 }
 
 
-    void
+void
 stop_capture(Camera *cam)
 {
-    if (camera_is_active(cam)){
-        cam_stop(cam->camera);
+    if (cam->sensor != NULL){
+        sensor_stop(cam->sensor);
 
-        cam_close(cam->camera);
+        pthread_cancel(cam->thread);
 
-        WG_FREE(cam->camera);
-        cam->camera = NULL;
+        pthread_join(cam->thread, NULL);
+
+        sensor_cleanup(cam->sensor);
+
+        WG_FREE(cam->sensor);
+        cam->sensor = NULL;
     }
 
     return;
 }
 
-    gint 
+gint 
 delete_event( GtkWidget *widget, GdkEvent  *event, gpointer   data )
 {
     Camera *cam = NULL;
@@ -398,21 +454,94 @@ void button_clicked_stop
     gtk_window_set_focus(GTK_WINDOW(cam->window), start_button);
 }
 
+WG_PRIVATE void
+default_cb(Sensor *sensor, Sensor_cb_type type, Wg_image *img, void *user_data)
+{
+    Camera *cam = NULL;
+    Event *event = NULL;
+    Wg_image rgb_img;
+    GdkPixbuf *pixbuf = NULL;
+
+    cam = (Camera*)user_data;
+    switch (type){
+    case CB_SETUP_START:
+#if 0
+        event = create_event(EVENT_PRINT_MSG, cam->status_bar,
+        "Initializing....");
+
+        wg_workq_add(&workq, &event->leaf);
+#endif
+        break;
+    case CB_SETUP_STOP:
+#if 0
+        event = create_event(EVENT_PRINT_MSG, cam->status_bar,
+        "Have fun");
+
+        wg_workq_add(&workq, &event->leaf);
+#endif
+        break;
+    case CB_IMG:
+            gdk_threads_enter();
+            if (cam->pixbuf != NULL){
+                g_object_unref(cam->pixbuf);
+            }
+
+            img_convert_to_pixbuf(img, &pixbuf, NULL);
+
+            cam->pixbuf = pixbuf;
+
+            gtk_widget_queue_draw(cam->area);
+            gdk_threads_leave();
+
+            gui_camera_fps_update(GUI_CAMERA(cam->gui_camera), 1);
+#if 0
+        img_convert_to_pixbuf(img, &pixbuf, NULL);
+
+        event = create_event(EVENT_PAINT, cam->acc_area, pixbuf,
+                &cam->acc_pixbuf);
+
+        wg_workq_add(&workq, &event->leaf);
+
+        event = create_event(EVENT_UPDATE_FPS, cam->gui_camera, 1);
+
+        wg_workq_add(&workq, &event->leaf);
+#endif
+        break;
+    case CB_IMG_EDGE:
+#if 0
+        img_grayscale_2_rgb(img, &rgb_img);
+        img_convert_to_pixbuf(&rgb_img, &pixbuf, NULL);
+
+        event = create_event(EVENT_PAINT, cam->area, pixbuf,
+                &cam->pixbuf);
+
+        img_cleanup(&rgb_img);
+
+        wg_workq_add(&workq, &event->leaf);
+#endif
+        break;
+    default:
+        cam = NULL;
+    }
+    return;
+}
+
 void button_clicked_start
 (GtkWidget *widget, gpointer data){
-    Wg_camera *camera;
-    Camera    *cam = NULL;
+    Sensor *sensor = NULL;
+    Camera *cam = NULL;
     const gchar *device = NULL;
-    cam_status status = CAM_FAILURE;
+    wg_status status = WG_FAILURE;
     GtkWidget *dev_path = NULL;
     GtkWidget *stop_button = NULL;
     GtkWidget *resolution = NULL;
+    pthread_attr_t attr;
 
     cam = (Camera*)data;
 
-    camera = WG_MALLOC(sizeof (Wg_camera));
-    if (NULL != camera){
-        cam->camera = camera;
+    sensor = WG_MALLOC(sizeof (*sensor));
+    if (NULL != sensor){
+        cam->sensor = sensor;
 
         dev_path = gui_camera_get_device_widget(GUI_CAMERA(cam->gui_camera));
         stop_button = gui_camera_get_stop_widget(GUI_CAMERA(cam->gui_camera));
@@ -421,11 +550,17 @@ void button_clicked_start
 
         device = gtk_combo_box_text_get_active_text(
                 GTK_COMBO_BOX_TEXT(dev_path));
+        
+        strncpy(sensor->video_dev, device, VIDEO_SIZE_MAX);
 
-        cam_init(cam->camera, device);
-        status = cam_open(cam->camera, 0, ENABLE_DECOMPRESSOR);
-        if (CAM_SUCCESS == status){
-            cam->thread = g_thread_create(capture, cam, FALSE, NULL);
+        status = sensor_init(cam->sensor);
+        if (WG_SUCCESS == status){
+            sensor_set_default_cb(cam->sensor, (Sensor_def_cb)default_cb, cam);
+
+            pthread_attr_init(&attr);
+            pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+            pthread_create(&cam->thread, &attr, capture, cam);
+            pthread_attr_destroy(&attr);
 
             gtk_widget_set_sensitive(widget, FALSE);
             gtk_widget_set_sensitive(stop_button, TRUE);
@@ -433,8 +568,8 @@ void button_clicked_start
             gtk_widget_set_sensitive(dev_path, FALSE);
             gtk_window_set_focus(GTK_WINDOW(cam->window), stop_button);
         }else{
-            WG_FREE(cam->camera);
-            cam->camera = NULL;
+            WG_FREE(cam->sensor);
+            cam->sensor = NULL;
         }
     }
 
@@ -521,6 +656,7 @@ int main(int argc, char *argv[])
         WG_LOG("g_thread supported\n");
     }else{
         WG_LOG("g_thread not supported\n");
+        return EXIT_FAILURE;
     }
 
     gtk_init(&argc, &argv);
@@ -546,6 +682,13 @@ int main(int argc, char *argv[])
     camera->frame_count = 0;
     camera->threshold_low = thres_low;
     camera->threshold_high = thres_high;
+    camera->status_bar = gtk_statusbar_new();
+
+    guint ctx = gtk_statusbar_get_context_id(GTK_STATUSBAR(camera->status_bar),
+            "Message");
+
+    gtk_statusbar_push(GTK_STATUSBAR(camera->status_bar), ctx, 
+            "Welcome to Wall Game Plugin");
 
     gtk_widget_set_app_paintable(camera->hist_area, TRUE);
     gtk_widget_set_double_buffered(camera->hist_area, FALSE);
@@ -621,6 +764,8 @@ int main(int argc, char *argv[])
 
     gtk_box_pack_start(GTK_BOX(display_box), camera->acc_area, TRUE, TRUE, 0);
 
+    gtk_box_pack_start(GTK_BOX(display_box), camera->status_bar, TRUE, TRUE, 0);
+
     gtk_box_pack_start(GTK_BOX(hbox), display_box, FALSE, TRUE, 5);
 
     gtk_box_pack_start(GTK_BOX(hbox), gtk_cam, FALSE, TRUE, 5);
@@ -628,6 +773,8 @@ int main(int argc, char *argv[])
     gtk_container_add (GTK_CONTAINER(window), hbox);
 
     gtk_widget_show_all(window);
+
+    start_control_thread();
 
     gtk_main();
 
@@ -643,7 +790,11 @@ int main(int argc, char *argv[])
         g_object_unref(camera->hist_pixbuf);
     }
 
-    WG_FREE(camera->camera);
+    if (NULL != camera->sensor){
+        sensor_cleanup(camera->sensor);
+        WG_FREE(camera->sensor);
+    }
+
     WG_FREE(camera);
 
     gdk_threads_leave();
@@ -693,4 +844,113 @@ create_histogram(Wg_image *img, wg_uint width, wg_uint height, Wg_image *hist)
     img_draw_cleanup_context(&ctx);
 
     return WG_SUCCESS;
+}
+
+
+WG_PRIVATE void*
+process_event(void *data)
+{
+    WorkQ *workq = NULL;
+    Event *event = NULL;
+    Gui_camera *cam = NULL;
+
+    workq = (WorkQ*)data;
+
+    for (;;){
+        wg_workq_get(workq, (void**)&event);
+        switch (event->type){
+        case EVENT_PAINT:
+            gdk_threads_enter();
+            if (*event->event.paint.pixbuf_dest != NULL){
+                g_object_unref(*event->event.paint.pixbuf_dest);
+            }
+
+            *event->event.paint.pixbuf_dest = event->event.paint.pixbuf;
+
+            gtk_widget_queue_draw(event->event.paint.widget);
+            gdk_threads_leave();
+            destroy_event(event);
+            break;
+        case EVENT_UPDATE_FPS:
+            gdk_threads_enter();
+            cam = GUI_CAMERA(event->event.update_fps.widget);
+            gui_camera_fps_update(cam, event->event.update_fps.frame_inc);
+            gdk_threads_leave();
+            destroy_event(event);
+            break;
+        case EVENT_PRINT_MSG:
+            gdk_threads_enter();
+            guint ctx = gtk_statusbar_get_context_id(
+                    GTK_STATUSBAR(event->event.print_msg.widget), "Message");
+
+            gtk_statusbar_push(GTK_STATUSBAR(event->event.print_msg.widget), 
+                    ctx, event->event.print_msg.msg);
+
+            gdk_threads_leave();
+            destroy_event(event);
+
+        }
+    }
+
+    pthread_exit(NULL);
+}
+
+WG_PRIVATE void
+start_control_thread()
+{
+    pthread_attr_t attr;
+
+    wg_workq_init(&workq, GET_OFFSET(Event, leaf));
+
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+    pthread_create(&control_thread, &attr, process_event, &workq);
+    pthread_attr_destroy(&attr);
+
+    return;
+}
+
+WG_PRIVATE Event*
+create_event(Event_type type, ...)
+{
+    Event *event = NULL;
+    va_list args;
+
+    va_start (args, type);
+
+    switch (type){
+    case EVENT_PAINT:
+        event = WG_MALLOC(sizeof (Event));
+        event->type = type;
+        event->event.paint.widget = va_arg(args, GtkWidget*);
+        event->event.paint.pixbuf = va_arg(args, GdkPixbuf*);
+        event->event.paint.pixbuf_dest = va_arg(args, GdkPixbuf**);
+        break;
+    case EVENT_UPDATE_FPS:
+        event = WG_MALLOC(sizeof (Event));
+        event->type = type;
+        event->event.update_fps.widget = va_arg(args, GtkWidget*);
+        event->event.update_fps.frame_inc = va_arg(args, wg_uint);
+        break;
+    case EVENT_PRINT_MSG:
+        event = WG_MALLOC(sizeof (Event));
+        event->type = type;
+        event->event.update_fps.widget = va_arg(args, GtkWidget*);
+        strcpy(event->event.print_msg.msg, va_arg(args, wg_char*));
+        break;
+    default:
+        event = NULL;
+    }
+
+    va_end(args);
+
+    return event;
+}
+
+WG_PRIVATE void
+destroy_event(Event *event)
+{
+    WG_FREE(event);
+
+    return;
 }

@@ -11,10 +11,13 @@
 #include <linux/videodev2.h>
 
 #include "include/cam.h"
+#include "include/cam.h"
 #include "include/img.h"
 #include "include/cam_frame.h"
 
 #include "include/sensor.h"
+
+#include "include/ef_engine.h"
 
 /* Do not increase this value above 100 */
 #define BG_FRAMES_NUM 25
@@ -23,7 +26,7 @@ WG_PRIVATE wg_status
 collect_frames(Sensor *sensor, Wg_image *img, wg_uint num);
 
 WG_PRIVATE void
-release_frames(Wg_image *img, wg_uint num);
+release_frames(Wg_image *img, wg_int num);
 
 WG_PRIVATE wg_status
 convert_frames(Wg_image *img, wg_uint num);
@@ -59,6 +62,7 @@ sensor_init(Sensor *sensor)
     /* clear callbacks */
     for (i = 0; i < ELEMNUM(sensor->cb); ++i){
         sensor->cb[i] = NULL;
+        sensor->user_data[i] = NULL;
     }
 
     pthread_mutex_init(&sensor->lock, NULL);
@@ -86,13 +90,23 @@ sensor_start(Sensor *sensor)
 {
     Wg_frame frame;
     Wg_image image;
+    Wg_image gs_image;
+    Wg_image edge_image;
+    Wg_image acc;
     Wg_cam_decompressor decomp;
     union{
         cam_status cam;
         wg_status  wg;
     }status;
 
+    ef_init();
+
     status.cam = cam_open(&sensor->camera, 0, ENABLE_DECOMPRESSOR);
+    if (CAM_SUCCESS != status.cam){
+        return WG_FAILURE;
+    }
+
+    status.cam = cam_start(&sensor->camera);
     if (CAM_SUCCESS != status.cam){
         return WG_FAILURE;
     }
@@ -111,12 +125,17 @@ sensor_start(Sensor *sensor)
     cam_frame_init(&frame);
     cam_decompressor(&sensor->camera, &decomp);
 
+    pthread_mutex_lock(&sensor->lock);
+    sensor->state = SENSOR_STARTED;
+    pthread_mutex_unlock(&sensor->lock);
+
     for (;;){
         pthread_mutex_lock(&sensor->lock);
-        sensor->state = SENSOR_STARTED;
-        if (WG_TRUE == sensor->complete_request){
+        if (WG_TRUE == ((volatile Sensor *)sensor)->complete_request){
             sensor->complete_request = WG_FALSE;
             sensor->state = SENSOR_STOPED;
+            cam_stop(&sensor->camera);
+            cam_close(&sensor->camera);
             pthread_cond_signal(&sensor->finish);
             pthread_mutex_unlock(&sensor->lock);
             return WG_SUCCESS;
@@ -128,24 +147,54 @@ sensor_start(Sensor *sensor)
                     frame.start, frame.size, 
                     frame.width, frame.height, &image);
 
+
             cam_discard_frame(&sensor->camera, &frame);
 
             call_user_callback(sensor, CB_IMG, &image);
 
+            img_rgb_2_grayscale(&image, &gs_image);
+
+            img_grayscale_normalize(&gs_image, 255, 0);
+
+            call_user_callback(sensor, CB_IMG_GS, &gs_image);
+
+            ef_detect_edge(&gs_image, &edge_image);
+
+            img_grayscale_normalize(&edge_image, 255, 0);
+
+            ef_hyst_thr(&edge_image, 200, 100);
+
+            ef_threshold(&edge_image, 255);
+
+            call_user_callback(sensor, CB_IMG_EDGE, &edge_image);
+
+            ef_detect_circle(&edge_image, &acc);
+
+            call_user_callback(sensor, CB_IMG_ACC, &acc);
 
             img_cleanup(&image);
-
+            img_cleanup(&gs_image);
+            img_cleanup(&edge_image);
+            img_cleanup(&acc);
         }else{
             pthread_mutex_lock(&sensor->lock);
             sensor->complete_request = WG_FALSE;
             sensor->state = SENSOR_STOPED;
+            cam_stop(&sensor->camera);
+            cam_close(&sensor->camera);
             pthread_cond_signal(&sensor->finish);
             pthread_mutex_unlock(&sensor->lock);
             return WG_SUCCESS;
-
         }
     }
 
+    pthread_mutex_lock(&sensor->lock);
+    sensor->complete_request = WG_FALSE;
+    sensor->state = SENSOR_STOPED;
+    cam_stop(&sensor->camera);
+    cam_close(&sensor->camera);
+    pthread_cond_signal(&sensor->finish);
+    pthread_mutex_unlock(&sensor->lock);
     return WG_SUCCESS;
 }
 
@@ -161,7 +210,7 @@ sensor_stop(Sensor *sensor)
 
     sensor->complete_request = WG_TRUE;
 
-    while(WG_TRUE == sensor->complete_request){
+    while(WG_TRUE == ((volatile Sensor *)sensor)->complete_request){
         pthread_cond_wait(&sensor->finish, &sensor->lock);
     }
 
@@ -171,7 +220,7 @@ sensor_stop(Sensor *sensor)
 }
 
 wg_status
-sensor_set_default_cb(Sensor *sensor, Sensor_def_cb cb)
+sensor_set_default_cb(Sensor *sensor, Sensor_def_cb cb, void *user_data)
 {
     wg_int i = 0;
 
@@ -179,17 +228,20 @@ sensor_set_default_cb(Sensor *sensor, Sensor_def_cb cb)
 
     for (i = 0; i < ELEMNUM(sensor->cb); ++i){
         sensor->cb[i] = cb;
+        sensor->user_data[i] = user_data;
     }
 
     return WG_SUCCESS;
 }
 
 wg_status
-sensor_set_cb(Sensor *sensor, Sensor_cb_type type, Sensor_def_cb cb)
+sensor_set_cb(Sensor *sensor, Sensor_cb_type type, 
+        Sensor_def_cb cb, void *user_data)
 {
     CHECK_FOR_NULL_PARAM(sensor);
 
     sensor->cb[type] = cb;
+    sensor->user_data[type] = user_data;
 
     return WG_SUCCESS;
 }
@@ -251,9 +303,9 @@ call_user_xy_callback(const Sensor *const sensor, wg_uint x, wg_uint y)
 }
 
 WG_PRIVATE void
-release_frames(Wg_image *img, wg_uint num)
+release_frames(Wg_image *img, wg_int num)
 {
-    wg_uint i = 0;
+    wg_int i = 0;
 
     for (i = 0; i < num; ++i){
         img_cleanup(&img[i]);
@@ -273,7 +325,7 @@ call_user_callback(const Sensor *const sensor, Sensor_cb_type type,
 
     user_callback = (Sensor_cb)sensor->cb[type];
     if (NULL != user_callback){
-        user_callback(sensor, type, image);
+        user_callback(sensor, type, image, sensor->user_data[type]);
     }
 
     return;
@@ -375,7 +427,7 @@ collect_frames(Sensor *sensor, Wg_image *img, wg_uint num)
     for (i = 0; i < num; ++i){
         status = cam_read(&sensor->camera, &frame);
         if (CAM_SUCCESS != status){
-            release_frames(img, i - 1);
+            release_frames(img, i);
             return WG_FAILURE;
         }
         status = invoke_decompressor(&decompressor, 
@@ -383,7 +435,7 @@ collect_frames(Sensor *sensor, Wg_image *img, wg_uint num)
                 frame.width, frame.height, &img[i]);
         if (CAM_SUCCESS != status){
             cam_discard_frame(&sensor->camera, &frame);
-            release_frames(img, i - 1);
+            release_frames(img, i);
             return WG_FAILURE;
         }
 

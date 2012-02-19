@@ -187,6 +187,7 @@ img_convert_to_pixbuf(Wg_image *img, GdkPixbuf **pixbuf,
         void (*free_cb)(guchar *, gpointer))
 {
     GdkPixbuf *pix = NULL;
+    GdkPixbuf *pix_dest = NULL;
 
     if (IMG_RGB != img->type){
         WG_LOG("Only RGB24 supported\n");
@@ -199,19 +200,18 @@ img_convert_to_pixbuf(Wg_image *img, GdkPixbuf **pixbuf,
             GDK_COLORSPACE_RGB, FALSE, 8, 
             img->width, img->height, 
             img->row_distance, 
-            free_cb, img);
+            NULL, NULL);
 
     if (NULL == pixbuf){
         WG_LOG("Wg_image -> GdkPixbuf conversion error\n");
         return WG_FAILURE;
     }
 
-//    img->image = NULL;
+    pix_dest = gdk_pixbuf_copy(pix);
 
-//    img_cleanup(img);
-//    WG_FREE(img);
+    g_object_unref(pix);
 
-    *pixbuf = pix;
+    *pixbuf = pix_dest;
 
     return WG_SUCCESS;
 }

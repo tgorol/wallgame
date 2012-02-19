@@ -47,7 +47,7 @@ wg_memleak_start()
         init_flag = WG_TRUE;
         pthread_mutex_unlock(&memleak_lock);
 
-        WG_LOG("Memleak checking starded\n");
+        WG_DEBUG("Memleak checking starded\n");
     }else{
         pthread_mutex_unlock(&memleak_lock);
     }
