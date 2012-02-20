@@ -106,6 +106,12 @@ sensor_start(Sensor *sensor)
         return WG_FAILURE;
     }
 
+    status.cam = cam_set_resolution(&sensor->camera, 
+            sensor->width, sensor->height);
+    if (CAM_SUCCESS != status.cam){
+        return WG_FAILURE;
+    }
+
     status.cam = cam_start(&sensor->camera);
     if (CAM_SUCCESS != status.cam){
         return WG_FAILURE;
@@ -146,7 +152,6 @@ sensor_start(Sensor *sensor)
             status.cam = invoke_decompressor(&decomp, 
                     frame.start, frame.size, 
                     frame.width, frame.height, &image);
-
 
             cam_discard_frame(&sensor->camera, &frame);
 
@@ -215,6 +220,8 @@ sensor_stop(Sensor *sensor)
     }
 
     pthread_mutex_unlock(&sensor->lock);
+
+    img_cleanup(&sensor->background);
 
     return WG_SUCCESS;
 }
@@ -393,7 +400,7 @@ convert_frames(Wg_image *img, wg_uint num)
     for (i = 0; i < num ; ++i){
         status = img_rgb_2_grayscale(&img[i], &local_img[i]);
         if (CAM_SUCCESS != status){
-            release_frames(local_img, i - 1);
+            release_frames(local_img, i);
             return WG_FAILURE;
         }
     }

@@ -30,6 +30,8 @@ typedef void (*Sensor_xy_cb)(const Sensor *sensor, wg_uint x, wg_uint y);
 
 struct Sensor{
     wg_char video_dev[VIDEO_SIZE_MAX + 1];
+    wg_uint width;
+    wg_uint height;
 
     /* internal use fields. DO NOT TOUCH */
     Sensor_state state;

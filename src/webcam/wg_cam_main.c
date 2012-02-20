@@ -205,14 +205,12 @@ xbuf_free(guchar *pixels, gpointer data)
 void *
 capture(void *data)
 {
-#if 0
-
-    cam = (Camera*)data;
+    Camera *cam = (Camera*)data;
 
     sensor_start(cam->sensor);
 
     pthread_exit(NULL);
-#endif
+#if 0
     Camera *cam = NULL;
     Wg_frame *frame = NULL;
     Wg_image *image_sub = NULL;
@@ -398,6 +396,7 @@ capture(void *data)
     cam_free_frame(cam->camera, frame);
 
     WG_FREE(frame);
+#endif
 }
 
 
@@ -465,36 +464,18 @@ default_cb(Sensor *sensor, Sensor_cb_type type, Wg_image *img, void *user_data)
     cam = (Camera*)user_data;
     switch (type){
     case CB_SETUP_START:
-#if 0
         event = create_event(EVENT_PRINT_MSG, cam->status_bar,
         "Initializing....");
 
         wg_workq_add(&workq, &event->leaf);
-#endif
         break;
     case CB_SETUP_STOP:
-#if 0
         event = create_event(EVENT_PRINT_MSG, cam->status_bar,
         "Have fun");
 
         wg_workq_add(&workq, &event->leaf);
-#endif
         break;
     case CB_IMG:
-            gdk_threads_enter();
-            if (cam->pixbuf != NULL){
-                g_object_unref(cam->pixbuf);
-            }
-
-            img_convert_to_pixbuf(img, &pixbuf, NULL);
-
-            cam->pixbuf = pixbuf;
-
-            gtk_widget_queue_draw(cam->area);
-            gdk_threads_leave();
-
-            gui_camera_fps_update(GUI_CAMERA(cam->gui_camera), 1);
-#if 0
         img_convert_to_pixbuf(img, &pixbuf, NULL);
 
         event = create_event(EVENT_PAINT, cam->acc_area, pixbuf,
@@ -505,10 +486,8 @@ default_cb(Sensor *sensor, Sensor_cb_type type, Wg_image *img, void *user_data)
         event = create_event(EVENT_UPDATE_FPS, cam->gui_camera, 1);
 
         wg_workq_add(&workq, &event->leaf);
-#endif
         break;
     case CB_IMG_EDGE:
-#if 0
         img_grayscale_2_rgb(img, &rgb_img);
         img_convert_to_pixbuf(&rgb_img, &pixbuf, NULL);
 
@@ -518,7 +497,6 @@ default_cb(Sensor *sensor, Sensor_cb_type type, Wg_image *img, void *user_data)
         img_cleanup(&rgb_img);
 
         wg_workq_add(&workq, &event->leaf);
-#endif
         break;
     default:
         cam = NULL;
@@ -550,6 +528,9 @@ void button_clicked_start
 
         device = gtk_combo_box_text_get_active_text(
                 GTK_COMBO_BOX_TEXT(dev_path));
+
+        gui_camera_get_active_resolution(GUI_CAMERA(cam->gui_camera),
+                &sensor->width, &sensor->height);
         
         strncpy(sensor->video_dev, device, VIDEO_SIZE_MAX);
 
