@@ -7,12 +7,16 @@
 #include <wgtypes.h>
 #include <wg.h>
 #include <wgmacros.h>
+#include <wg_linked_list.h>
+#include <wg_sync_linked_list.h>
+#include <wg_wq.h>
 
 #include <linux/videodev2.h>
 
 #include "include/cam.h"
 #include "include/cam.h"
 #include "include/img.h"
+#include "include/img_gs.h"
 #include "include/cam_frame.h"
 
 #include "include/sensor.h"
@@ -21,6 +25,9 @@
 
 /* Do not increase this value above 100 */
 #define BG_FRAMES_NUM 25
+
+#define TH_HIGH    240
+#define TH_LOW     100
 
 WG_PRIVATE wg_status
 collect_frames(Sensor *sensor, Wg_image *img, wg_uint num);
@@ -69,6 +76,10 @@ sensor_init(Sensor *sensor)
     pthread_cond_init(&sensor->finish, NULL);
 
     sensor->state = SENSOR_STOPED;
+    sensor->th_high = TH_HIGH;
+    sensor->th_low  = TH_LOW;
+
+    wg_wq_init(&sensor->detection_wq);
 
     return status;
 }
@@ -85,9 +96,26 @@ sensor_cleanup(Sensor *sensor)
     return;
 }
 
+WG_PRIVATE void
+detect_circle_wq(void *data)
+{
+    Wg_image *img = NULL;
+    Wg_image acc;
+
+    img = (Wg_image*)data;
+
+    ef_detect_circle(img, &acc);
+
+    img_cleanup(img);
+    img_cleanup(&acc);
+
+    return;
+}
+
 wg_status
 sensor_start(Sensor *sensor)
 {
+    Wg_image *edge_image_tmp = NULL;
     Wg_frame frame;
     Wg_image image;
     Wg_image gs_image;
@@ -98,6 +126,8 @@ sensor_start(Sensor *sensor)
         cam_status cam;
         wg_status  wg;
     }status;
+    wg_uint th_low = 0;
+    wg_uint th_high = 0;
 
     ef_init();
 
@@ -163,23 +193,33 @@ sensor_start(Sensor *sensor)
 
             call_user_callback(sensor, CB_IMG_GS, &gs_image);
 
+            img_gs_sub(&gs_image, &sensor->background);
+
             ef_detect_edge(&gs_image, &edge_image);
 
             img_grayscale_normalize(&edge_image, 255, 0);
 
-            ef_hyst_thr(&edge_image, 200, 100);
+            sensor_get_threshold(sensor, &th_high, &th_low);
+            ef_hyst_thr(&edge_image, th_high, th_low);
 
             ef_threshold(&edge_image, 255);
 
             call_user_callback(sensor, CB_IMG_EDGE, &edge_image);
 
-            ef_detect_circle(&edge_image, &acc);
+            edge_image_tmp = wg_wq_work_create(sizeof (Wg_image),
+                    detect_circle_wq);
 
-            call_user_callback(sensor, CB_IMG_ACC, &acc);
+            *edge_image_tmp = edge_image;
+
+            wg_wq_add(&sensor->detection_wq, edge_image_tmp);
+
+//            ef_detect_circle(&edge_image, &acc);
+
+//            call_user_callback(sensor, CB_IMG_ACC, &acc);
 
             img_cleanup(&image);
             img_cleanup(&gs_image);
-            img_cleanup(&edge_image);
+//            img_cleanup(&edge_image);
             img_cleanup(&acc);
         }else{
             pthread_mutex_lock(&sensor->lock);
@@ -204,6 +244,38 @@ sensor_start(Sensor *sensor)
 }
 
 wg_status
+sensor_set_threshold(Sensor *sensor, wg_uint high, wg_uint low)
+{
+    CHECK_FOR_NULL_PARAM(sensor);
+
+    pthread_mutex_lock(&sensor->lock);
+    
+    sensor->th_low  = low;
+    sensor->th_high = high;
+
+    pthread_mutex_unlock(&sensor->lock);
+
+    return WG_SUCCESS;
+}
+
+wg_status
+sensor_get_threshold(Sensor *sensor, wg_uint *high, wg_uint *low)
+{
+    CHECK_FOR_NULL_PARAM(sensor);
+    CHECK_FOR_NULL_PARAM(high);
+    CHECK_FOR_NULL_PARAM(low);
+
+    pthread_mutex_lock(&sensor->lock);
+    
+    *low  = sensor->th_low;
+    *high = sensor->th_high;
+
+    pthread_mutex_unlock(&sensor->lock);
+
+    return WG_SUCCESS;
+}
+
+wg_status
 sensor_stop(Sensor *sensor)
 {
     pthread_mutex_lock(&sensor->lock);
@@ -222,6 +294,8 @@ sensor_stop(Sensor *sensor)
     pthread_mutex_unlock(&sensor->lock);
 
     img_cleanup(&sensor->background);
+
+    wg_wq_cleanup(&sensor->detection_wq);
 
     return WG_SUCCESS;
 }
@@ -451,3 +525,4 @@ collect_frames(Sensor *sensor, Wg_image *img, wg_uint num)
 
     return WG_SUCCESS;
 }
+

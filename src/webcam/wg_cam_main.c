@@ -15,7 +15,8 @@
 #include <wgmacros.h>
 #include <wg_linked_list.h>
 #include <wg_lsdir.h>
-#include <wg_workqueue.h>
+#include <wg_sync_linked_list.h>
+#include <wg_wq.h>
 
 #include <linux/videodev2.h>
 
@@ -37,11 +38,15 @@
 #include "include/gui_camera.h"
 
 #include "include/sensor.h"
+#include "include/gui_work.h"
 
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
 #define NORM_RANGE_MIN 0
 #define NORM_RANGE_MAX 255
+
+#define TH_HIGH_DEF  240
+#define TH_LOW_DEF   100
 
 
 typedef struct Camera{
@@ -63,54 +68,14 @@ typedef struct Camera{
     gint fps;
     gint frame_count;
     Wg_video_out vid;
+    wg_uint th_low;
+    wg_uint th_high;
 }Camera;
 
-typedef enum Event_type {
-    EVENT_PAINT        = 0,
-    EVENT_UPDATE_FPS      ,
-    EVENT_PRINT_MSG 
-}Event_type;
-
-typedef struct Event_paint{
-    GtkWidget *widget;
-    GdkPixbuf *pixbuf;
-    GdkPixbuf **pixbuf_dest;
-}Event_paint;
-
-typedef struct Event_print_msg{
-    GtkWidget *widget;
-    wg_char msg[64];
-}Event_print_msg;
-
-typedef struct Event_update_fps{
-    GtkWidget *widget;
-    wg_uint frame_inc;
-}Event_update_fps;
-
-typedef struct Event{
-    List_head leaf;
-    Event_type type;
-    union{
-        Event_paint paint;
-        Event_update_fps update_fps;
-        Event_print_msg print_msg;
-    }event;
-}Event;
-
-pthread_t control_thread;
-WorkQ workq;
 
 wg_status
 create_histogram(Wg_image *img, wg_uint width, wg_uint height, Wg_image *hist);
 
-WG_PRIVATE void
-start_control_thread();
-
-WG_PRIVATE Event*
-create_event(Event_type type, ...);
-
-WG_PRIVATE void
-destroy_event(Event *event);
 
 static gboolean
 on_expose_hist(GtkWidget *widget,
@@ -453,50 +418,106 @@ void button_clicked_stop
     gtk_window_set_focus(GTK_WINDOW(cam->window), start_button);
 }
 
+typedef struct Update_image{
+    GdkPixbuf *src_pixbuf;
+    GdkPixbuf **dest_pixbuf;
+    GtkWidget *area;
+}Update_image;
+
+typedef struct Update_fps{
+    wg_uint frame_inc;
+    Gui_camera *widget;
+}Update_fps;
+
+WG_PRIVATE void
+update_fps_cb(void *data)
+{
+    Update_fps *fps = NULL;
+
+    fps = (Update_fps*)data;
+
+    gui_camera_fps_update(fps->widget, fps->frame_inc);
+
+    return;
+}
+
+WG_PRIVATE void
+update_image_cb(void *data)
+{
+    Update_image *img = NULL;
+
+    img = (Update_image*)data;
+
+    gdk_threads_enter();
+
+    if (*img->dest_pixbuf != NULL){
+        g_object_unref(*img->dest_pixbuf);
+        *img->dest_pixbuf = NULL;
+    }
+
+    *img->dest_pixbuf = img->src_pixbuf;
+
+    gtk_widget_queue_draw(img->area);
+
+    gdk_threads_leave();
+
+    return;
+}
+
 WG_PRIVATE void
 default_cb(Sensor *sensor, Sensor_cb_type type, Wg_image *img, void *user_data)
 {
     Camera *cam = NULL;
-    Event *event = NULL;
     Wg_image rgb_img;
+    union {
+        Update_image *update_img;
+        Update_fps   *update_fps;
+    }work;
     GdkPixbuf *pixbuf = NULL;
 
     cam = (Camera*)user_data;
     switch (type){
     case CB_SETUP_START:
-        event = create_event(EVENT_PRINT_MSG, cam->status_bar,
-        "Initializing....");
-
-        wg_workq_add(&workq, &event->leaf);
         break;
     case CB_SETUP_STOP:
-        event = create_event(EVENT_PRINT_MSG, cam->status_bar,
-        "Have fun");
-
-        wg_workq_add(&workq, &event->leaf);
         break;
     case CB_IMG:
         img_convert_to_pixbuf(img, &pixbuf, NULL);
 
-        event = create_event(EVENT_PAINT, cam->acc_area, pixbuf,
-                &cam->acc_pixbuf);
+        /* update frame */
+        work.update_img = gui_work_create(sizeof (Update_image), 
+                update_image_cb);
 
-        wg_workq_add(&workq, &event->leaf);
+        work.update_img->src_pixbuf  = pixbuf;
+        work.update_img->dest_pixbuf = &cam->acc_pixbuf;
+        work.update_img->area = cam->acc_area;
 
-        event = create_event(EVENT_UPDATE_FPS, cam->gui_camera, 1);
+        gui_work_add(work.update_img);
 
-        wg_workq_add(&workq, &event->leaf);
+        /* update fps */
+        work.update_fps = gui_work_create(sizeof (Update_fps), update_fps_cb);
+
+        work.update_fps->widget = GUI_CAMERA(cam->gui_camera);
+        work.update_fps->frame_inc = 1;
+
+        gui_work_add(work.update_fps);
+
         break;
     case CB_IMG_EDGE:
+        /* update frame */
         img_grayscale_2_rgb(img, &rgb_img);
         img_convert_to_pixbuf(&rgb_img, &pixbuf, NULL);
 
-        event = create_event(EVENT_PAINT, cam->area, pixbuf,
-                &cam->pixbuf);
-
         img_cleanup(&rgb_img);
 
-        wg_workq_add(&workq, &event->leaf);
+        work.update_img = gui_work_create(sizeof (Update_image), 
+                update_image_cb);
+
+        work.update_img->src_pixbuf  = pixbuf;
+        work.update_img->dest_pixbuf = &cam->pixbuf;
+        work.update_img->area = cam->area;
+
+        gui_work_add(work.update_img);
         break;
     default:
         cam = NULL;
@@ -535,6 +556,7 @@ void button_clicked_start
         strncpy(sensor->video_dev, device, VIDEO_SIZE_MAX);
 
         status = sensor_init(cam->sensor);
+        sensor_set_threshold(cam->sensor, cam->th_high, cam->th_low);
         if (WG_SUCCESS == status){
             sensor_set_default_cb(cam->sensor, (Sensor_def_cb)default_cb, cam);
 
@@ -600,6 +622,36 @@ select_resolution(GtkWidget *obj, gpointer data)
     WG_LOG("New resolution w:%u h:%u\n", width, height);
 #endif
 
+}
+
+WG_PRIVATE gboolean
+on_change_value_th_low(GtkRange     *range,
+        GtkScrollType scroll,
+        gdouble       value,
+        gpointer      user_data)
+{
+    Camera *cam = (Camera*)user_data;
+
+    cam->th_low = (wg_uint)value;
+    if (cam->sensor != NULL){
+        sensor_set_threshold(cam->sensor, cam->th_high, cam->th_low);
+    }
+    return FALSE;
+}
+
+WG_PRIVATE gboolean
+on_change_value_th_high(GtkRange     *range,
+        GtkScrollType scroll,
+        gdouble       value,
+        gpointer      user_data)
+{
+    Camera *cam = (Camera*)user_data;
+
+    cam->th_high = (wg_uint)value;
+    if (cam->sensor != NULL){
+        sensor_set_threshold(cam->sensor, cam->th_high, cam->th_low);
+    }
+    return FALSE;
 }
 
 
@@ -697,8 +749,17 @@ int main(int argc, char *argv[])
     gui_camera_add(GUI_CAMERA(gtk_cam), gtk_label_new("Low threshold"));
     gui_camera_add(GUI_CAMERA(gtk_cam), thres_low);
 
-    gtk_range_set_value(GTK_RANGE(thres_low),  100.0); 
-    gtk_range_set_value(GTK_RANGE(thres_high), 200.0); 
+    g_signal_connect(GTK_RANGE(thres_high), "change-value", 
+            G_CALLBACK(on_change_value_th_high), camera);
+
+    g_signal_connect(GTK_RANGE(thres_low), "change-value", 
+            G_CALLBACK(on_change_value_th_low), camera);
+
+    gtk_range_set_value(GTK_RANGE(thres_low),  TH_LOW_DEF); 
+    gtk_range_set_value(GTK_RANGE(thres_high), TH_HIGH_DEF); 
+
+    camera->th_high = TH_HIGH_DEF;
+    camera->th_low  = TH_LOW_DEF;
 
     gtk_widget_set_sensitive(button_start, TRUE);
     gtk_widget_set_sensitive(button_stop, FALSE);
@@ -755,9 +816,11 @@ int main(int argc, char *argv[])
 
     gtk_widget_show_all(window);
 
-    start_control_thread();
+    gui_work_thread_init();
 
     gtk_main();
+
+    gui_work_thread_cleanup();
 
     if (NULL != camera->pixbuf){
         g_object_unref(camera->pixbuf);
@@ -827,111 +890,3 @@ create_histogram(Wg_image *img, wg_uint width, wg_uint height, Wg_image *hist)
     return WG_SUCCESS;
 }
 
-
-WG_PRIVATE void*
-process_event(void *data)
-{
-    WorkQ *workq = NULL;
-    Event *event = NULL;
-    Gui_camera *cam = NULL;
-
-    workq = (WorkQ*)data;
-
-    for (;;){
-        wg_workq_get(workq, (void**)&event);
-        switch (event->type){
-        case EVENT_PAINT:
-            gdk_threads_enter();
-            if (*event->event.paint.pixbuf_dest != NULL){
-                g_object_unref(*event->event.paint.pixbuf_dest);
-            }
-
-            *event->event.paint.pixbuf_dest = event->event.paint.pixbuf;
-
-            gtk_widget_queue_draw(event->event.paint.widget);
-            gdk_threads_leave();
-            destroy_event(event);
-            break;
-        case EVENT_UPDATE_FPS:
-            gdk_threads_enter();
-            cam = GUI_CAMERA(event->event.update_fps.widget);
-            gui_camera_fps_update(cam, event->event.update_fps.frame_inc);
-            gdk_threads_leave();
-            destroy_event(event);
-            break;
-        case EVENT_PRINT_MSG:
-            gdk_threads_enter();
-            guint ctx = gtk_statusbar_get_context_id(
-                    GTK_STATUSBAR(event->event.print_msg.widget), "Message");
-
-            gtk_statusbar_push(GTK_STATUSBAR(event->event.print_msg.widget), 
-                    ctx, event->event.print_msg.msg);
-
-            gdk_threads_leave();
-            destroy_event(event);
-
-        }
-    }
-
-    pthread_exit(NULL);
-}
-
-WG_PRIVATE void
-start_control_thread()
-{
-    pthread_attr_t attr;
-
-    wg_workq_init(&workq, GET_OFFSET(Event, leaf));
-
-    pthread_attr_init(&attr);
-    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-    pthread_create(&control_thread, &attr, process_event, &workq);
-    pthread_attr_destroy(&attr);
-
-    return;
-}
-
-WG_PRIVATE Event*
-create_event(Event_type type, ...)
-{
-    Event *event = NULL;
-    va_list args;
-
-    va_start (args, type);
-
-    switch (type){
-    case EVENT_PAINT:
-        event = WG_MALLOC(sizeof (Event));
-        event->type = type;
-        event->event.paint.widget = va_arg(args, GtkWidget*);
-        event->event.paint.pixbuf = va_arg(args, GdkPixbuf*);
-        event->event.paint.pixbuf_dest = va_arg(args, GdkPixbuf**);
-        break;
-    case EVENT_UPDATE_FPS:
-        event = WG_MALLOC(sizeof (Event));
-        event->type = type;
-        event->event.update_fps.widget = va_arg(args, GtkWidget*);
-        event->event.update_fps.frame_inc = va_arg(args, wg_uint);
-        break;
-    case EVENT_PRINT_MSG:
-        event = WG_MALLOC(sizeof (Event));
-        event->type = type;
-        event->event.update_fps.widget = va_arg(args, GtkWidget*);
-        strcpy(event->event.print_msg.msg, va_arg(args, wg_char*));
-        break;
-    default:
-        event = NULL;
-    }
-
-    va_end(args);
-
-    return event;
-}
-
-WG_PRIVATE void
-destroy_event(Event *event)
-{
-    WG_FREE(event);
-
-    return;
-}

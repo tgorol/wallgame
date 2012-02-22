@@ -9,7 +9,7 @@
 
 #include <wg_linked_list.h>
 #include <wg_iterator.h>
-#include <wg_workqueue.h>
+#include <wg_sync_linked_list.h>
 
 /*! \defgroup squeue Synchronized Queue Implementation.
  */

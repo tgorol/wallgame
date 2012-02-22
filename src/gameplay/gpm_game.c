@@ -12,7 +12,7 @@
 
 #include <wg_trans.h>
 #include <wg_linked_list.h>
-#include <wg_workqueue.h>
+#include <wg_sync_linked_list.h>
 #include <wg_slab.h>
 #include <wg_msg.h>
 #include <wgp.h>

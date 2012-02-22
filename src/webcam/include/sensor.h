@@ -27,6 +27,7 @@ typedef struct Sensor Sensor;
 typedef void (*Sensor_def_cb)(const Sensor *, ...);
 typedef void (*Sensor_cb)(const Sensor *, Sensor_cb_type, ...);
 typedef void (*Sensor_xy_cb)(const Sensor *sensor, wg_uint x, wg_uint y);
+typedef wg_int (*Sensor_hook_int)(const Sensor *sensor, void *data);
 
 struct Sensor{
     wg_char video_dev[VIDEO_SIZE_MAX + 1];
@@ -37,11 +38,18 @@ struct Sensor{
     Sensor_state state;
     Wg_camera camera;
     Wg_image background;
+
     Sensor_def_cb cb[CB_NUM];
     void *user_data[CB_NUM];
+
     pthread_mutex_t lock;
     pthread_cond_t finish;
     wg_boolean complete_request;
+
+    wg_uint th_high;
+    wg_uint th_low;
+
+    Wg_wq detection_wq;
 };
 
 WG_PUBLIC wg_status
@@ -65,5 +73,11 @@ sensor_set_cb(Sensor *sensor, Sensor_cb_type type,
 
 WG_PUBLIC wg_status
 sensor_get_cb(Sensor *sensor, Sensor_cb_type type, Sensor_def_cb *cb);
+
+wg_status
+sensor_set_threshold(Sensor *sensor, wg_uint high, wg_uint low);
+
+wg_status
+sensor_get_threshold(Sensor *sensor, wg_uint *high, wg_uint *low);
 
 #endif

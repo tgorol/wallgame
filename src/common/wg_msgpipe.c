@@ -9,7 +9,7 @@
 #include <wgmacros.h>
 
 #include <wg_linked_list.h>
-#include <wg_workqueue.h>
+#include <wg_sync_linked_list.h>
 
 #include <wg_msgpipe.h>
 

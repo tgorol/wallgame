@@ -277,3 +277,38 @@ img_gs_draw_pixel(Wg_image *img, wg_int y, wg_int x, va_list args)
     return WG_SUCCESS;
 
 }
+
+wg_status
+img_gs_sub(Wg_image *img_1, Wg_image *img_2)
+{
+    gray_pixel *gs_pixel_1 = NULL;
+    gray_pixel *gs_pixel_2 = NULL;
+    wg_uint width = 0;
+    wg_uint height = 0;
+    wg_uint row = 0;
+    wg_uint col = 0;
+    wg_int diff = 0;
+
+    CHECK_FOR_NULL_PARAM(img_1);
+    CHECK_FOR_NULL_PARAM(img_2);
+
+    if ((img_1->type != IMG_GS) || (img_2->type != IMG_GS)){
+        WG_ERROR("Invalig image format! Passed %d expect %d\n", 
+                img_1->type, IMG_GS);
+        return CAM_FAILURE;
+    }
+
+    img_get_width(img_1, &width);
+    img_get_height(img_1, &height);
+
+    for (row = 0; row < height; ++row){
+        img_get_row(img_1, row, (wg_uchar**)&gs_pixel_1);
+        img_get_row(img_2, row, (wg_uchar**)&gs_pixel_2);
+        for (col = 0; col < width; ++col, ++gs_pixel_1, ++gs_pixel_2){
+            *gs_pixel_1 = abs(*gs_pixel_1 - *gs_pixel_2);
+        }
+    }
+
+    return CAM_SUCCESS;
+
+}
