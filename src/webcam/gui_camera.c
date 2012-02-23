@@ -42,7 +42,7 @@
 #define DEV_PATH  "/dev/"
 
 /** @brief Default resolution */
-#define RESOLUTION_DEFAULT_INDEX    1
+#define RESOLUTION_DEFAULT_INDEX    0
 
 enum{
     CHANGED_SIGNAL,
@@ -64,7 +64,6 @@ typedef struct Resolution{
 * @brief List of supported resolutions
 */
 static const Resolution res_info[] = {
-    {"640x480", 640, 480,} , 
     {"352x288", 352, 288,} ,
     {"320x240", 320, 240,} ,
     {"176x144", 176, 144,} ,

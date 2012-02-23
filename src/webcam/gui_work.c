@@ -22,7 +22,7 @@ gui_work_thread_init()
     return wg_wq_init(&wq);
 }
 
-wg_status
+void
 gui_work_thread_cleanup()
 {
     wg_wq_cleanup(&wq);

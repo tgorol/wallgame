@@ -154,4 +154,59 @@ img_rgb_draw_pixel(Wg_image *img, wg_int y, wg_int x, va_list args)
     return WG_SUCCESS;
 }
 
+#define avg(gs_pixel, c)                                       \
+                 ((gs_pixel[0][c] + gs_pixel[1][c] +           \
+                 gs_pixel[2][c] +                              \
+                 gs_pixel[rd + 0][c] + gs_pixel[rd + 1][c] +   \
+                 gs_pixel[rd + 2][c] +                         \
+                 gs_pixel[rd2 + 0][c] + gs_pixel[rd2 + 1][c] + \
+                 gs_pixel[rd2 + 2][c]) / 9)
+
+wg_status
+img_rgb_smooth(Wg_image *img, Wg_image *new_img)
+{
+    wg_uint width = 0;
+    wg_uint height = 0;
+    wg_uint row = 0;
+    wg_uint col = 0;
+    rgb24_pixel *rgb_pixel = NULL;
+    rgb24_pixel *rgb_new_pixel = NULL;
+    wg_int rd = 0;
+    wg_int rd2 = 0;
+
+    CHECK_FOR_NULL_PARAM(img);
+
+    if (img->type != IMG_RGB){
+        WG_ERROR("Invalig image format! Passed %d expect %d\n", 
+                img->type, IMG_RGB);
+        return CAM_FAILURE;
+    }
+
+    img_get_width(img, &width);
+    img_get_height(img, &height);
+
+    height -= 2;
+    width  -= 2;
+
+    img_fill(width, height, RGB24_COMPONENT_NUM, IMG_RGB,
+            new_img);
+
+    rd = img->row_distance;
+    rd2 = rd + rd;
+
+    for (row = 0; row < height; ++row){
+        img_get_row(img, row, (wg_uchar**)&rgb_pixel);
+        img_get_row(new_img, row, (wg_uchar**)&rgb_new_pixel);
+        for (col = 0; col < width; ++col, ++rgb_pixel, ++rgb_new_pixel){
+#if 0
+            rgb_new_pixel[0][RGB24_G] = avg(rgb_pixel, RGB24_G);
+#endif
+            rgb_new_pixel[0][RGB24_B] = avg(rgb_pixel, RGB24_B);
+            rgb_new_pixel[0][RGB24_R] = avg(rgb_pixel, RGB24_R);
+        }
+    }
+
+    return CAM_SUCCESS;
+}
+
 /*! @} */

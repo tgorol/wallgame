@@ -27,8 +27,11 @@ bgrx_2_rgb(bgrx_pixel bgrx, rgb24_pixel rgb)
 }
 
     
-wg_status
+WG_PUBLIC wg_status
 img_rgb_draw_pixel(Wg_image *img, wg_int y, wg_int x, va_list args);
+
+WG_PUBLIC wg_status
+img_rgb_smooth(Wg_image *img, Wg_image *new_img);
 
 #endif
 

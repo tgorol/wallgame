@@ -287,7 +287,6 @@ img_gs_sub(Wg_image *img_1, Wg_image *img_2)
     wg_uint height = 0;
     wg_uint row = 0;
     wg_uint col = 0;
-    wg_int diff = 0;
 
     CHECK_FOR_NULL_PARAM(img_1);
     CHECK_FOR_NULL_PARAM(img_2);
@@ -310,5 +309,5 @@ img_gs_sub(Wg_image *img_1, Wg_image *img_2)
     }
 
     return CAM_SUCCESS;
-
 }
+

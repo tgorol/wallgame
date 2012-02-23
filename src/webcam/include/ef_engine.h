@@ -46,4 +46,10 @@ ef_hyst_thr(Wg_image *img, wg_uint upp, wg_uint low);
 WG_PUBLIC cam_status
 ef_acc_2_gs(Wg_image *acc, Wg_image *acc_gs);
 
+WG_PUBLIC cam_status
+ef_filter(Wg_image *img, Wg_image *dest, ...);
+
+WG_PUBLIC wg_status
+ef_center(Wg_image *img, wg_uint *y, wg_uint *x);
+
 #endif /* EF_ENGINE_H */

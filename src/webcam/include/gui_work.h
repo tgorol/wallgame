@@ -4,7 +4,7 @@
 WG_PUBLIC wg_status
 gui_work_thread_init();
 
-WG_PUBLIC wg_status
+WG_PUBLIC void
 gui_work_thread_cleanup();
 
 WG_PUBLIC void *

@@ -26,6 +26,9 @@ typedef ssize_t        wg_ssize     ;
 
 typedef long int       wg_long      ;
 
+typedef uint64_t       wg_uint64    ;
+typedef int64_t        wg_int64     ;
+
 typedef uint32_t       wg_uint32    ;
 typedef int32_t        wg_int32     ;
 

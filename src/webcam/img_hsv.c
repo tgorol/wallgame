@@ -2,6 +2,7 @@
 #include <sys/types.h>
 #include <string.h>
 #include <math.h>
+#include <stdarg.h>
 
 #include <gtk/gtk.h>
 
@@ -201,6 +202,69 @@ img_rgb_2_hsv_gtk(Wg_image *rgb_img, Wg_image *hsv_img)
     }
 
     return CAM_SUCCESS;
+}
+
+
+/** 
+* @brief Filter image and return bw image
+* 
+* @param img  Image to filter
+* @param filtered_img Grayscale output image
+* @param args  arguments (const Hsv* top , const Hsv* bottom)
+* 
+* @return 
+*/
+cam_status
+img_hsv_filter(const Wg_image *img, Wg_image *filtered_img, va_list args)
+{
+    register Hsv *hsv_pixel = NULL;
+    wg_uchar *tmp_ptr = NULL;
+    gray_pixel *gs_pixel = NULL;
+    wg_uint row = 0;
+    wg_uint col = 0;
+    wg_uint width = 0;
+    wg_uint height = 0;
+    cam_status status = CAM_FAILURE;
+    const Hsv *bottom = NULL;
+    const Hsv *top = NULL;
+
+    CHECK_FOR_NULL_PARAM(img);
+    CHECK_FOR_NULL_PARAM(bottom);
+    CHECK_FOR_NULL_PARAM(top);
+
+    if (img->type != IMG_HSV){
+        WG_ERROR("Invalig image format! Passed %d expect %d\n", 
+                img->type, IMG_HSV);
+        return CAM_FAILURE;
+    }
+  
+    top = va_arg(args, const Hsv*);
+    bottom = va_arg(args, const Hsv*);
+
+    img_get_width(img, &width);
+    img_get_height(img, &height);
+
+    status = img_fill(width, height, GS_COMPONENT_NUM, IMG_GS, filtered_img);
+    if (CAM_SUCCESS != status){
+        return status;
+    }
+
+    for (row = 0; row < height; ++row){
+        img_get_row(img, row, &tmp_ptr);
+        hsv_pixel = (Hsv*)tmp_ptr;
+        img_get_row(filtered_img, row, (wg_uchar**)&gs_pixel);
+        for (col = 0; col < width; ++col, ++hsv_pixel, ++gs_pixel){
+            *gs_pixel =  (
+                    (hsv_pixel->sat >= bottom->sat) &&
+                    (hsv_pixel->sat < top->sat)    &&
+                    (hsv_pixel->val >= bottom->val) &&
+                    (hsv_pixel->val < top->val)    &&
+                    (hsv_pixel->hue >= bottom->hue) &&
+                    (hsv_pixel->hue < top->hue)) ? 255 : 0;
+        }
+    }
+
+    return WG_SUCCESS;
 }
 
 /**

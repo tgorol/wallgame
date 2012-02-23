@@ -60,7 +60,7 @@ typedef struct Img_iterator{
  * @retval CAM_FAILURE
  */
 WG_INLINE wg_uint
-img_get_width(Wg_image *img, wg_uint *width)
+img_get_width(const Wg_image *img, wg_uint *width)
 {
     CHECK_FOR_NULL_PARAM(img);
 
@@ -70,7 +70,7 @@ img_get_width(Wg_image *img, wg_uint *width)
 }
 
 /**
- * @brief Get haight of the image
+ * @brief Get height of the image
  *
  * @param img    image structure
  * @param height  memory to store height
@@ -79,7 +79,7 @@ img_get_width(Wg_image *img, wg_uint *width)
  * @retval CAM_FAILURE
  */
 WG_INLINE wg_uint
-img_get_height(Wg_image *img, wg_uint *height)
+img_get_height(const Wg_image *img, wg_uint *height)
 {
     CHECK_FOR_NULL_PARAM(img);
 
@@ -99,7 +99,7 @@ img_get_height(Wg_image *img, wg_uint *height)
  * @retval CAM_FAILURE
  */
 WG_INLINE cam_status
-img_get_row(Wg_image *img, wg_uint row_num, wg_uchar **row)
+img_get_row(const Wg_image *img, wg_uint row_num, wg_uchar **row)
 {
     CHECK_FOR_NULL_PARAM(img);
     CHECK_FOR_RANGE_GE(row_num, img->height);
@@ -286,6 +286,9 @@ img_get_subimage(Wg_image *img_src, wg_uint x, wg_uint y,
 wg_status
 img_convert_to_pixbuf(Wg_image *img, GdkPixbuf **pixbuf,
         void (*free_cb)(guchar *, gpointer));
+
+WG_PUBLIC cam_status
+img_copy(Wg_image *src, Wg_image *dest);
 
 /*! @} */
 

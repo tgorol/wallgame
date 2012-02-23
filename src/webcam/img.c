@@ -166,6 +166,18 @@ img_get_subimage(Wg_image *img_src, wg_uint x, wg_uint y,
     return CAM_SUCCESS;
 }
 
+cam_status
+img_copy(Wg_image *src, Wg_image *dest)
+{
+    CHECK_FOR_NULL_PARAM(src);
+    CHECK_FOR_NULL_PARAM(dest);
+
+    img_fill(src->width, src->height, src->components_per_pixel, src->type,
+            dest);
+
+    return img_get_subimage(src, 0, 0, dest);
+}
+
 /** 
 * @brief Convert Wg_image instance into GdkPixbuf
 *

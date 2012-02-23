@@ -10,6 +10,8 @@
 #include <gtk/gtk.h>
 #include <gdk/gdk.h>
 
+#include <sys/select.h>
+
 #include <wgtypes.h>
 #include <wg.h>
 #include <wgmacros.h>
@@ -429,6 +431,11 @@ typedef struct Update_fps{
     Gui_camera *widget;
 }Update_fps;
 
+typedef struct Encode_frame{
+    Wg_image img;    
+    Wg_video_out *out;
+}Encode_frame;
+
 WG_PRIVATE void
 update_fps_cb(void *data)
 {
@@ -464,6 +471,23 @@ update_image_cb(void *data)
     return;
 }
 
+void
+encode_frame(void *data)
+{
+    Encode_frame *ef = (Encode_frame*)data;
+    struct timeval tv;
+
+    tv.tv_sec = 0;
+    tv.tv_usec   = 1000 * 40;
+    select(0, NULL, NULL, NULL, &tv);
+
+//    video_encode_frame(ef->out, &ef->img);
+
+    img_cleanup(&ef->img);
+
+    return;
+}
+
 WG_PRIVATE void
 default_cb(Sensor *sensor, Sensor_cb_type type, Wg_image *img, void *user_data)
 {
@@ -472,14 +496,32 @@ default_cb(Sensor *sensor, Sensor_cb_type type, Wg_image *img, void *user_data)
     union {
         Update_image *update_img;
         Update_fps   *update_fps;
+        Encode_frame   *encode_frame;
     }work;
     GdkPixbuf *pixbuf = NULL;
 
     cam = (Camera*)user_data;
     switch (type){
+    case CB_ENTER:
+        video_open_output_stream("text.mpg", &cam->vid, sensor->width, 
+                sensor->height);
+        break;
+    case CB_EXIT:
+        video_close_output_stream(&cam->vid);
+        break;
     case CB_SETUP_START:
         break;
     case CB_SETUP_STOP:
+        break;
+    case CB_IMG_ACC:
+        /* update fps */
+        work.update_fps = gui_work_create(sizeof (Update_fps), update_fps_cb);
+
+        work.update_fps->widget = GUI_CAMERA(cam->gui_camera);
+        work.update_fps->frame_inc = 1;
+
+        gui_work_add(work.update_fps);
+
         break;
     case CB_IMG:
         img_convert_to_pixbuf(img, &pixbuf, NULL);
@@ -494,13 +536,16 @@ default_cb(Sensor *sensor, Sensor_cb_type type, Wg_image *img, void *user_data)
 
         gui_work_add(work.update_img);
 
-        /* update fps */
-        work.update_fps = gui_work_create(sizeof (Update_fps), update_fps_cb);
+#if 0
+        work.encode_frame = gui_work_create(sizeof (Encode_frame), 
+                encode_frame);
 
-        work.update_fps->widget = GUI_CAMERA(cam->gui_camera);
-        work.update_fps->frame_inc = 1;
+        img_copy(img, &work.encode_frame->img);
 
-        gui_work_add(work.update_fps);
+        work.encode_frame->out = &cam->vid;
+
+        gui_work_add(work.encode_frame);
+#endif
 
         break;
     case CB_IMG_EDGE:
@@ -724,13 +769,13 @@ int main(int argc, char *argv[])
             "Welcome to Wall Game Plugin");
 
     gtk_widget_set_app_paintable(camera->hist_area, TRUE);
-    gtk_widget_set_double_buffered(camera->hist_area, FALSE);
+    gtk_widget_set_double_buffered(camera->hist_area, TRUE);
 
     gtk_widget_set_app_paintable(camera->acc_area, TRUE);
-    gtk_widget_set_double_buffered(camera->acc_area, FALSE);
+    gtk_widget_set_double_buffered(camera->acc_area, TRUE);
 
     gtk_widget_set_app_paintable(camera->area, TRUE);
-    gtk_widget_set_double_buffered(camera->area, FALSE);
+    gtk_widget_set_double_buffered(camera->area, TRUE);
 
     button_start = gui_camera_get_start_widget(GUI_CAMERA(gtk_cam));
     button_stop = gui_camera_get_stop_widget(GUI_CAMERA(gtk_cam));

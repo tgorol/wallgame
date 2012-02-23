@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <sys/types.h>
+#include <time.h>
 
 #include <wgtypes.h>
 #include <wg.h>
@@ -89,7 +90,7 @@ video_open_output_stream(const char *filename, Wg_video_out *vid,
     vid->context->width = width + width;
     vid->context->height = height + height;
     /* frames per second */
-    vid->context->time_base= (AVRational){1,25};
+    vid->context->time_base= (AVRational){1, 30};
     vid->context->gop_size = 10; /* emit one intra frame every ten frames */
     vid->context->max_b_frames=1;
     vid->context->pix_fmt = PIX_FMT_YUV420P;
@@ -107,6 +108,8 @@ video_open_output_stream(const char *filename, Wg_video_out *vid,
         video_close_output_stream(vid);
         return WG_FAILURE;
     }
+
+    vid->ts = 0;
 
     return WG_SUCCESS;
 }
@@ -206,6 +209,10 @@ video_encode_frame(Wg_video_out *vid, Wg_image *img)
             img->height, dest_data, yuv420_pix->linesize);
 
     sws_freeContext(img_convert_ctx);
+
+    yuv420_pix->pts = vid->ts;
+
+    vid->ts += 1;
 
     /* encode frame */
     out_size = avcodec_encode_video(vid->context, outbuf, outbuf_size, 

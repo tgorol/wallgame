@@ -12,6 +12,7 @@ typedef struct Wg_video_out{
     FILE *out_stream;           /*!< file stream */
     AVCodec *codec;             /*!< codec */
     AVCodecContext *context;    /*!< encoding context */
+    wg_uint64 ts;
 }Wg_video_out;
 
 WG_PUBLIC wg_status

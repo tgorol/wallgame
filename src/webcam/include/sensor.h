@@ -12,6 +12,8 @@ typedef enum Sensor_cb_type {
     CB_SETUP_START    ,
     CB_SETUP_STOP     ,
     CB_SETUP_ERROR    ,
+    CB_EXIT           ,
+    CB_ENTER          ,
     CB_XY             ,
 
     CB_NUM

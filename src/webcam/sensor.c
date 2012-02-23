@@ -16,7 +16,11 @@
 #include "include/cam.h"
 #include "include/cam.h"
 #include "include/img.h"
+#include "include/img_bgrx.h"
+#include "include/img_rgb24.h"
+#include "include/img_draw.h"
 #include "include/img_gs.h"
+#include "include/img_hsv.h"
 #include "include/cam_frame.h"
 
 #include "include/sensor.h"
@@ -28,6 +32,12 @@
 
 #define TH_HIGH    240
 #define TH_LOW     100
+
+typedef struct Workq_data{
+    Wg_image img;
+    Sensor *sensor;
+}Workq_data;
+
 
 WG_PRIVATE wg_status
 collect_frames(Sensor *sensor, Wg_image *img, wg_uint num);
@@ -93,21 +103,7 @@ sensor_cleanup(Sensor *sensor)
     pthread_cond_destroy(&sensor->finish);
     pthread_mutex_destroy(&sensor->lock);
 
-    return;
-}
-
-WG_PRIVATE void
-detect_circle_wq(void *data)
-{
-    Wg_image *img = NULL;
-    Wg_image acc;
-
-    img = (Wg_image*)data;
-
-    ef_detect_circle(img, &acc);
-
-    img_cleanup(img);
-    img_cleanup(&acc);
+    wg_wq_cleanup(&sensor->detection_wq);
 
     return;
 }
@@ -115,21 +111,31 @@ detect_circle_wq(void *data)
 wg_status
 sensor_start(Sensor *sensor)
 {
-    Wg_image *edge_image_tmp = NULL;
     Wg_frame frame;
     Wg_image image;
-    Wg_image gs_image;
-    Wg_image edge_image;
     Wg_image acc;
+    Wg_image edge_image;
+    Wg_image hsv_image;
+    Wg_image filtered_image;
+    Wg_image smooth_image;
+    Img_draw ctx;
+    rgb24_pixel color;
+    Hsv top;
+    Hsv bottom;
     Wg_cam_decompressor decomp;
     union{
         cam_status cam;
         wg_status  wg;
     }status;
-    wg_uint th_low = 0;
-    wg_uint th_high = 0;
+    wg_uint x = 0;
+    wg_uint y = 0;
+    wg_uint v = 0;
 
     ef_init();
+
+    color[0] = 0;
+    color[1] = 0;
+    color[2] = 255;
 
     status.cam = cam_open(&sensor->camera, 0, ENABLE_DECOMPRESSOR);
     if (CAM_SUCCESS != status.cam){
@@ -165,6 +171,16 @@ sensor_start(Sensor *sensor)
     sensor->state = SENSOR_STARTED;
     pthread_mutex_unlock(&sensor->lock);
 
+    bottom.val = 0.0 / 100.0;
+    bottom.hue = 60.0 / 360.0;
+    bottom.sat = 0.0 / 100.0;
+
+    top.val = 100.0 / 100.0;
+    top.hue = 120.0 / 360.0;
+    top.sat = 100.0 / 100.0;
+
+    call_user_callback(sensor, CB_ENTER, NULL);
+
     for (;;){
         pthread_mutex_lock(&sensor->lock);
         if (WG_TRUE == ((volatile Sensor *)sensor)->complete_request){
@@ -185,42 +201,41 @@ sensor_start(Sensor *sensor)
 
             cam_discard_frame(&sensor->camera, &frame);
 
-            call_user_callback(sensor, CB_IMG, &image);
+            img_rgb_2_hsv_gtk(&image, &hsv_image);
 
-            img_rgb_2_grayscale(&image, &gs_image);
+            ef_filter(&hsv_image, &filtered_image, &top, &bottom);
 
-            img_grayscale_normalize(&gs_image, 255, 0);
+//            ef_smooth(&filtered_image, &smooth_image);
+            smooth_image = filtered_image;
 
-            call_user_callback(sensor, CB_IMG_GS, &gs_image);
+            ef_threshold(&smooth_image, 30);
 
-            img_gs_sub(&gs_image, &sensor->background);
-
-            ef_detect_edge(&gs_image, &edge_image);
-
-            img_grayscale_normalize(&edge_image, 255, 0);
-
-            sensor_get_threshold(sensor, &th_high, &th_low);
-            ef_hyst_thr(&edge_image, th_high, th_low);
-
-            ef_threshold(&edge_image, 255);
+            ef_detect_edge(&smooth_image, &edge_image);
 
             call_user_callback(sensor, CB_IMG_EDGE, &edge_image);
 
-            edge_image_tmp = wg_wq_work_create(sizeof (Wg_image),
-                    detect_circle_wq);
+#ifndef G_GENTER
+            ef_detect_circle(&edge_image, &acc);
 
-            *edge_image_tmp = edge_image;
+            ef_acc_get_max(&acc, &y, &x, &v);
 
-            wg_wq_add(&sensor->detection_wq, edge_image_tmp);
+            call_user_callback(sensor, CB_IMG_ACC, &acc);
+#else
+            ef_center(&edge_image, &y, &x);
+#endif  /* G_CENTER */
+           
+            img_draw_get_context(image.type, &ctx);
+            img_draw_cross(&ctx, &image, y, x, &color);
+            img_draw_cleanup_context(&ctx);
 
-//            ef_detect_circle(&edge_image, &acc);
-
-//            call_user_callback(sensor, CB_IMG_ACC, &acc);
+            call_user_callback(sensor, CB_IMG, &image);
 
             img_cleanup(&image);
-            img_cleanup(&gs_image);
-//            img_cleanup(&edge_image);
+            img_cleanup(&smooth_image);
             img_cleanup(&acc);
+            img_cleanup(&hsv_image);
+          //  img_cleanup(&filtered_image);
+            img_cleanup(&edge_image);
         }else{
             pthread_mutex_lock(&sensor->lock);
             sensor->complete_request = WG_FALSE;
@@ -232,6 +247,8 @@ sensor_start(Sensor *sensor)
             return WG_SUCCESS;
         }
     }
+
+    call_user_callback(sensor, CB_EXIT, NULL);
 
     pthread_mutex_lock(&sensor->lock);
     sensor->complete_request = WG_FALSE;
@@ -294,8 +311,6 @@ sensor_stop(Sensor *sensor)
     pthread_mutex_unlock(&sensor->lock);
 
     img_cleanup(&sensor->background);
-
-    wg_wq_cleanup(&sensor->detection_wq);
 
     return WG_SUCCESS;
 }

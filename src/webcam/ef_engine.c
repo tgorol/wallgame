@@ -15,6 +15,7 @@
 #include "include/img_bgrx.h"
 #include "include/img_rgb24.h"
 #include "include/img_draw.h"
+#include "include/img_hsv.h"
 #include "include/ef_engine.h"
 
  
@@ -25,11 +26,11 @@
 
 #define   CACHE_TAN_NUM (135 + 45)
 
-#define NB_X   25
-#define NB_Y   25
+#define NB_X   10
+#define NB_Y   10
 
-#define NB_X2   23
-#define NB_Y2   23
+#define NB_X2   8
+#define NB_Y2   8
 
 #define FPPOS   8
 #define FPPOS_M ((FPPOS) >> 1) 
@@ -245,6 +246,24 @@ ef_acc_get_max(Wg_image *acc, wg_uint *row_par, wg_uint *col_par,
     *votes   = max_value;
 
     return CAM_SUCCESS;
+}
+
+cam_status
+ef_filter(Wg_image *img, Wg_image *dest, ...)
+{
+    va_list args;
+    cam_status status = CAM_FAILURE;
+
+    CHECK_FOR_NULL_PARAM(img);
+    CHECK_FOR_NULL_PARAM(dest);
+
+    va_start(args, dest);
+
+    status = img_hsv_filter(img, dest, args);
+
+    va_end(args);
+
+    return status;
 }
 
 cam_status
@@ -724,5 +743,50 @@ init_tan_cache(void)
     }
 
     return;
+}
+
+wg_status
+ef_center(Wg_image *img, wg_uint *y, wg_uint *x)
+{
+    gray_pixel *gs_pixel = NULL;
+    wg_uint width = 0;
+    wg_uint height = 0;
+    wg_int row = 0;
+    wg_int col = 0;
+    wg_uint pix_num_x = 0;
+    wg_uint pix_num_y = 0;
+    wg_uint pix_num = 0;
+
+    CHECK_FOR_NULL_PARAM(img);
+    CHECK_FOR_NULL_PARAM(x);
+    CHECK_FOR_NULL_PARAM(y);
+
+    if (img->type != IMG_GS){
+        WG_ERROR("Invalig image format! Passed %d expect %d\n", 
+                img->type, IMG_GS);
+        return CAM_FAILURE;
+    }
+
+    img_get_width(img, &width);
+    img_get_height(img, &height);
+
+    for (row = 0; row < height; ++row){
+        img_get_row(img, row, (wg_uchar**)&gs_pixel);
+        for (col = 0; col < width; ++col, ++gs_pixel){
+            pix_num_x += (*gs_pixel == 255) * col;
+            pix_num_y += (*gs_pixel == 255) * row;
+            pix_num   += (*gs_pixel == 255);
+        }
+    }
+
+    if (pix_num != 0){
+        *x = pix_num_x / pix_num;
+        *y = pix_num_y / pix_num;
+    }else{
+        *x = 0;
+        *y = 0;
+    }
+
+    return WG_SUCCESS;
 }
 
