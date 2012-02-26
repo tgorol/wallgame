@@ -44,6 +44,7 @@ typedef int8_t         wg_int8     ;
 typedef void (*fvoid)(void)         ;
 
 #define WG_FLOAT(val)  ((wg_float)val)
+#define WG_DOUBLE(val)  ((wg_double)val)
 
 typedef enum WG_BOOLEAN {
     WG_FALSE = (1 == 0), 

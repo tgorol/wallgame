@@ -14,10 +14,10 @@
 
 #include "include/cam.h"
 #include "include/img.h"
-#include "include/img_hsv.h"
-#include "include/img_bgrx.h"
-#include "include/img_rgb24.h"
 
+#define HSV_HIST_HUE_NUM  360
+#define HSV_HIST_VAL_NUM  100
+#define HSV_HIST_SAT_NUM  100
 
 #define MAX3(r, g, b) WG_MAX(b , WG_MAX(r, g))
 #define MIN3(r, g, b) WG_MIN(b , WG_MIN(r, g))
@@ -33,6 +33,93 @@ WG_PRIVATE float atan2_fast(float y, float x);
  * @ingroup image
  * @{ 
  */
+
+
+/** 
+* @brief Get histogram
+* 
+* @param img image instance
+* @param[out] h   memory for hue values
+* @param[out] s   memory for saturation
+* @param[out] v   memorry for value
+* @param[out] hs  number of elements in h array
+* @param[out] ss  number of elements in s array
+* @param[out] vs  number of elements in v array
+* 
+* @return 
+*/
+cam_status
+img_hsv_hist(Wg_image *img, wg_uint **h, wg_uint **s, wg_uint **v,
+                  wg_size *hs, wg_size *ss, wg_size *vs)
+{
+    Hsv *pixel   = NULL;
+    wg_uint *hue = NULL;
+    wg_uint *val = NULL;
+    wg_uint *sat = NULL;
+    wg_uint width  = 0;
+    wg_uint height = 0;
+    wg_int row     = 0;
+    wg_int col     = 0;
+
+    CHECK_FOR_NULL_PARAM(img);
+    CHECK_FOR_NULL_PARAM(hs);
+    CHECK_FOR_NULL_PARAM(ss);
+    CHECK_FOR_NULL_PARAM(vs);
+
+    if (img->type != IMG_HSV){
+        WG_ERROR("Invalig image format! Passed %d expect %d\n", 
+                img->type, IMG_HSV);
+        return CAM_FAILURE;
+    }
+
+    sat = WG_CALLOC(HSV_HIST_SAT_NUM + 1, sizeof (*sat));
+    hue = WG_CALLOC(HSV_HIST_HUE_NUM + 1, sizeof (*hue));
+    val = WG_CALLOC(HSV_HIST_VAL_NUM + 1, sizeof (*val));
+
+    if ((sat == NULL) || (hue == NULL) || (val == NULL)){
+        WG_FREE(sat);
+        WG_FREE(val);
+        WG_FREE(hue);
+
+        return CAM_FAILURE;
+    }
+
+    img_get_width(img, &width);
+    img_get_height(img, &height);
+
+    for (row = 0; row < height; ++row){
+        img_get_row(img, row, (wg_uchar**)&pixel);
+        for (col = 0; col < width; ++col, ++pixel){
+            ++hue[(wg_uint)(pixel->hue * HSV_HIST_HUE_NUM)];
+            ++sat[(wg_uint)(pixel->sat * HSV_HIST_SAT_NUM)];
+            ++val[(wg_uint)(pixel->val * HSV_HIST_VAL_NUM)];
+        }
+    }
+
+
+    if (NULL != v){
+        *v = val;
+        *vs = HSV_HIST_VAL_NUM;
+    }else{
+        WG_FREE(val);
+    }
+    
+    if (NULL != s){
+        *s = sat;
+        *ss = HSV_HIST_SAT_NUM;
+    }else{
+        WG_FREE(sat);
+    }
+
+    if (NULL != h){
+        *h = hue;
+        *hs = HSV_HIST_HUE_NUM;
+    }else{
+        WG_FREE(hue);
+    }
+
+    return CAM_SUCCESS;
+}
 
 /**
  * @brief Convert BGRX to HSV
@@ -81,14 +168,14 @@ img_rgb_2_hsv(Wg_image *rgb_img, Wg_image *hsv_img)
         img_get_row(hsv_img, row, (wg_uchar**)&hsv_pixel);
         for (col = 0; col < width; ++col, ++hsv_pixel){
             rgb_max = MAX3(
-                    PIXEL_RED(rgb_pixel[col]),
-                    PIXEL_GREEN(rgb_pixel[col]),
-                    PIXEL_BLUE(rgb_pixel[col])
+                    RGB24_PIXEL_RED(rgb_pixel[col]),
+                    RGB24_PIXEL_GREEN(rgb_pixel[col]),
+                    RGB24_PIXEL_BLUE(rgb_pixel[col])
                     );
             rgb_min = MIN3(
-                    PIXEL_RED(rgb_pixel[col]),
-                    PIXEL_GREEN(rgb_pixel[col]),
-                    PIXEL_BLUE(rgb_pixel[col])
+                    RGB24_PIXEL_RED(rgb_pixel[col]),
+                    RGB24_PIXEL_GREEN(rgb_pixel[col]),
+                    RGB24_PIXEL_BLUE(rgb_pixel[col])
                     );
 
             hsv_pixel->val = rgb_max;
@@ -97,9 +184,9 @@ img_rgb_2_hsv(Wg_image *rgb_img, Wg_image *hsv_img)
                 continue;
             }
 
-            r = PIXEL_RED(rgb_pixel[col]);
-            g = PIXEL_GREEN(rgb_pixel[col]);
-            b = PIXEL_BLUE(rgb_pixel[col]);
+            r = RGB24_PIXEL_RED(rgb_pixel[col]);
+            g = RGB24_PIXEL_GREEN(rgb_pixel[col]);
+            b = RGB24_PIXEL_BLUE(rgb_pixel[col]);
 
             /* normnalize colors to 1 */
             r /= hsv_pixel->val;
@@ -188,9 +275,9 @@ img_rgb_2_hsv_gtk(Wg_image *rgb_img, Wg_image *hsv_img)
         /* Calculate HSV value for each pixel and update uint values */
         for (col = 0; col < width; ++col, ++hsv_pixel, ++rgb_pixel){
 
-            r = PIXEL_RED(*rgb_pixel) / 255.0;
-            g = PIXEL_GREEN(*rgb_pixel) / 255.0;
-            b = PIXEL_BLUE(*rgb_pixel) / 255.0;
+            r = RGB24_PIXEL_RED(*rgb_pixel) / 255.0;
+            g = RGB24_PIXEL_GREEN(*rgb_pixel) / 255.0;
+            b = RGB24_PIXEL_BLUE(*rgb_pixel) / 255.0;
 
             gtk_rgb_to_hsv(r, g, b, 
                     &hsv_pixel->hue,
@@ -325,9 +412,9 @@ img_rgb_2_hsv_fast(Wg_image *rgb_img, Wg_image *hsv_img)
         /* Calculate HSV value for each pixel and update uint values */
         for (col = 0; col < width; ++col, ++hsv_pixel, ++rgb_pixel){
 
-            r = PIXEL_RED(*rgb_pixel);
-            g = PIXEL_GREEN(*rgb_pixel);
-            b = PIXEL_BLUE(*rgb_pixel);
+            r = RGB24_PIXEL_RED(*rgb_pixel);
+            g =RGB24_PIXEL_GREEN(*rgb_pixel);
+            b =RGB24_PIXEL_BLUE(*rgb_pixel);
 
             v1 = MAX3(r, g, b);
 

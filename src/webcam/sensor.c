@@ -91,7 +91,61 @@ sensor_init(Sensor *sensor)
 
     wg_wq_init(&sensor->detection_wq);
 
+    sensor->top.val = 0.0;
+    sensor->top.sat = 0.0;
+    sensor->top.hue = 0.0;
+
+    sensor->bottom.val = 1.0;
+    sensor->bottom.sat = 1.0;
+    sensor->bottom.hue = 1.0;
+
     return status;
+}
+
+wg_status
+sensor_add_color(Sensor *sensor, const Hsv *color)
+{
+    wg_double h = 0.0;
+    wg_double s = 0.0;
+    wg_double v = 0.0;
+
+    CHECK_FOR_NULL_PARAM(sensor);
+    CHECK_FOR_NULL_PARAM(color);
+
+    h = color->hue * 0.03;
+    s = color->sat * 0.03;
+    v = color->val * 0.03;
+
+    pthread_mutex_lock(&sensor->lock);
+
+    sensor->top.val =
+        color->val > sensor->top.val ? color->val + v : sensor->top.val;
+
+    sensor->top.sat =
+        color->sat > sensor->top.sat ? color->sat + s : sensor->top.sat;
+
+    sensor->top.hue =
+        color->hue > sensor->top.hue ? color->hue + h: sensor->top.hue;
+
+    sensor->bottom.val =
+        color->val < sensor->bottom.val ? color->val - v: sensor->bottom.val;
+
+    sensor->bottom.sat =
+        color->sat < sensor->bottom.sat ? color->sat - s: sensor->bottom.sat;
+
+    sensor->bottom.hue =
+        color->hue < sensor->bottom.hue ? color->hue - h : sensor->bottom.hue;
+
+    pthread_mutex_unlock(&sensor->lock);
+
+    WG_LOG("Color added to sensor %p \nh=%f s=%f v=%f\n", 
+            (void*)sensor, 
+            WG_FLOAT(color->hue), 
+            WG_FLOAT(color->sat), 
+            WG_FLOAT(color->val)
+            );
+
+    return WG_SUCCESS;
 }
 
 void
@@ -171,14 +225,6 @@ sensor_start(Sensor *sensor)
     sensor->state = SENSOR_STARTED;
     pthread_mutex_unlock(&sensor->lock);
 
-    bottom.val = 0.0 / 100.0;
-    bottom.hue = 60.0 / 360.0;
-    bottom.sat = 0.0 / 100.0;
-
-    top.val = 100.0 / 100.0;
-    top.hue = 120.0 / 360.0;
-    top.sat = 100.0 / 100.0;
-
     call_user_callback(sensor, CB_ENTER, NULL);
 
     for (;;){
@@ -203,6 +249,11 @@ sensor_start(Sensor *sensor)
 
             img_rgb_2_hsv_gtk(&image, &hsv_image);
 
+            pthread_mutex_lock(&sensor->lock);
+            top    = sensor->top;
+            bottom = sensor->bottom;
+            pthread_mutex_unlock(&sensor->lock);
+
             ef_filter(&hsv_image, &filtered_image, &top, &bottom);
 
 //            ef_smooth(&filtered_image, &smooth_image);
@@ -220,6 +271,8 @@ sensor_start(Sensor *sensor)
             ef_acc_get_max(&acc, &y, &x, &v);
 
             call_user_callback(sensor, CB_IMG_ACC, &acc);
+
+            img_cleanup(&acc);
 #else
             ef_center(&edge_image, &y, &x);
 #endif  /* G_CENTER */
@@ -232,9 +285,8 @@ sensor_start(Sensor *sensor)
 
             img_cleanup(&image);
             img_cleanup(&smooth_image);
-            img_cleanup(&acc);
             img_cleanup(&hsv_image);
-          //  img_cleanup(&filtered_image);
+//            img_cleanup(&filtered_image);
             img_cleanup(&edge_image);
         }else{
             pthread_mutex_lock(&sensor->lock);

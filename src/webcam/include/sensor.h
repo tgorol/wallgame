@@ -35,6 +35,8 @@ struct Sensor{
     wg_char video_dev[VIDEO_SIZE_MAX + 1];
     wg_uint width;
     wg_uint height;
+    Hsv bottom;
+    Hsv top;
 
     /* internal use fields. DO NOT TOUCH */
     Sensor_state state;
@@ -81,5 +83,8 @@ sensor_set_threshold(Sensor *sensor, wg_uint high, wg_uint low);
 
 wg_status
 sensor_get_threshold(Sensor *sensor, wg_uint *high, wg_uint *low);
+
+WG_PUBLIC wg_status
+sensor_add_color(Sensor *sensor, const Hsv *color);
 
 #endif

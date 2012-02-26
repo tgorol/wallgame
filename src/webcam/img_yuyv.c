@@ -11,7 +11,6 @@
 
 #include "include/cam.h"
 #include "include/img.h"
-#include "include/img_yuyv.h"
 
 /*! @defgroup webcam_yuyv YUYV Conversion Functions
  *  @ingroup image

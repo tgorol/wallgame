@@ -12,9 +12,6 @@
 
 #include "include/cam.h"
 #include "include/img.h"
-#include "include/img_gs.h"
-#include "include/img_bgrx.h"
-#include "include/img_rgb24.h"
 
 #include "include/img_draw.h"
 

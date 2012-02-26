@@ -10,9 +10,6 @@
 
 #include "include/cam.h"
 #include "include/img.h"
-#include "include/img_bgrx.h"
-#include "include/img_rgb24.h"
-#include "include/img_gs.h"
 
 /*! @defgroup webcam_rgb24 RGB24 Conversion Functions
  *  @ingroup image
@@ -86,7 +83,7 @@ img_bgrx_2_rgb(Wg_image *bgrx_img, Wg_image *rgb_img)
 * @retval WG_FAILURE
 */
 wg_status
-img_grayscale_2_rgb(Wg_image *grayscale_img, Wg_image *rgb_img)
+img_gs_2_rgb(Wg_image *grayscale_img, Wg_image *rgb_img)
 {
     cam_status status = CAM_FAILURE;
     gray_pixel *gs_pixel = NULL;
@@ -152,6 +149,29 @@ img_rgb_draw_pixel(Wg_image *img, wg_int y, wg_int x, va_list args)
     }
 
     return WG_SUCCESS;
+}
+
+cam_status
+img_rgb_from_buffer(wg_uchar *buffer, wg_uint width, wg_uint height, 
+        Wg_image *img)
+{
+    wg_uint i = 0;
+    rgb24_pixel *pixel = NULL;
+    wg_uint row_size = 0;
+
+    CHECK_FOR_NULL_PARAM(buffer);
+
+    row_size = width * RGB24_COMPONENT_NUM;
+
+    img_fill(width, height, RGB24_COMPONENT_NUM, IMG_RGB, img);
+
+    for (i = 0; i < height; ++i){
+        img_get_row(img, i, (wg_uchar**)&pixel);
+        fast_memcpy((wg_uchar*)pixel, (wg_uchar*)buffer, row_size);
+        buffer += row_size;
+    }
+
+    return CAM_SUCCESS;
 }
 
 #define avg(gs_pixel, c)                                       \

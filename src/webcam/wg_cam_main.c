@@ -32,10 +32,6 @@
 
 #include "include/img.h"
 #include "include/img_draw.h"
-#include "include/img_gs.h"
-#include "include/img_bgrx.h"
-#include "include/img_rgb24.h"
-#include "include/ef_engine.h"
 
 #include "include/gui_camera.h"
 
@@ -72,6 +68,11 @@ typedef struct Camera{
     Wg_video_out vid;
     wg_uint th_low;
     wg_uint th_high;
+    wg_boolean dragging;
+    wg_uint x1;
+    wg_uint y1;
+    wg_uint x2;
+    wg_uint y2;
 }Camera;
 
 
@@ -531,8 +532,8 @@ default_cb(Sensor *sensor, Sensor_cb_type type, Wg_image *img, void *user_data)
                 update_image_cb);
 
         work.update_img->src_pixbuf  = pixbuf;
-        work.update_img->dest_pixbuf = &cam->acc_pixbuf;
-        work.update_img->area = cam->acc_area;
+        work.update_img->dest_pixbuf = &cam->pixbuf;
+        work.update_img->area = cam->area;
 
         gui_work_add(work.update_img);
 
@@ -550,7 +551,7 @@ default_cb(Sensor *sensor, Sensor_cb_type type, Wg_image *img, void *user_data)
         break;
     case CB_IMG_EDGE:
         /* update frame */
-        img_grayscale_2_rgb(img, &rgb_img);
+        img_gs_2_rgb(img, &rgb_img);
         img_convert_to_pixbuf(&rgb_img, &pixbuf, NULL);
 
         img_cleanup(&rgb_img);
@@ -559,8 +560,8 @@ default_cb(Sensor *sensor, Sensor_cb_type type, Wg_image *img, void *user_data)
                 update_image_cb);
 
         work.update_img->src_pixbuf  = pixbuf;
-        work.update_img->dest_pixbuf = &cam->pixbuf;
-        work.update_img->area = cam->area;
+        work.update_img->dest_pixbuf = &cam->acc_pixbuf;
+        work.update_img->area = cam->acc_area;
 
         gui_work_add(work.update_img);
         break;
@@ -568,6 +569,112 @@ default_cb(Sensor *sensor, Sensor_cb_type type, Wg_image *img, void *user_data)
         cam = NULL;
     }
     return;
+}
+
+WG_PRIVATE gboolean
+pressed_mouse(GtkWidget *widget, GdkEvent  *event, gpointer user_data) 
+{
+    GdkEventButton *event_button = NULL;
+    Camera *cam = NULL;
+
+    cam = (Camera*)user_data;
+    event_button = (GdkEventButton*)event;
+    cam->dragging = WG_TRUE;
+    cam->x1 = event_button->x;
+    cam->y1 = event_button->y;
+
+    return FALSE;
+}
+
+typedef struct Setup_hist{
+    wg_uint x1;
+    wg_uint y1;
+    wg_uint x2;
+    wg_uint y2;
+    Camera *cam;
+}Setup_hist;
+
+WG_PRIVATE void
+setup_hist(void *data)
+{
+    Setup_hist *work = NULL;
+    Wg_image image;
+    Wg_image rect_image;
+    Wg_image hsv_image;
+    wg_uint width = 0;
+    wg_uint height = 0;
+    wg_uchar *buffer = NULL;
+    wg_uint *hist_hue = NULL;
+    wg_size hist_hue_size = 0;
+    wg_uint i = 0;
+    wg_uint max_hue = 0;
+    Hsv color;
+
+    work = (Setup_hist*)data;
+
+    gdk_threads_enter();
+
+    width  = gdk_pixbuf_get_width(work->cam->pixbuf);
+    height = gdk_pixbuf_get_height(work->cam->pixbuf);
+    buffer = gdk_pixbuf_get_pixels(work->cam->pixbuf); 
+
+    img_rgb_from_buffer(buffer, width, height, &image);
+
+    gdk_threads_leave();
+
+    img_fill(abs(work->x2 - work->x1), abs(work->y2 - work->y1),
+            RGB24_COMPONENT_NUM, IMG_RGB, &rect_image);
+
+    img_get_subimage(&image, work->x1, work->y1, &rect_image);
+
+    img_rgb_2_hsv_gtk(&rect_image, &hsv_image);
+
+    img_hsv_hist(&hsv_image, &hist_hue, NULL, NULL,
+                        &hist_hue_size, NULL, NULL);
+
+
+    for (i = 0; i < hist_hue_size; ++i){
+        if (max_hue < hist_hue[i]){
+            color.hue = i;
+            max_hue = hist_hue[i];
+        }
+    }
+
+    color.hue /= WG_FLOAT(hist_hue_size);
+    color.val = 0.7;
+    color.sat = 0.7;
+    sensor_add_color(work->cam->sensor, &color);
+
+    WG_FREE(hist_hue);
+    img_cleanup(&image);
+    img_cleanup(&hsv_image);
+    img_cleanup(&rect_image);
+}
+
+WG_PRIVATE gboolean
+released_mouse(GtkWidget *widget, GdkEvent  *event, gpointer user_data) 
+{
+    GdkEventButton *event_button = NULL;
+    Camera *cam = NULL;
+    Setup_hist *work = NULL;
+
+    cam = (Camera*)user_data;
+    event_button = (GdkEventButton*)event;
+    cam->x2 = event_button->x;
+    cam->y2 = event_button->y;
+    cam->dragging = WG_FALSE;
+
+    work = gui_work_create(sizeof (Setup_hist), setup_hist);
+
+    work->x1 = cam->x1;
+    work->y1 = cam->y1;
+    work->x2 = cam->x2;
+    work->y2 = cam->y2;
+    work->cam = cam;
+
+    gui_work_add(work);
+
+    return FALSE;
 }
 
 void button_clicked_start
@@ -586,6 +693,14 @@ void button_clicked_start
     sensor = WG_MALLOC(sizeof (*sensor));
     if (NULL != sensor){
         cam->sensor = sensor;
+
+        cam->dragging = WG_FALSE;
+
+        g_signal_connect(cam->area, "button-press-event", 
+                G_CALLBACK(pressed_mouse), cam);
+
+        g_signal_connect(cam->area, "button-release-event", 
+                G_CALLBACK(released_mouse), cam);
 
         dev_path = gui_camera_get_device_widget(GUI_CAMERA(cam->gui_camera));
         stop_button = gui_camera_get_stop_widget(GUI_CAMERA(cam->gui_camera));
@@ -624,11 +739,67 @@ void button_clicked_start
     return;
 }
 
-static void button_clicked_color
-(GtkWidget *widget, gpointer data){
+typedef struct Add_color{
+    Hsv color;
+    Camera *camera;
+}Add_color;
+
+WG_PRIVATE void
+add_color(void *data)
+{
+    Add_color *c = (Add_color*)data;
+
+    if (NULL != c->camera->sensor){
+        sensor_add_color(c->camera->sensor, &c->color);
+    }
+
+    return;
+}
+
+WG_PRIVATE void
+new_color(GtkColorSelection *colorselection, gpointer user_data) 
+{
+    Camera *cam = NULL;
+    GdkColor rgb_color;
+    Add_color *c = NULL;
+
+    cam = (Camera*)user_data;
+
+    gtk_color_selection_get_current_color(colorselection, &rgb_color);
+
+    c = gui_work_create(sizeof (Add_color), add_color);
+
+    gtk_rgb_to_hsv(
+            WG_DOUBLE(rgb_color.red) / 65535.0, 
+            WG_DOUBLE(rgb_color.green) / 65535.0,
+            WG_DOUBLE(rgb_color.blue) / 65535.0, 
+            &c->color.hue ,
+            &c->color.sat ,
+            &c->color.val
+            );
+
+    c->camera = cam;
+
+    gui_work_add(c);
+
+    return;
+}
+
+WG_PRIVATE void
+button_clicked_color(GtkWidget *widget, gpointer data){
     GtkWidget *color_sel = NULL;
+    GtkWidget *cs = NULL;
+    Camera *cam  = NULL;
+
+    cam  = (Camera*)data;
 
     color_sel = gtk_color_selection_dialog_new("Pick up a color");
+
+    cs = gtk_color_selection_dialog_get_color_selection(
+            GTK_COLOR_SELECTION_DIALOG(color_sel));
+
+    g_signal_connect(GTK_COLOR_SELECTION(cs), 
+            "color-changed", G_CALLBACK(new_color), cam);
 
     gtk_dialog_run(GTK_DIALOG(color_sel));
 }
@@ -761,6 +932,9 @@ int main(int argc, char *argv[])
     camera->threshold_low = thres_low;
     camera->threshold_high = thres_high;
     camera->status_bar = gtk_statusbar_new();
+
+    gtk_widget_add_events(camera->area, 
+            GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK ); 
 
     guint ctx = gtk_statusbar_get_context_id(GTK_STATUSBAR(camera->status_bar),
             "Message");
@@ -905,7 +1079,7 @@ create_histogram(Wg_image *img, wg_uint width, wg_uint height, Wg_image *hist)
     wg_float x = WG_FLOAT(0);
     Img_draw ctx;
 
-    img_grayscale_histogram(img, histogram, ELEMNUM(histogram));
+    img_gs_histogram(img, histogram, ELEMNUM(histogram));
 
     status = img_fill(width, height, GS_COMPONENT_NUM, IMG_GS, hist);
     if (WG_SUCCESS != status){

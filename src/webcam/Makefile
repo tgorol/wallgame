@@ -18,7 +18,8 @@ SOURCE=cam.c                  \
        ef_engine.c    \
        vid.c            \
        sensor.c          \
-       gui_work.c
+       gui_work.c        \
+       gui_prim.c
 
 APP_NAME=webcam
 

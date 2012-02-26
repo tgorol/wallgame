@@ -13,9 +13,6 @@
 
 #include "include/cam.h"
 #include "include/img.h"
-#include "include/img_gs.h"
-#include "include/img_bgrx.h"
-#include "include/img_rgb24.h"
 
 #define FIX_POINT    16
 
@@ -76,9 +73,9 @@ img_rgb_2_grayscale(Wg_image *rgb_img, Wg_image *grayscale_img)
             rgb_pixel = (rgb24_pixel*)img_iterator_next_col(&rgb_itr);
             gs_pixel = (gray_pixel*)img_iterator_next_col(&gs_itr);
             *gs_pixel = RGB_2_GS(
-                    PIXEL_RED(*rgb_pixel),
-                    PIXEL_GREEN(*rgb_pixel),
-                    PIXEL_BLUE(*rgb_pixel)
+                    RGB24_PIXEL_RED(*rgb_pixel),
+                    RGB24_PIXEL_GREEN(*rgb_pixel),
+                    RGB24_PIXEL_BLUE(*rgb_pixel)
                     );
         }
     }
@@ -96,7 +93,7 @@ img_rgb_2_grayscale(Wg_image *rgb_img, Wg_image *grayscale_img)
 * @return 
 */
 cam_status
-img_grayscale_histogram(Wg_image* grayscale_img, wg_uint *histogram,
+img_gs_histogram(Wg_image* grayscale_img, wg_uint *histogram,
         wg_uint size)
 {
     wg_uint width = 0;
@@ -134,7 +131,7 @@ img_grayscale_histogram(Wg_image* grayscale_img, wg_uint *histogram,
 }
 
 wg_status
-img_grayscale_normalize(Wg_image* grayscale_img, gray_pixel new_max,
+img_gs_normalize(Wg_image* grayscale_img, gray_pixel new_max,
         gray_pixel new_min)
 {
     gray_pixel *gs_pixel = NULL;
@@ -158,7 +155,7 @@ img_grayscale_normalize(Wg_image* grayscale_img, gray_pixel new_max,
     img_get_width(grayscale_img, &width);
     img_get_height(grayscale_img, &height);
 
-    img_grayscale_max_min(grayscale_img, &gs_max, &gs_min);
+    img_gs_max_min(grayscale_img, &gs_max, &gs_min);
 
     gs_range = FF_FLOAT(gs_max - gs_min);
     new_range = FF_FLOAT(new_max - new_min);
@@ -179,7 +176,7 @@ img_grayscale_normalize(Wg_image* grayscale_img, gray_pixel new_max,
 }
 
 wg_status
-img_grayscale_max_min(Wg_image* grayscale_img, gray_pixel *gs_max,
+img_gs_max_min(Wg_image* grayscale_img, gray_pixel *gs_max,
         gray_pixel *gs_min)
 {
     gray_pixel *gs_pixel = NULL;
@@ -218,14 +215,14 @@ img_grayscale_max_min(Wg_image* grayscale_img, gray_pixel *gs_max,
 }
 
 cam_status
-img_grayscale_save(Wg_image *img, wg_char *filename, wg_char *ext)
+img_gs_save(Wg_image *img, wg_char *filename, wg_char *ext)
 {
     Wg_image rgb;
     cam_status status = WG_FAILURE;
     gboolean error_flag = FALSE;
     GdkPixbuf *pixbuf = NULL;
 
-    status = img_grayscale_2_rgb(img, &rgb);
+    status = img_gs_2_rgb(img, &rgb);
     if (CAM_SUCCESS != status){
         WG_LOG("GS to RGB conversion error\n");
         return CAM_FAILURE;

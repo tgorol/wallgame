@@ -36,9 +36,6 @@ typedef wg_uchar JSAMPLE;
 typedef JSAMPLE* JSAMPROW;
 
 WG_PRIVATE void
-fast_memcpy(wg_uchar *restrict dest, wg_uchar *restrict src, wg_size size);
-
-WG_PRIVATE void
 xfree_cb(guchar *pixels, gpointer data);
 
 WG_PRIVATE wg_uchar
@@ -251,7 +248,7 @@ crop_color(wg_int color, wg_int value)
  *
  * @return void
  */
-inline WG_STATIC void
+void
 fast_memcpy(wg_uchar *restrict dest, wg_uchar *restrict src, const wg_size size)
 {
     __asm__ (

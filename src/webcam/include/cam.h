@@ -145,7 +145,7 @@ struct Wg_camera{
  * Inline functions
  */
 
-inline static cam_status invoke_decompressor(
+WG_INLINE  cam_status invoke_decompressor(
         Wg_cam_decompressor *decomp,
         wg_uchar *in_buffer, wg_ssize in_size, 
         wg_uint width, wg_uint height, Wg_image *img)
@@ -184,50 +184,9 @@ WG_PUBLIC cam_status
 cam_decompressor(Wg_camera *cam, Wg_cam_decompressor *dcomp);
 
 WG_PUBLIC cam_status
-img_rgb_2_hsv(Wg_image *rgb_img, Wg_image *hsv_img);
-
-WG_PUBLIC cam_status
-img_rgb_2_hsv_fast(Wg_image *rgb_img, Wg_image *hsv_img);
-
-WG_PUBLIC cam_status
-img_rgb_2_bgrx(Wg_image *rgb_img, Wg_image *bgrx_img);
-
-WG_PUBLIC cam_status
-img_rgb_2_hsv_gtk(Wg_image *rgb_img, Wg_image *hsv_img);
-
-WG_PUBLIC wg_status
-img_rgb_2_grayscale(Wg_image *rgb_img, Wg_image *grayscale_img);
-
-WG_PUBLIC wg_status
-img_grayscale_2_rgb(Wg_image *grayscale_img, Wg_image *rgb_img);
-
-WG_PUBLIC wg_status
-img_grayscale_max_min(Wg_image* grayscale_img, gray_pixel *gs_max,
-        gray_pixel *gs_min);
-
-WG_PUBLIC wg_status
-img_grayscale_normalize(Wg_image* grayscale_img, gray_pixel new_max,
-        gray_pixel new_min);
-
-WG_PUBLIC cam_status
-img_grayscale_histogram(Wg_image* grayscale_img, wg_uint *histogram, 
-        wg_size size);
-
-WG_PUBLIC cam_status
-img_grayscale_save(Wg_image *img, wg_char *filename, wg_char *ext);
-
-WG_PUBLIC cam_status
-ef_acc_get_max(Wg_image *acc, wg_uint *row_par, wg_uint *col_par, 
-        wg_uint *votes);
-
-cam_status
-ef_paint_cross(Wg_image *img, wg_uint y, wg_uint x, gray_pixel color);
-
-WG_PUBLIC cam_status
 cam_set_resolution(Wg_camera *cam, wg_uint width, wg_uint height);
 
 WG_PUBLIC cam_status
 cam_get_resolution(Wg_camera *cam, wg_uint *width, wg_uint *height);
-
 
 #endif

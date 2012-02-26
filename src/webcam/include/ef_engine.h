@@ -52,4 +52,11 @@ ef_filter(Wg_image *img, Wg_image *dest, ...);
 WG_PUBLIC wg_status
 ef_center(Wg_image *img, wg_uint *y, wg_uint *x);
 
+WG_PUBLIC cam_status
+ef_acc_get_max(Wg_image *acc, wg_uint *row_par, wg_uint *col_par, 
+        wg_uint *votes);
+
+cam_status
+ef_paint_cross(Wg_image *img, wg_uint y, wg_uint x, gray_pixel color);
+
 #endif /* EF_ENGINE_H */

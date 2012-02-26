@@ -1,40 +1,20 @@
-#ifndef _CAM_IMG_H
-#define _CAM_IMG_H
+#ifndef _IMG_H
+#define _IMG_H
 
 #include <gdk/gdk.h>
+
+#include "img_bgrx.h"
+#include "img_draw.h"
+#include "img_gs.h"
+#include "img_hsv.h"
+#include "img_jpeg.h"
+#include "img_rgb24.h"
+#include "img_yuyv.h"
 
 /*! @addtogroup image
  * @{
  */
 
-/* 8 means bits in 1 bytes */
-
-/** Maximum value of gray scale pixel */
-#define  GS_PIXEL_MAX    ((sizeof(gray_pixel) << 8) - 1)
-
-/** Minimum value of gray scale pixel */
-#define  GS_PIXEL_MIN    (0)
-
-/** 
-* @brief Gray scale pixel components layout
-*/
-enum {
-    GS_PIXEL,           /*!< pixel value    */
-    GS_COMPONENT_NUM    /*!< number of components in gray scale pixel format */
-};
-
-/** @brief Get RED compontent of the pixel
- * @todo change names to RGB_R, RGB_G RGB_B
- */
-#define PIXEL_RED(pixel)   (pixel)[RGB24_R]
-
-/** @brief Get GREEN component of the pixel
- */
-#define PIXEL_GREEN(pixel) (pixel)[RGB24_G]
-
-/** @brief Get BLUE component of the pixel
- */
-#define PIXEL_BLUE(pixel)  (pixel)[RGB24_B]
 
 /** 
 * @brief Image iterator
@@ -289,6 +269,10 @@ img_convert_to_pixbuf(Wg_image *img, GdkPixbuf **pixbuf,
 
 WG_PUBLIC cam_status
 img_copy(Wg_image *src, Wg_image *dest);
+
+WG_PUBLIC void
+fast_memcpy(wg_uchar *restrict dest, wg_uchar *restrict src, 
+        const wg_size size);
 
 /*! @} */
 

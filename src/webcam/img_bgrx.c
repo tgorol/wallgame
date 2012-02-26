@@ -10,8 +10,6 @@
 
 #include "include/cam.h"
 #include "include/img.h"
-#include "include/img_bgrx.h"
-#include "include/img_rgb24.h"
 
 #define BGRX_COMPONENT_NUM    4
 
@@ -64,9 +62,9 @@ img_rgb_2_bgrx(Wg_image *rgb_img, Wg_image *bgrx_img)
         img_get_row(bgrx_img, row, (wg_uchar**)&bgrx_pixel);
         for (col = 0; col < width; ++col, ++bgrx_pixel, ++rgb_pixel){
             *bgrx_pixel = RGB_2_BGRX(
-                    PIXEL_RED(*rgb_pixel),
-                    PIXEL_GREEN(*rgb_pixel),
-                    PIXEL_BLUE(*rgb_pixel)
+                    RGB24_PIXEL_RED(*rgb_pixel),
+                    RGB24_PIXEL_GREEN(*rgb_pixel),
+                    RGB24_PIXEL_BLUE(*rgb_pixel)
                     );
         }
     }

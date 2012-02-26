@@ -364,7 +364,7 @@ ef_acc_save(Wg_image *acc, wg_char *filename, wg_char *type)
         }
     }
 
-    img_grayscale_save(&acc_gs, filename, type);
+    img_gs_save(&acc_gs, filename, type);
 
     img_cleanup(&acc_gs);
 
@@ -384,6 +384,7 @@ ef_smooth(Wg_image *img, Wg_image *new_img)
     wg_int rd2 = 0;
     wg_int rd3 = 0;
     wg_int rd4 = 0;
+    wg_uint count = 0;
 
     CHECK_FOR_NULL_PARAM(img);
 
@@ -408,7 +409,7 @@ ef_smooth(Wg_image *img, Wg_image *new_img)
         img_get_row(img, row, (wg_uchar**)&gs_pixel);
         img_get_row(new_img, row, (wg_uchar**)&gs_new_pixel);
         for (col = 0; col < width - 4; ++col, ++gs_pixel, ++gs_new_pixel){
-            *gs_new_pixel = 
+            count = 
                 (
                  /* 1st row */
                  gs_pixel[0] + gs_pixel[1] + 
@@ -429,8 +430,9 @@ ef_smooth(Wg_image *img, Wg_image *new_img)
                  /* 5th row */
                  gs_pixel[rd4 + 0] + gs_pixel[rd4 + 1] + 
                  gs_pixel[rd4 + 2] + gs_pixel[rd4 + 3] + 
-                 gs_pixel[rd4 + 4])/ 25;
+                 gs_pixel[rd4 + 4]);
 
+            *gs_new_pixel = (count >= 255 * 12) ? 255 : 0;
         }
     }
 
@@ -773,9 +775,11 @@ ef_center(Wg_image *img, wg_uint *y, wg_uint *x)
     for (row = 0; row < height; ++row){
         img_get_row(img, row, (wg_uchar**)&gs_pixel);
         for (col = 0; col < width; ++col, ++gs_pixel){
-            pix_num_x += (*gs_pixel == 255) * col;
-            pix_num_y += (*gs_pixel == 255) * row;
-            pix_num   += (*gs_pixel == 255);
+            if (*gs_pixel == 255){
+                pix_num_x += col;
+                pix_num_y += row;
+                ++pix_num;
+            }
         }
     }
 
