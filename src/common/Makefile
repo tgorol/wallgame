@@ -6,7 +6,8 @@ SOURCE= wg_iterator.c      \
 		wg_slab.c          \
 		wg_msgpipe.c       \
         wg_lsdir.c         \
-        wg_wq.c
+        wg_wq.c            \
+        wg_sort.c
 
 INCLUDE=./include 
 

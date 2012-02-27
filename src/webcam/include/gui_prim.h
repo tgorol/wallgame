@@ -15,4 +15,7 @@ WG_PUBLIC void
 wg_rect_new_from_points(wg_int x1, wg_int y1, wg_int x2,
         wg_int y2, Wg_rect *rect);
 
+WG_PUBLIC void
+wg_rect_move(Wg_rect *rect, wg_int dx, wg_int dy);
+
 #endif

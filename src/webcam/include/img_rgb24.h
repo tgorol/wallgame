@@ -43,9 +43,6 @@ bgrx_2_rgb(bgrx_pixel bgrx, rgb24_pixel rgb)
 WG_PUBLIC wg_status
 img_rgb_draw_pixel(Wg_image *img, wg_int y, wg_int x, va_list args);
 
-WG_PUBLIC wg_status
-img_rgb_smooth(Wg_image *img, Wg_image *new_img);
-
 WG_PUBLIC cam_status
 img_rgb_2_hsv(Wg_image *rgb_img, Wg_image *hsv_img);
 
@@ -64,6 +61,12 @@ img_rgb_2_grayscale(Wg_image *rgb_img, Wg_image *grayscale_img);
 WG_PUBLIC cam_status
 img_rgb_from_buffer(wg_uchar *buffer, wg_uint width, wg_uint height, 
         Wg_image *img);
+
+WG_PUBLIC wg_status
+img_rgb_median_filter(Wg_image *img, Wg_image *new_img);
+
+WG_PUBLIC cam_status
+img_bgrx_2_rgb(Wg_image *bgrx_img, Wg_image *rgb_img);
 
 #endif
 

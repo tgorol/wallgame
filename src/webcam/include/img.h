@@ -252,6 +252,20 @@ img_iterator_next_col(Img_iterator *iterator)
     return itr->col_index++ < itr->width ?  old_col : NULL;   
 }
 
+WG_INLINE cam_status
+img_get_data(Wg_image *img, wg_uchar **data, wg_size *num, wg_size *size)
+{
+    CHECK_FOR_NULL_PARAM(data);
+    CHECK_FOR_NULL_PARAM(num);
+    CHECK_FOR_NULL_PARAM(size);
+
+    *data = img->image;
+    *num  = img->width * img->height;
+    *size = img->components_per_pixel;
+
+    return CAM_SUCCESS;
+}
+
 cam_status
 img_fill(wg_uint width, wg_uint height, wg_uint comp_num, img_type,
         Wg_image *img);

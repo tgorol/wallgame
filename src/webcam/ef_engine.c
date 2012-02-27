@@ -397,18 +397,21 @@ ef_smooth(Wg_image *img, Wg_image *new_img)
     img_get_width(img, &width);
     img_get_height(img, &height);
 
-    img_fill(width - 4, height - 4, GS_COMPONENT_NUM, IMG_GS,
+    width -= 4;
+    height -= 4;
+
+    img_fill(width, height, GS_COMPONENT_NUM, IMG_GS,
             new_img);
 
-    rd = img->row_distance;
+    rd = img->width;
     rd2 = rd + rd;
     rd3 = rd2 + rd;
     rd4 = rd3 + rd;
 
-    for (row = 0; row < height - 4; ++row){
+    for (row = 0; row < height; ++row){
         img_get_row(img, row, (wg_uchar**)&gs_pixel);
         img_get_row(new_img, row, (wg_uchar**)&gs_new_pixel);
-        for (col = 0; col < width - 4; ++col, ++gs_pixel, ++gs_new_pixel){
+        for (col = 0; col < width; ++col, ++gs_pixel, ++gs_new_pixel){
             count = 
                 (
                  /* 1st row */
@@ -462,17 +465,20 @@ ef_detect_edge(Wg_image *img, Wg_image *new_img)
 
     img_get_width(img, &width);
     img_get_height(img, &height);
-    img_get_row_distance(img, &rd);
 
+    rd = width;
     rd2 = rd + rd;
 
-    img_fill(width - 2, height - 2, GS_COMPONENT_NUM, IMG_GS,
+    width  -= 2;
+    height -= 2;
+
+    img_fill(width, height, GS_COMPONENT_NUM, IMG_GS,
             new_img);
 
-    for (row = 0; row < height - 2; ++row){
+    for (row = 0; row < height; ++row){
         img_get_row(img, row, (wg_uchar**)&gs_pixel);
         img_get_row(new_img, row, (wg_uchar**)&gs_new_pixel);
-        for (col = 0; col < width - 2; ++col, ++gs_pixel, ++gs_new_pixel){
+        for (col = 0; col < width; ++col, ++gs_pixel, ++gs_new_pixel){
             *gs_new_pixel = WG_MAX(
                     abs(gs_pixel[0] - gs_pixel[2] + 
                         (gs_pixel[rd] << 1) - (gs_pixel[rd + 2] << 1) +

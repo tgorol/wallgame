@@ -10,6 +10,8 @@
 #include <wg.h>
 #include <wgmacros.h>
 
+#include <wg_sort.h>
+
 #include <linux/videodev2.h>
 
 #include "include/cam.h"
@@ -119,6 +121,64 @@ img_hsv_hist(Wg_image *img, wg_uint **h, wg_uint **s, wg_uint **v,
     }
 
     return CAM_SUCCESS;
+}
+
+cam_status
+img_hsv_median_filter(Wg_image *img, Wg_image *new_img)
+{
+    Hsv *hsv_pixel = NULL;
+    Hsv *hsv_new_pixel = NULL;
+    wg_uint width = 0;
+    wg_uint height = 0;
+    wg_uint row = 0;
+    wg_uint col = 0;
+    wg_int rd = 0;
+    wg_int rd2 = 0;
+    wg_double data[9];
+
+    CHECK_FOR_NULL_PARAM(img);
+
+    if (img->type != IMG_HSV){
+        WG_ERROR("Invalig image format! Passed %d expect %d\n", 
+                img->type, IMG_HSV);
+        return CAM_FAILURE;
+    }
+
+    img_get_width(img, &width);
+    img_get_height(img, &height);
+
+    width  -= 2;
+    height -= 2;
+
+    img_fill(width, height, img->components_per_pixel, img->type, new_img);
+
+    rd = img->width;
+    rd2 = rd + rd;
+
+    for (row = 0; row < height; ++row){
+        img_get_row(img, row, (wg_uchar**)&hsv_pixel);
+        img_get_row(new_img, row, (wg_uchar**)&hsv_new_pixel);
+        for (col = 0; col < width; ++col, ++hsv_pixel, ++hsv_new_pixel){
+                 data[0] = hsv_pixel[0].hue;
+                 data[1] = hsv_pixel[1].hue;
+                 data[2] = hsv_pixel[2].hue;
+                 /* 2nd row */
+                 data[3] = hsv_pixel[rd + 0].hue;
+                 data[4] = hsv_pixel[rd + 1].hue;
+                 data[5] = hsv_pixel[rd + 2].hue;
+                 /* 3rd row */
+                 data[6] = hsv_pixel[rd2 + 0].hue;
+                 data[7] = hsv_pixel[rd2 + 1].hue;
+                 data[8] = hsv_pixel[rd2 + 2].hue;
+
+                 wg_sort_double(data, 9);
+
+                 hsv_new_pixel->hue = data[4];
+        }
+    }
+
+    return CAM_SUCCESS;
+
 }
 
 /**

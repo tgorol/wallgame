@@ -50,9 +50,6 @@ struct Sensor{
     pthread_cond_t finish;
     wg_boolean complete_request;
 
-    wg_uint th_high;
-    wg_uint th_low;
-
     Wg_wq detection_wq;
 };
 
@@ -77,12 +74,6 @@ sensor_set_cb(Sensor *sensor, Sensor_cb_type type,
 
 WG_PUBLIC wg_status
 sensor_get_cb(Sensor *sensor, Sensor_cb_type type, Sensor_def_cb *cb);
-
-wg_status
-sensor_set_threshold(Sensor *sensor, wg_uint high, wg_uint low);
-
-wg_status
-sensor_get_threshold(Sensor *sensor, wg_uint *high, wg_uint *low);
 
 WG_PUBLIC wg_status
 sensor_add_color(Sensor *sensor, const Hsv *color);

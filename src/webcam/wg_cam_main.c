@@ -19,6 +19,7 @@
 #include <wg_lsdir.h>
 #include <wg_sync_linked_list.h>
 #include <wg_wq.h>
+#include <wg_sort.h>
 
 #include <linux/videodev2.h>
 
@@ -37,6 +38,7 @@
 
 #include "include/sensor.h"
 #include "include/gui_work.h"
+#include "include/gui_prim.h"
 
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
@@ -52,22 +54,15 @@ typedef struct Camera{
     GdkPixbuf *pixbuf;
     GdkPixbuf *hist_pixbuf;
     GdkPixbuf *acc_pixbuf;
-    GtkWidget *hist_area;
     GtkWidget *acc_area;
     GtkWidget *area;
     GtkWidget *gui_camera;
-    GtkWidget *show_gray;
-    GtkWidget *smooth;
-    GtkWidget *threshold_low;
-    GtkWidget *threshold_high;
     GtkWidget *status_bar;
     pthread_t  thread;
     Sensor    *sensor;
     gint fps;
     gint frame_count;
     Wg_video_out vid;
-    wg_uint th_low;
-    wg_uint th_high;
     wg_boolean dragging;
     wg_uint x1;
     wg_uint y1;
@@ -78,26 +73,6 @@ typedef struct Camera{
 
 wg_status
 create_histogram(Wg_image *img, wg_uint width, wg_uint height, Wg_image *hist);
-
-
-static gboolean
-on_expose_hist(GtkWidget *widget,
-        cairo_t *cr,
-        gpointer data)
-{
-    Camera *cam = NULL;
-
-    cam = (Camera*)data;
-
-    if (cam->hist_pixbuf != NULL){
-
-        gdk_cairo_set_source_pixbuf(cr, cam->hist_pixbuf, 0, 0);
-
-        cairo_paint(cr);
-    }
-
-    return TRUE;
-}
 
 static gboolean
 on_expose_acc(GtkWidget *widget,
@@ -111,6 +86,9 @@ on_expose_acc(GtkWidget *widget,
     int w_height = 0;
 
     cam = (Camera*)data;
+
+    cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+    cairo_paint(cr);
 
     if (cam->acc_pixbuf != NULL){
         gui_camera_get_active_resolution(GUI_CAMERA(cam->gui_camera),
@@ -142,6 +120,9 @@ on_expose_event(GtkWidget *widget,
     int w_height = 0;
 
     cam = (Camera*)data;
+
+    cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+    cairo_paint(cr);
 
     if (cam->pixbuf != NULL){
         gui_camera_get_active_resolution(GUI_CAMERA(cam->gui_camera),
@@ -178,193 +159,6 @@ capture(void *data)
     sensor_start(cam->sensor);
 
     pthread_exit(NULL);
-#if 0
-    Camera *cam = NULL;
-    Wg_frame *frame = NULL;
-    Wg_image *image_sub = NULL;
-    Wg_image *tmp_img = NULL;
-    Wg_image *acc_img = NULL;
-    wg_uint width = 0;
-    wg_uint height = 0;
-    wg_uint w = 0;
-    wg_uint h = 0;
-    wg_uint votes = 0;
-    Wg_image  acc_img_gs;
-    Wg_image  gs_img;
-    Wg_image  rgb_img;
-    Wg_image  hist_img;
-    cam_status status;
-    Img_draw draw;
-    Wg_cam_decompressor decompressor;
-    rgb24_pixel rgb_color = {0, 0, 255};
-
-    ef_init();
-
-    cam = (Camera*)data;
-
-    frame = WG_CALLOC(1, sizeof (Wg_frame));
-
-    //    cam_select_user_decompressor(camera, v4l2_fourcc('M', 'J', 'P', 'G'));
-
-    cam_decompressor(cam->camera, &decompressor);
-
-    gui_camera_get_active_resolution(GUI_CAMERA(cam->gui_camera),
-            &width, &height);
-    cam_set_resolution(cam->camera, width, height);
-
-    cam_get_resolution(cam->camera, &width, &height);
-
-    cam_start(cam->camera);
-
-    gui_camera_fps_start(GUI_CAMERA(cam->gui_camera));
-
-    video_open_output_stream("text.mpg", &cam->vid, width, height);
-
-    for(;;){
-        gdk_threads_enter();
-        if ((cam->camera != NULL) && 
-                (cam_read(cam->camera, frame) == CAM_SUCCESS)){
-            gdk_threads_leave();
-
-            image_sub = WG_MALLOC(sizeof (Wg_image));
-            tmp_img = WG_MALLOC(sizeof (Wg_image));
-            acc_img = WG_MALLOC(sizeof (Wg_image));
-
-            status = invoke_decompressor(&decompressor, 
-                    frame->start, frame->size, 
-                    frame->width, frame->height, &rgb_img);
-            if(CAM_SUCCESS == status){
-
-                cam_discard_frame(cam->camera, frame);
-
-                img_rgb_2_grayscale(&rgb_img, &gs_img);
-
-                width = gtk_widget_get_allocated_width(cam->hist_area);
-                height = gtk_widget_get_allocated_height(
-                        cam->hist_area);
-
-                create_histogram(&gs_img, width, height, &hist_img);
-
-                img_grayscale_2_rgb(&hist_img, tmp_img);
-
-                img_cleanup(&hist_img);
-
-                if (gtk_toggle_button_get_active(
-                            GTK_TOGGLE_BUTTON(cam->smooth))){
-
-                    img_grayscale_normalize(&gs_img, NORM_RANGE_MAX,
-                            NORM_RANGE_MIN);
-
-                    ef_smooth(&gs_img, image_sub);
-
-                    img_cleanup(&gs_img);
-
-                    gs_img = *image_sub;
-                }
-
-                ef_detect_edge(&gs_img, image_sub);
-
-                img_cleanup(&gs_img);
-
-                gs_img = *image_sub;
-
-                ef_hyst_thr(&gs_img,
-                        (gray_pixel)gtk_range_get_value(
-                            GTK_RANGE(cam->threshold_high)),
-                        (gray_pixel)gtk_range_get_value(
-                            GTK_RANGE(cam->threshold_low))
-                        );
-
-                ef_threshold(&gs_img, 255);
-
-                img_grayscale_normalize(&gs_img, 255, 0);
-
-                ef_detect_circle(&gs_img, image_sub);
-
-                ef_acc_2_gs(image_sub, &acc_img_gs);
-
-                img_grayscale_2_rgb(&acc_img_gs, acc_img);
-
-                img_cleanup(&acc_img_gs);
-
-                ef_acc_get_max(image_sub, &h, &w, &votes);
-                if (votes < 100){
-                    h = 0;
-                    w = 0;
-                }
-
-                img_cleanup(image_sub);
-
-                if (gtk_toggle_button_get_active(
-                            GTK_TOGGLE_BUTTON(cam->show_gray))){
-                    img_grayscale_2_rgb(&gs_img, image_sub);
-                    img_cleanup(&rgb_img);
-                    img_cleanup(&gs_img);
-                }else{
-                    *image_sub = rgb_img;
-                    img_cleanup(&gs_img);
-                }
-
-                img_draw_get_context(image_sub->type, &draw);
-
-                img_draw_cross(&draw, image_sub, h, w, &rgb_color);
-
-                img_draw_cleanup_context(&draw);
-
-                gdk_threads_enter();
-
-                //            video_encode_frame(&cam->vid, image_sub);
-
-                if (cam->acc_pixbuf != NULL){
-                    g_object_unref(cam->acc_pixbuf);
-                    cam->acc_pixbuf = NULL;
-                }
-
-                img_convert_to_pixbuf(acc_img, &cam->acc_pixbuf, NULL);
-
-                gtk_widget_queue_draw(cam->acc_area);
-
-                if (cam->pixbuf != NULL){
-                    g_object_unref(cam->pixbuf);
-                    cam->pixbuf = NULL;
-                }
-
-                img_convert_to_pixbuf(image_sub, &cam->pixbuf, NULL);
-
-                gtk_widget_queue_draw(cam->area);
-
-                if (cam->hist_pixbuf != NULL){
-                    g_object_unref(cam->hist_pixbuf);
-                    cam->hist_pixbuf = NULL;
-                }
-
-                img_convert_to_pixbuf(tmp_img, &cam->hist_pixbuf, NULL);
-
-                gtk_widget_queue_draw(cam->hist_area);
-
-                gui_camera_fps_update(GUI_CAMERA(cam->gui_camera), 1);
-
-                gdk_threads_leave();
-            }else{
-                gdk_threads_leave();
-            }
-        }else{
-            gdk_threads_leave();
-        }
-    }
-
-    video_close_output_stream(&cam->vid);
-
-    gui_camera_fps_stop(GUI_CAMERA(cam->gui_camera));
-
-    //    cam_stop(cam->camera);
-
-    //    cam_close(cam->camera);
-
-    cam_free_frame(cam->camera, frame);
-
-    WG_FREE(frame);
-#endif
 }
 
 
@@ -587,10 +381,7 @@ pressed_mouse(GtkWidget *widget, GdkEvent  *event, gpointer user_data)
 }
 
 typedef struct Setup_hist{
-    wg_uint x1;
-    wg_uint y1;
-    wg_uint x2;
-    wg_uint y2;
+    Wg_rect rect;
     Camera *cam;
 }Setup_hist;
 
@@ -603,12 +394,13 @@ setup_hist(void *data)
     Wg_image hsv_image;
     wg_uint width = 0;
     wg_uint height = 0;
+    wg_uint t_width = 0;
+    wg_uint t_height = 0;
     wg_uchar *buffer = NULL;
-    wg_uint *hist_hue = NULL;
-    wg_size hist_hue_size = 0;
     wg_uint i = 0;
-    wg_uint max_hue = 0;
-    Hsv color;
+    Hsv *color = NULL;
+    wg_uint size = 0;
+    wg_uint num = 0;
 
     work = (Setup_hist*)data;
 
@@ -622,33 +414,30 @@ setup_hist(void *data)
 
     gdk_threads_leave();
 
-    img_fill(abs(work->x2 - work->x1), abs(work->y2 - work->y1),
+    t_width = gtk_widget_get_allocated_width(work->cam->area);
+    t_height = gtk_widget_get_allocated_height(work->cam->area);
+
+    img_fill(work->rect.width, work->rect.height,
             RGB24_COMPONENT_NUM, IMG_RGB, &rect_image);
 
-    img_get_subimage(&image, work->x1, work->y1, &rect_image);
+    wg_rect_move(&work->rect, 
+            -((t_width - width) >> 1), -((t_height - height) >> 1));
+
+    img_get_subimage(&image, work->rect.x, work->rect.y, &rect_image);
 
     img_rgb_2_hsv_gtk(&rect_image, &hsv_image);
 
-    img_hsv_hist(&hsv_image, &hist_hue, NULL, NULL,
-                        &hist_hue_size, NULL, NULL);
+    img_get_data(&hsv_image, (wg_uchar**)&color, &num, &size);
 
-
-    for (i = 0; i < hist_hue_size; ++i){
-        if (max_hue < hist_hue[i]){
-            color.hue = i;
-            max_hue = hist_hue[i];
-        }
+    for (i = 0; i < num; ++i, ++color){
+        sensor_add_color(work->cam->sensor, color);
     }
 
-    color.hue /= WG_FLOAT(hist_hue_size);
-    color.val = 0.7;
-    color.sat = 0.7;
-    sensor_add_color(work->cam->sensor, &color);
-
-    WG_FREE(hist_hue);
     img_cleanup(&image);
     img_cleanup(&hsv_image);
     img_cleanup(&rect_image);
+
+    return;
 }
 
 WG_PRIVATE gboolean
@@ -666,10 +455,7 @@ released_mouse(GtkWidget *widget, GdkEvent  *event, gpointer user_data)
 
     work = gui_work_create(sizeof (Setup_hist), setup_hist);
 
-    work->x1 = cam->x1;
-    work->y1 = cam->y1;
-    work->x2 = cam->x2;
-    work->y2 = cam->y2;
+    wg_rect_new_from_points(cam->x1, cam->y1, cam->x2, cam->y2, &work->rect);
     work->cam = cam;
 
     gui_work_add(work);
@@ -716,7 +502,6 @@ void button_clicked_start
         strncpy(sensor->video_dev, device, VIDEO_SIZE_MAX);
 
         status = sensor_init(cam->sensor);
-        sensor_set_threshold(cam->sensor, cam->th_high, cam->th_low);
         if (WG_SUCCESS == status){
             sensor_set_default_cb(cam->sensor, (Sensor_def_cb)default_cb, cam);
 
@@ -827,68 +612,25 @@ static void button_clicked_capture
     }
 }
 
-    static void
-select_resolution(GtkWidget *obj, gpointer data)
-{
-#if 0
-    wg_uint width = 0;
-    wg_uint height = 0;
-
-    gui_camera_get_active_resolution(GTK_CAMERA(obj), &width, &height);
-    WG_LOG("New resolution w:%u h:%u\n", width, height);
-#endif
-
-}
-
-WG_PRIVATE gboolean
-on_change_value_th_low(GtkRange     *range,
-        GtkScrollType scroll,
-        gdouble       value,
-        gpointer      user_data)
-{
-    Camera *cam = (Camera*)user_data;
-
-    cam->th_low = (wg_uint)value;
-    if (cam->sensor != NULL){
-        sensor_set_threshold(cam->sensor, cam->th_high, cam->th_low);
-    }
-    return FALSE;
-}
-
-WG_PRIVATE gboolean
-on_change_value_th_high(GtkRange     *range,
-        GtkScrollType scroll,
-        gdouble       value,
-        gpointer      user_data)
-{
-    Camera *cam = (Camera*)user_data;
-
-    cam->th_high = (wg_uint)value;
-    if (cam->sensor != NULL){
-        sensor_set_threshold(cam->sensor, cam->th_high, cam->th_low);
-    }
-    return FALSE;
-}
-
-
-int main(int argc, char *argv[])
+int
+main(int argc, char *argv[])
 {
     GtkWidget *window;
     GtkWidget *button_start = NULL;
     GtkWidget *button_stop = NULL;
     GtkWidget *capture_button = NULL;
-    GtkWidget *resolution = NULL;
     GtkWidget *hbox = NULL;
     GtkWidget *area = NULL;
     GtkWidget *color_button = NULL;
-    GtkWidget *thres_low = NULL;
-    GtkWidget *thres_high = NULL;
     GtkWidget *display_box = NULL;
     Camera    *camera = NULL;
     GtkWidget *gtk_cam = NULL;
     List_head  video;
     wg_uint width = 0;
     wg_uint height = 0;
+    wg_uint a[] = {12,3, 2, 8, 10, 7};
+
+    wg_sort_uint(a, ELEMNUM(a));
 
     MEMLEAK_START;
 
@@ -909,8 +651,6 @@ int main(int argc, char *argv[])
     }
 
     gtk_init(&argc, &argv);
-    thres_low =  gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 0.0, 255.0, 1.0);
-    thres_high =  gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 0.0, 255.0, 1.0);
 
     camera = WG_CALLOC(1, sizeof (Camera));
 
@@ -921,7 +661,6 @@ int main(int argc, char *argv[])
     gui_camera_get_active_resolution(GUI_CAMERA(gtk_cam),
             &width, &height);
 
-    camera->hist_area  = gtk_drawing_area_new();
     camera->acc_area   = gtk_drawing_area_new();
     camera->hist_pixbuf = NULL;
     camera->area = area;
@@ -929,8 +668,6 @@ int main(int argc, char *argv[])
     camera->window = window;
     camera->fps = 0;
     camera->frame_count = 0;
-    camera->threshold_low = thres_low;
-    camera->threshold_high = thres_high;
     camera->status_bar = gtk_statusbar_new();
 
     gtk_widget_add_events(camera->area, 
@@ -942,9 +679,6 @@ int main(int argc, char *argv[])
     gtk_statusbar_push(GTK_STATUSBAR(camera->status_bar), ctx, 
             "Welcome to Wall Game Plugin");
 
-    gtk_widget_set_app_paintable(camera->hist_area, TRUE);
-    gtk_widget_set_double_buffered(camera->hist_area, TRUE);
-
     gtk_widget_set_app_paintable(camera->acc_area, TRUE);
     gtk_widget_set_double_buffered(camera->acc_area, TRUE);
 
@@ -953,32 +687,8 @@ int main(int argc, char *argv[])
 
     button_start = gui_camera_get_start_widget(GUI_CAMERA(gtk_cam));
     button_stop = gui_camera_get_stop_widget(GUI_CAMERA(gtk_cam));
-    resolution  = gui_camera_get_resolution_widget(GUI_CAMERA(gtk_cam));
     capture_button  = gui_camera_get_capture_widget(GUI_CAMERA(gtk_cam));
     color_button = gui_camera_get_color_widget(GUI_CAMERA(gtk_cam));
-
-    camera->smooth = gui_camera_add_checkbox(GUI_CAMERA(gtk_cam), 
-            "Smoothing");
-
-    camera->show_gray = gui_camera_add_checkbox(GUI_CAMERA(gtk_cam), 
-            "Show gray scale");
-
-    gui_camera_add(GUI_CAMERA(gtk_cam), gtk_label_new("High threshold"));
-    gui_camera_add(GUI_CAMERA(gtk_cam), thres_high);
-    gui_camera_add(GUI_CAMERA(gtk_cam), gtk_label_new("Low threshold"));
-    gui_camera_add(GUI_CAMERA(gtk_cam), thres_low);
-
-    g_signal_connect(GTK_RANGE(thres_high), "change-value", 
-            G_CALLBACK(on_change_value_th_high), camera);
-
-    g_signal_connect(GTK_RANGE(thres_low), "change-value", 
-            G_CALLBACK(on_change_value_th_low), camera);
-
-    gtk_range_set_value(GTK_RANGE(thres_low),  TH_LOW_DEF); 
-    gtk_range_set_value(GTK_RANGE(thres_high), TH_HIGH_DEF); 
-
-    camera->th_high = TH_HIGH_DEF;
-    camera->th_low  = TH_LOW_DEF;
 
     gtk_widget_set_sensitive(button_start, TRUE);
     gtk_widget_set_sensitive(button_stop, FALSE);
@@ -986,13 +696,10 @@ int main(int argc, char *argv[])
     gtk_window_set_focus(GTK_WINDOW(window), button_start);
 
     gtk_widget_set_size_request(area, width, height);
-    gtk_widget_set_size_request(camera->hist_area, width, 75);
     gtk_widget_set_size_request(camera->acc_area, width, height);
 
     g_signal_connect(gtk_widget_get_toplevel(area), "draw",
             G_CALLBACK(on_expose_event), camera);
-    g_signal_connect(gtk_widget_get_toplevel(camera->hist_area), "draw",
-            G_CALLBACK(on_expose_hist), camera);
     g_signal_connect(gtk_widget_get_toplevel(camera->acc_area), "draw",
             G_CALLBACK(on_expose_acc), camera);
 
@@ -1011,25 +718,20 @@ int main(int argc, char *argv[])
     g_signal_connect (gtk_widget_get_toplevel (window), "delete_event",
             G_CALLBACK(delete_event), camera);
 
-    g_signal_connect(gtk_widget_get_toplevel(resolution), "changed",
-            G_CALLBACK(select_resolution), camera);
-
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
 
     hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
-    display_box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
-
-    gtk_box_pack_start(GTK_BOX(display_box), camera->hist_area, TRUE, TRUE, 0);
+    display_box = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
 
     gtk_box_pack_start(GTK_BOX(display_box), area, TRUE, TRUE, 0);
 
     gtk_box_pack_start(GTK_BOX(display_box), camera->acc_area, TRUE, TRUE, 0);
 
-    gtk_box_pack_start(GTK_BOX(display_box), camera->status_bar, TRUE, TRUE, 0);
+//    gtk_box_pack_start(GTK_BOX(display_box), camera->status_bar, TRUE, TRUE, 0);
 
-    gtk_box_pack_start(GTK_BOX(hbox), display_box, FALSE, TRUE, 5);
+    gtk_box_pack_start(GTK_BOX(hbox), display_box, FALSE, FALSE, 5);
 
-    gtk_box_pack_start(GTK_BOX(hbox), gtk_cam, FALSE, TRUE, 5);
+    gtk_box_pack_start(GTK_BOX(hbox), gtk_cam, TRUE, TRUE, 5);
 
     gtk_container_add (GTK_CONTAINER(window), hbox);
 

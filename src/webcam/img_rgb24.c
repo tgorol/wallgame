@@ -5,6 +5,7 @@
 #include <wgtypes.h>
 #include <wg.h>
 #include <wgmacros.h>
+#include <wg_sort.h>
 
 #include <linux/videodev2.h>
 
@@ -57,7 +58,7 @@ img_bgrx_2_rgb(Wg_image *bgrx_img, Wg_image *rgb_img)
     img_get_width(bgrx_img, &width);
     img_get_height(bgrx_img, &height);
 
-    status = img_fill(width, height, RGB24_COMPONENT_NUM, IMG_BGRX,
+    status = img_fill(width, height, RGB24_COMPONENT_NUM, IMG_RGB,
             rgb_img);
     if (CAM_SUCCESS != status){
         return CAM_FAILURE;
@@ -183,16 +184,18 @@ img_rgb_from_buffer(wg_uchar *buffer, wg_uint width, wg_uint height,
                  gs_pixel[rd2 + 2][c]) / 9)
 
 wg_status
-img_rgb_smooth(Wg_image *img, Wg_image *new_img)
+img_rgb_median_filter(Wg_image *img, Wg_image *new_img)
 {
+    register rgb24_pixel *rgb_pixel = NULL;
+    rgb24_pixel *tmp_pixel = NULL;
     wg_uint width = 0;
     wg_uint height = 0;
     wg_uint row = 0;
     wg_uint col = 0;
-    rgb24_pixel *rgb_pixel = NULL;
     rgb24_pixel *rgb_new_pixel = NULL;
     wg_int rd = 0;
     wg_int rd2 = 0;
+    wg_uint data[5];
 
     CHECK_FOR_NULL_PARAM(img);
 
@@ -208,21 +211,49 @@ img_rgb_smooth(Wg_image *img, Wg_image *new_img)
     height -= 2;
     width  -= 2;
 
-    img_fill(width, height, RGB24_COMPONENT_NUM, IMG_RGB,
+    img_fill(width, height, img->components_per_pixel, img->type,
             new_img);
 
-    rd = img->row_distance;
+    rd = img->width;
     rd2 = rd + rd;
 
     for (row = 0; row < height; ++row){
-        img_get_row(img, row, (wg_uchar**)&rgb_pixel);
+        img_get_row(img, row, (wg_uchar**)&tmp_pixel);
+        rgb_pixel = tmp_pixel;
         img_get_row(new_img, row, (wg_uchar**)&rgb_new_pixel);
         for (col = 0; col < width; ++col, ++rgb_pixel, ++rgb_new_pixel){
-#if 0
-            rgb_new_pixel[0][RGB24_G] = avg(rgb_pixel, RGB24_G);
-#endif
-            rgb_new_pixel[0][RGB24_B] = avg(rgb_pixel, RGB24_B);
-            rgb_new_pixel[0][RGB24_R] = avg(rgb_pixel, RGB24_R);
+            data[0] = rgb_pixel[0][RGB24_R];
+            data[1] = rgb_pixel[2][RGB24_R];
+
+            data[2] = rgb_pixel[rd + 1][RGB24_R];
+
+            data[3] = rgb_pixel[rd2 + 0][RGB24_R];
+            data[4] = rgb_pixel[rd2 + 2][RGB24_R];
+
+            wg_sort_uint(data, ELEMNUM(data));
+            rgb_new_pixel[0][RGB24_R] = data[2];
+
+            data[0] = rgb_pixel[0][RGB24_G];
+            data[1] = rgb_pixel[2][RGB24_G];
+
+            data[2] = rgb_pixel[rd + 1][RGB24_G];
+
+            data[3] = rgb_pixel[rd2 + 0][RGB24_G];
+            data[4] = rgb_pixel[rd2 + 2][RGB24_G];
+
+            wg_sort_uint(data, ELEMNUM(data));
+            rgb_new_pixel[0][RGB24_G] = data[2];
+
+            data[0] = rgb_pixel[0][RGB24_B];
+            data[1] = rgb_pixel[2][RGB24_B];
+
+            data[2] = rgb_pixel[rd + 1][RGB24_B];
+
+            data[3] = rgb_pixel[rd2 + 0][RGB24_B];
+            data[4] = rgb_pixel[rd2 + 2][RGB24_B];
+
+            wg_sort_uint(data, ELEMNUM(data));
+            rgb_new_pixel[0][RGB24_B] = data[2];
         }
     }
 

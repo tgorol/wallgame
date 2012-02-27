@@ -21,4 +21,7 @@ typedef wg_uint32 bgrx_pixel;
 #define BGRX_R(bgrx)                          \
     (((wg_uint32)(bgrx) >> (BGRX_R_SHIFT)) & 0xff)            
 
+WG_PUBLIC wg_status
+img_bgrx_median_filter(Wg_image *img, Wg_image *new_img);
+
 #endif

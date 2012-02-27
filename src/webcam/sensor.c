@@ -86,8 +86,6 @@ sensor_init(Sensor *sensor)
     pthread_cond_init(&sensor->finish, NULL);
 
     sensor->state = SENSOR_STOPED;
-    sensor->th_high = TH_HIGH;
-    sensor->th_low  = TH_LOW;
 
     wg_wq_init(&sensor->detection_wq);
 
@@ -112,9 +110,9 @@ sensor_add_color(Sensor *sensor, const Hsv *color)
     CHECK_FOR_NULL_PARAM(sensor);
     CHECK_FOR_NULL_PARAM(color);
 
-    h = color->hue * 0.03;
-    s = color->sat * 0.03;
-    v = color->val * 0.03;
+    h = color->hue * 0.02;
+    s = color->sat * 0.02;
+    v = color->val * 0.02;
 
     pthread_mutex_lock(&sensor->lock);
 
@@ -137,13 +135,6 @@ sensor_add_color(Sensor *sensor, const Hsv *color)
         color->hue < sensor->bottom.hue ? color->hue - h : sensor->bottom.hue;
 
     pthread_mutex_unlock(&sensor->lock);
-
-    WG_LOG("Color added to sensor %p \nh=%f s=%f v=%f\n", 
-            (void*)sensor, 
-            WG_FLOAT(color->hue), 
-            WG_FLOAT(color->sat), 
-            WG_FLOAT(color->val)
-            );
 
     return WG_SUCCESS;
 }
@@ -171,7 +162,8 @@ sensor_start(Sensor *sensor)
     Wg_image edge_image;
     Wg_image hsv_image;
     Wg_image filtered_image;
-    Wg_image smooth_image;
+    Wg_image tmp_image;
+    Wg_image bgrx_image;
     Img_draw ctx;
     rgb24_pixel color;
     Hsv top;
@@ -247,6 +239,20 @@ sensor_start(Sensor *sensor)
 
             cam_discard_frame(&sensor->camera, &frame);
 
+            img_rgb_2_bgrx(&image, &bgrx_image);
+            img_cleanup(&image);
+
+            img_bgrx_median_filter(&bgrx_image, &tmp_image);
+            img_cleanup(&bgrx_image);
+
+            img_bgrx_2_rgb(&tmp_image, &image);
+            img_cleanup(&tmp_image);
+
+//            img_rgb_median_filter(&image, &tmp_image);
+//            img_cleanup(&image);
+
+//            image = tmp_image;
+
             img_rgb_2_hsv_gtk(&image, &hsv_image);
 
             pthread_mutex_lock(&sensor->lock);
@@ -256,12 +262,9 @@ sensor_start(Sensor *sensor)
 
             ef_filter(&hsv_image, &filtered_image, &top, &bottom);
 
-//            ef_smooth(&filtered_image, &smooth_image);
-            smooth_image = filtered_image;
+            ef_threshold(&filtered_image, 1);
 
-            ef_threshold(&smooth_image, 30);
-
-            ef_detect_edge(&smooth_image, &edge_image);
+            ef_detect_edge(&filtered_image, &edge_image);
 
             call_user_callback(sensor, CB_IMG_EDGE, &edge_image);
 
@@ -275,6 +278,7 @@ sensor_start(Sensor *sensor)
             img_cleanup(&acc);
 #else
             ef_center(&edge_image, &y, &x);
+            call_user_callback(sensor, CB_IMG_ACC, NULL);
 #endif  /* G_CENTER */
            
             img_draw_get_context(image.type, &ctx);
@@ -284,9 +288,8 @@ sensor_start(Sensor *sensor)
             call_user_callback(sensor, CB_IMG, &image);
 
             img_cleanup(&image);
-            img_cleanup(&smooth_image);
             img_cleanup(&hsv_image);
-//            img_cleanup(&filtered_image);
+            img_cleanup(&filtered_image);
             img_cleanup(&edge_image);
         }else{
             pthread_mutex_lock(&sensor->lock);
@@ -309,38 +312,6 @@ sensor_start(Sensor *sensor)
     cam_close(&sensor->camera);
     pthread_cond_signal(&sensor->finish);
     pthread_mutex_unlock(&sensor->lock);
-    return WG_SUCCESS;
-}
-
-wg_status
-sensor_set_threshold(Sensor *sensor, wg_uint high, wg_uint low)
-{
-    CHECK_FOR_NULL_PARAM(sensor);
-
-    pthread_mutex_lock(&sensor->lock);
-    
-    sensor->th_low  = low;
-    sensor->th_high = high;
-
-    pthread_mutex_unlock(&sensor->lock);
-
-    return WG_SUCCESS;
-}
-
-wg_status
-sensor_get_threshold(Sensor *sensor, wg_uint *high, wg_uint *low)
-{
-    CHECK_FOR_NULL_PARAM(sensor);
-    CHECK_FOR_NULL_PARAM(high);
-    CHECK_FOR_NULL_PARAM(low);
-
-    pthread_mutex_lock(&sensor->lock);
-    
-    *low  = sensor->th_low;
-    *high = sensor->th_high;
-
-    pthread_mutex_unlock(&sensor->lock);
-
     return WG_SUCCESS;
 }
 
