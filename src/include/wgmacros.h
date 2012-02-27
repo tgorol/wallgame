@@ -149,7 +149,7 @@
     do{                                                    \
         __typeof__ (ptr) p = ptr;                          \
         if (NULL != p){                                    \
-            wg_free(p);                                       \
+            wg_free(p, WG_FALSE);                                       \
             p = NULL;                                      \
         }                                                  \
     }while (0)

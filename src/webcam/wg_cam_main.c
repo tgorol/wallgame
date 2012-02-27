@@ -58,6 +58,7 @@ typedef struct Camera{
     GtkWidget *area;
     GtkWidget *gui_camera;
     GtkWidget *status_bar;
+    GtkWidget *noise_reduction;
     pthread_t  thread;
     Sensor    *sensor;
     gint fps;
@@ -502,6 +503,13 @@ void button_clicked_start
         strncpy(sensor->video_dev, device, VIDEO_SIZE_MAX);
 
         status = sensor_init(cam->sensor);
+
+        sensor_noise_reduction_set_state(cam->sensor, 
+                gtk_toggle_button_get_active(
+                    GTK_TOGGLE_BUTTON(cam->noise_reduction)
+                ));
+
+
         if (WG_SUCCESS == status){
             sensor_set_default_cb(cam->sensor, (Sensor_def_cb)default_cb, cam);
 
@@ -612,6 +620,19 @@ static void button_clicked_capture
     }
 }
 
+WG_PRIVATE void
+noise_reduction(GtkToggleButton *togglebutton,  gpointer user_data)
+{
+    Camera *cam = (Camera*)user_data;
+
+    if (cam->sensor != NULL){
+        sensor_noise_reduction_set_state(cam->sensor, 
+                gtk_toggle_button_get_active(togglebutton));
+    }
+
+    return;
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -669,6 +690,12 @@ main(int argc, char *argv[])
     camera->fps = 0;
     camera->frame_count = 0;
     camera->status_bar = gtk_statusbar_new();
+
+    camera->noise_reduction = 
+        gui_camera_add_checkbox(GUI_CAMERA(gtk_cam), "Noise Reduction");
+
+    g_signal_connect(GTK_TOGGLE_BUTTON(camera->noise_reduction), "toggled",
+            G_CALLBACK(noise_reduction), camera);
 
     gtk_widget_add_events(camera->area, 
             GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK ); 
@@ -740,6 +767,8 @@ main(int argc, char *argv[])
     gui_work_thread_init();
 
     gtk_main();
+
+    stop_capture(camera);
 
     gui_work_thread_cleanup();
 

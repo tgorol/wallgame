@@ -7,6 +7,8 @@
 #include <wg.h>
 #include <wgmacros.h>
 
+#include <wg_fixarith.h>
+
 #include <linux/videodev2.h>
 
 #include "include/cam.h"
@@ -26,26 +28,14 @@
 
 #define   CACHE_TAN_NUM (135 + 45)
 
-#define NB_X   10
-#define NB_Y   10
+#define NB_X   6
+#define NB_Y   6
 
-#define NB_X2   8
-#define NB_Y2   8
+#define NB_X2   4
+#define NB_Y2   4
 
+/* define fix point arithmetic accuracy */
 #define FPPOS   8
-#define FPPOS_M ((FPPOS) >> 1) 
-#define FPPOS_MAX (1 << FPPOS)
-
-#define FPPOS_INC(val)  ((val) += (FPPOS_VAL(1)))
-#define FPPOS_VAL(val)  ((wg_int32)(((wg_uint32)(val)) << FPPOS))
-#define FPPOS_MUL(val1, val2)                  \
-                    (FPPOS_INT((val1) * (val2)))
-
-#define FPPOS_DIV(num, dnum)                  \
-                    ((num / ((dnum) >> (FPPOS_M))) << (FPPOS_M))
-
-/*! @todo handle negative numbers properly */
-#define FPPOS_INT(val)  ((wg_int32)(((wg_int32)(val)) >> FPPOS))
 
 static wg_int32 tan_c_array[2 * NB_X + 1][2 * NB_Y + 1];
 

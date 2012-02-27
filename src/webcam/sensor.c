@@ -97,8 +97,55 @@ sensor_init(Sensor *sensor)
     sensor->bottom.sat = 1.0;
     sensor->bottom.hue = 1.0;
 
+    sensor->noise_reduction = WG_FALSE;
+
     return status;
 }
+
+wg_status
+sensor_start_noise_reduction(Sensor *sensor)
+{
+    CHECK_FOR_NULL_PARAM(sensor);
+
+    sensor_noise_reduction_set_state(sensor, WG_TRUE);
+
+    return WG_SUCCESS;
+}
+
+wg_status
+sensor_stop_noise_reduction(Sensor *sensor)
+{
+    CHECK_FOR_NULL_PARAM(sensor);
+
+    sensor_noise_reduction_set_state(sensor, WG_FALSE);
+
+    return WG_SUCCESS;
+}
+
+wg_status
+sensor_noise_reduction_set_state(Sensor *sensor, wg_boolean state)
+{
+    CHECK_FOR_NULL_PARAM(sensor);
+
+    pthread_mutex_lock(&sensor->lock);
+    sensor->noise_reduction = state;
+    pthread_mutex_unlock(&sensor->lock);
+
+    return WG_SUCCESS;
+}
+
+wg_boolean
+sensor_get_noise_reduction_state(Sensor *sensor)
+{
+    wg_boolean flag = WG_FALSE;
+
+    pthread_mutex_lock(&sensor->lock);
+    flag = sensor->noise_reduction;
+    pthread_mutex_unlock(&sensor->lock);
+
+    return flag;
+}
+
 
 wg_status
 sensor_add_color(Sensor *sensor, const Hsv *color)
@@ -201,12 +248,14 @@ sensor_start(Sensor *sensor)
 
     call_user_callback(sensor, CB_SETUP_START, NULL);
 
+#if 0
     status.wg = setup(sensor);
     if (WG_SUCCESS != status.wg){
         cam_close(&sensor->camera);
         call_user_callback(sensor, CB_SETUP_ERROR, NULL);
         return WG_FAILURE;
     }
+#endif
 
     call_user_callback(sensor, CB_SETUP_STOP, NULL);
 
@@ -242,16 +291,15 @@ sensor_start(Sensor *sensor)
             img_rgb_2_bgrx(&image, &bgrx_image);
             img_cleanup(&image);
 
-            img_bgrx_median_filter(&bgrx_image, &tmp_image);
+            if (sensor_get_noise_reduction_state(sensor) == WG_TRUE){
+                img_bgrx_median_filter(&bgrx_image, &tmp_image);
+                img_cleanup(&bgrx_image);
+
+                bgrx_image = tmp_image;
+            }
+
+            img_bgrx_2_rgb(&bgrx_image, &image);
             img_cleanup(&bgrx_image);
-
-            img_bgrx_2_rgb(&tmp_image, &image);
-            img_cleanup(&tmp_image);
-
-//            img_rgb_median_filter(&image, &tmp_image);
-//            img_cleanup(&image);
-
-//            image = tmp_image;
 
             img_rgb_2_hsv_gtk(&image, &hsv_image);
 
@@ -333,7 +381,9 @@ sensor_stop(Sensor *sensor)
 
     pthread_mutex_unlock(&sensor->lock);
 
+#if 0
     img_cleanup(&sensor->background);
+#endif
 
     return WG_SUCCESS;
 }

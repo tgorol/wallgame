@@ -6,7 +6,6 @@
 
 #include <wg_sort.h>
 
-
 void
 wg_sort_double(wg_double *data, wg_uint num)
 {

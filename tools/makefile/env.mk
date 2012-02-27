@@ -52,7 +52,7 @@ OBJ=$(foreach file, $(SOURCE), $(basename $(file)).o)
 CFLAGS+=-march=$(CPU_ARCH) -std=$(C_STD) -D_REENTRANT 
 
 ifeq ($(BUILD_TYPE),  RELEASE)
-	CFLAGS+=-g -Wall -O3
+	CFLAGS+=-g -Wall -O3 -pedantic
 else
 	CFLAGS+=-g -Wall -pedantic -DWGDEBUG -DMEMLEAK_CHECK
 endif

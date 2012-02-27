@@ -14,5 +14,5 @@ WG_PUBLIC void *
 wg_calloc(size_t num, size_t size, const wg_char *filename, wg_uint line);
 
 WG_PUBLIC void
-wg_free(void *ptr);
+wg_free(void *ptr, wg_boolean ff);
 #endif

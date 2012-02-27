@@ -42,6 +42,7 @@ struct Sensor{
     Sensor_state state;
     Wg_camera camera;
     Wg_image background;
+    wg_boolean noise_reduction;
 
     Sensor_def_cb cb[CB_NUM];
     void *user_data[CB_NUM];
@@ -77,5 +78,20 @@ sensor_get_cb(Sensor *sensor, Sensor_cb_type type, Sensor_def_cb *cb);
 
 WG_PUBLIC wg_status
 sensor_add_color(Sensor *sensor, const Hsv *color);
+
+WG_PUBLIC wg_status
+sensor_start_noise_reduction(Sensor *sensor);
+
+WG_PUBLIC wg_status
+sensor_stop_noise_reduction(Sensor *sensor);
+
+WG_PUBLIC wg_boolean
+sensor_get_noise_reduction_state(Sensor *sensor);
+
+WG_PUBLIC wg_boolean
+sensor_get_noise_reduction_set_state(Sensor *sensor);
+
+WG_PUBLIC wg_status
+sensor_noise_reduction_set_state(Sensor *sensor, wg_boolean state);
 
 #endif

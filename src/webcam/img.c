@@ -38,9 +38,6 @@ typedef JSAMPLE* JSAMPROW;
 WG_PRIVATE void
 xfree_cb(guchar *pixels, gpointer data);
 
-WG_PRIVATE wg_uchar
-crop_color(wg_int color, wg_int value);
-
 /** 
 * @brief Create new image instance
 *  
@@ -231,12 +228,6 @@ xfree_cb(guchar *pixels, gpointer data)
     img_cleanup(data);
 
     WG_FREE(data);
-}
-
-WG_PRIVATE wg_uchar
-crop_color(wg_int color, wg_int value)
-{
-    return color > value ? value : color;
 }
 
 /**

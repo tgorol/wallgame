@@ -5,7 +5,7 @@
 #define DEV_PATH_MAX   64
 
 /*! Number of buffers to allocate for streaming mode */
-#define DEFAULT_BUFFER_NUM 4
+#define DEFAULT_BUFFER_NUM 10
 
 
 enum {CAM_FMT_CAPTURE, CAM_FMT_NUM};

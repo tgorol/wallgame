@@ -391,7 +391,7 @@ WG_PRIVATE wg_status
 save_field_name(wg_char *name, Config_field *field)
 {
     int status = 0;
-    status = snprintf(field->name, CONFIG_MAX_FIELD_NAME_SIZE, name);
+    status = snprintf(field->name, CONFIG_MAX_FIELD_NAME_SIZE, "%s", name);
 
     return (status < 0) ? WG_FAILURE :  WG_SUCCESS;
 }
