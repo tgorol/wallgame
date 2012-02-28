@@ -16,6 +16,7 @@
 #include <wg.h>
 #include <wgmacros.h>
 #include <wg_linked_list.h>
+#include <wg_iterator.h>
 #include <wg_lsdir.h>
 #include <wg_sync_linked_list.h>
 #include <wg_wq.h>
@@ -42,27 +43,36 @@
 
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
-#define NORM_RANGE_MIN 0
-#define NORM_RANGE_MAX 255
-
-#define TH_HIGH_DEF  240
-#define TH_LOW_DEF   100
-
+/** @brief FPS interwal counter     */
+#define FPS_INTERVAL   0.5
 
 typedef struct Camera{
+    /* gui variables */
+    GtkWidget *menubar;
     GtkWidget *window;
-    GdkPixbuf *pixbuf;
-    GdkPixbuf *hist_pixbuf;
-    GdkPixbuf *acc_pixbuf;
-    GtkWidget *acc_area;
-    GtkWidget *area;
-    GtkWidget *gui_camera;
-    GtkWidget *status_bar;
+    GtkWidget *resolution_combo;
+    GtkWidget *device_combo;
+    GtkWidget *start_capturing;
+    GtkWidget *stop_capturing;
+    GtkWidget *left_area;
+    GtkWidget *right_area;
     GtkWidget *noise_reduction;
-    pthread_t  thread;
+    GtkWidget *fps_display;
+
+    /* Sensor variables */
     Sensor    *sensor;
-    gint fps;
-    gint frame_count;
+    
+    /* fps counter variables */
+    GTimer *fps_timer;             /*!< timer used by fps counter */
+    gint    frame_counter;         /*!< number of counted frames  */
+    gfloat  fps_val;               /*!< fps value                 */
+
+    GdkPixbuf *pixbuf;
+    GdkPixbuf *acc_pixbuf;
+    GdkPixbuf *hist_pixbuf;
+    GtkWidget *status_bar;
+
+    pthread_t  thread;
     Wg_video_out vid;
     wg_boolean dragging;
     wg_uint x1;
@@ -74,6 +84,21 @@ typedef struct Camera{
 
 wg_status
 create_histogram(Wg_image *img, wg_uint width, wg_uint height, Wg_image *hist);
+
+WG_PRIVATE void
+get_selected_resolution(GtkWidget *combo, wg_uint *width, wg_uint *height);
+
+WG_PRIVATE void
+stop_fps(Camera *obj);
+
+WG_STATIC void
+start_fps(Camera *obj);
+
+WG_PRIVATE void
+update_fps(Camera *obj, int val);
+
+WG_PRIVATE void 
+print_fps(Camera *obj);
 
 static gboolean
 on_expose_acc(GtkWidget *widget,
@@ -92,8 +117,7 @@ on_expose_acc(GtkWidget *widget,
     cairo_paint(cr);
 
     if (cam->acc_pixbuf != NULL){
-        gui_camera_get_active_resolution(GUI_CAMERA(cam->gui_camera),
-			&width, &height);
+        get_selected_resolution(cam->resolution_combo, &width, &height);
 
         w_width = gtk_widget_get_allocated_width(widget);
         w_height = gtk_widget_get_allocated_height(widget);
@@ -126,8 +150,7 @@ on_expose_event(GtkWidget *widget,
     cairo_paint(cr);
 
     if (cam->pixbuf != NULL){
-        gui_camera_get_active_resolution(GUI_CAMERA(cam->gui_camera),
-			&width, &height);
+        get_selected_resolution(cam->resolution_combo, &width, &height);
 
         w_width = gtk_widget_get_allocated_width(widget);
         w_height = gtk_widget_get_allocated_height(widget);
@@ -197,23 +220,16 @@ delete_event( GtkWidget *widget, GdkEvent  *event, gpointer   data )
 void button_clicked_stop
 (GtkWidget *widget, gpointer data){
     Camera    *cam = NULL;
-    GtkWidget *start_button = NULL;
-    GtkWidget *resolution = NULL;
-    GtkWidget *dev_path = NULL;
 
     cam = (Camera*)data;
 
     stop_capture(cam);
 
-    start_button = gui_camera_get_start_widget(GUI_CAMERA(cam->gui_camera));
-    resolution = gui_camera_get_resolution_widget(GUI_CAMERA(cam->gui_camera));
-    dev_path = gui_camera_get_device_widget(GUI_CAMERA(cam->gui_camera));
-
     gtk_widget_set_sensitive(widget, FALSE);
-    gtk_widget_set_sensitive(start_button, TRUE);
-    gtk_widget_set_sensitive(resolution, TRUE);
-    gtk_widget_set_sensitive(dev_path, TRUE);
-    gtk_window_set_focus(GTK_WINDOW(cam->window), start_button);
+    gtk_widget_set_sensitive(cam->start_capturing, TRUE);
+    gtk_widget_set_sensitive(cam->resolution_combo, TRUE);
+    gtk_widget_set_sensitive(cam->device_combo, TRUE);
+    gtk_window_set_focus(GTK_WINDOW(cam->window), cam->start_capturing);
 }
 
 typedef struct Update_image{
@@ -224,7 +240,7 @@ typedef struct Update_image{
 
 typedef struct Update_fps{
     wg_uint frame_inc;
-    Gui_camera *widget;
+    Camera *camera;
 }Update_fps;
 
 typedef struct Encode_frame{
@@ -239,7 +255,7 @@ update_fps_cb(void *data)
 
     fps = (Update_fps*)data;
 
-    gui_camera_fps_update(fps->widget, fps->frame_inc);
+    update_fps(fps->camera, fps->frame_inc);
 
     return;
 }
@@ -301,8 +317,10 @@ default_cb(Sensor *sensor, Sensor_cb_type type, Wg_image *img, void *user_data)
     case CB_ENTER:
         video_open_output_stream("text.mpg", &cam->vid, sensor->width, 
                 sensor->height);
+        start_fps(cam);
         break;
     case CB_EXIT:
+        stop_fps(cam);
         video_close_output_stream(&cam->vid);
         break;
     case CB_SETUP_START:
@@ -313,11 +331,10 @@ default_cb(Sensor *sensor, Sensor_cb_type type, Wg_image *img, void *user_data)
         /* update fps */
         work.update_fps = gui_work_create(sizeof (Update_fps), update_fps_cb);
 
-        work.update_fps->widget = GUI_CAMERA(cam->gui_camera);
+        work.update_fps->camera = cam;
         work.update_fps->frame_inc = 1;
 
         gui_work_add(work.update_fps);
-
         break;
     case CB_IMG:
         img_convert_to_pixbuf(img, &pixbuf, NULL);
@@ -328,7 +345,7 @@ default_cb(Sensor *sensor, Sensor_cb_type type, Wg_image *img, void *user_data)
 
         work.update_img->src_pixbuf  = pixbuf;
         work.update_img->dest_pixbuf = &cam->pixbuf;
-        work.update_img->area = cam->area;
+        work.update_img->area = cam->left_area;
 
         gui_work_add(work.update_img);
 
@@ -356,7 +373,7 @@ default_cb(Sensor *sensor, Sensor_cb_type type, Wg_image *img, void *user_data)
 
         work.update_img->src_pixbuf  = pixbuf;
         work.update_img->dest_pixbuf = &cam->acc_pixbuf;
-        work.update_img->area = cam->acc_area;
+        work.update_img->area = cam->right_area;
 
         gui_work_add(work.update_img);
         break;
@@ -415,8 +432,8 @@ setup_hist(void *data)
 
     gdk_threads_leave();
 
-    t_width = gtk_widget_get_allocated_width(work->cam->area);
-    t_height = gtk_widget_get_allocated_height(work->cam->area);
+    t_width = gtk_widget_get_allocated_width(work->cam->left_area);
+    t_height = gtk_widget_get_allocated_height(work->cam->left_area);
 
     img_fill(work->rect.width, work->rect.height,
             RGB24_COMPONENT_NUM, IMG_RGB, &rect_image);
@@ -470,9 +487,6 @@ void button_clicked_start
     Camera *cam = NULL;
     const gchar *device = NULL;
     wg_status status = WG_FAILURE;
-    GtkWidget *dev_path = NULL;
-    GtkWidget *stop_button = NULL;
-    GtkWidget *resolution = NULL;
     pthread_attr_t attr;
 
     cam = (Camera*)data;
@@ -483,21 +497,19 @@ void button_clicked_start
 
         cam->dragging = WG_FALSE;
 
-        g_signal_connect(cam->area, "button-press-event", 
+        g_signal_connect(cam->left_area, "button-press-event", 
                 G_CALLBACK(pressed_mouse), cam);
 
-        g_signal_connect(cam->area, "button-release-event", 
+        g_signal_connect(cam->left_area, "button-release-event", 
                 G_CALLBACK(released_mouse), cam);
 
-        dev_path = gui_camera_get_device_widget(GUI_CAMERA(cam->gui_camera));
-        stop_button = gui_camera_get_stop_widget(GUI_CAMERA(cam->gui_camera));
-        resolution = gui_camera_get_resolution_widget(
-                GUI_CAMERA(cam->gui_camera));
-
+#if 0
         device = gtk_combo_box_text_get_active_text(
-                GTK_COMBO_BOX_TEXT(dev_path));
+                GTK_COMBO_BOX_TEXT(cam->device_combo));
+#endif
+        device = "/dev/video0";
 
-        gui_camera_get_active_resolution(GUI_CAMERA(cam->gui_camera),
+        get_selected_resolution(cam->resolution_combo,
                 &sensor->width, &sensor->height);
         
         strncpy(sensor->video_dev, device, VIDEO_SIZE_MAX);
@@ -509,7 +521,6 @@ void button_clicked_start
                     GTK_TOGGLE_BUTTON(cam->noise_reduction)
                 ));
 
-
         if (WG_SUCCESS == status){
             sensor_set_default_cb(cam->sensor, (Sensor_def_cb)default_cb, cam);
 
@@ -519,10 +530,10 @@ void button_clicked_start
             pthread_attr_destroy(&attr);
 
             gtk_widget_set_sensitive(widget, FALSE);
-            gtk_widget_set_sensitive(stop_button, TRUE);
-            gtk_widget_set_sensitive(resolution, FALSE);
-            gtk_widget_set_sensitive(dev_path, FALSE);
-            gtk_window_set_focus(GTK_WINDOW(cam->window), stop_button);
+            gtk_widget_set_sensitive(cam->stop_capturing, TRUE);
+            gtk_widget_set_sensitive(cam->resolution_combo, FALSE);
+            gtk_widget_set_sensitive(cam->device_combo, FALSE);
+            gtk_window_set_focus(GTK_WINDOW(cam->window), cam->stop_capturing);
         }else{
             WG_FREE(cam->sensor);
             cam->sensor = NULL;
@@ -633,26 +644,309 @@ noise_reduction(GtkToggleButton *togglebutton,  gpointer user_data)
     return;
 }
 
+WG_PRIVATE void
+enable_threads(void)
+{
+    if (!g_thread_supported()){
+        g_thread_init(NULL);
+        gdk_threads_init();
+        gdk_threads_enter();
+        WG_LOG("g_thread supported\n");
+    }else{
+        WG_LOG("g_thread not supported\n");
+        exit(EXIT_FAILURE);
+    }
+
+    return;
+}
+
+/** @brief Default resolution */
+#define RESOLUTION_DEFAULT_INDEX    0
+
+/** @brief device path 
+ *
+ * @todo find a way to get it from the system
+ */
+#define DEV_PATH  "/dev/"
+
+/** @brief maximum devixe path size */
+#define DEVICE_PATH_MAX  64
+
+typedef struct Resolution{
+    wg_char text[16];        /*!< text of the resolution */
+    wg_uint  width;          /*!< width in pixels        */
+    wg_uint  height;         /*!< height in pixels       */
+}Resolution;
+
+/** 
+* @brief List of supported resolutions
+*/
+static const Resolution res_info[] = {
+    {"352x288", 352, 288,} ,
+    {"320x240", 320, 240,} ,
+    {"176x144", 176, 144,} ,
+    {"160x120", 160, 120,}
+};
+
+
+WG_PRIVATE void
+fill_resolution_combo(GtkComboBoxText *combo)
+{
+    wg_int i = 0;
+
+    for (i = 0; i < ELEMNUM(res_info); ++i){
+        gtk_combo_box_text_append_text(combo, res_info[i].text);
+    }
+
+    gtk_combo_box_set_active(GTK_COMBO_BOX(combo), RESOLUTION_DEFAULT_INDEX);
+
+    gtk_combo_box_set_focus_on_click(GTK_COMBO_BOX(combo), FALSE); 
+    
+    return;
+}
+
+WG_PRIVATE void
+get_selected_resolution(GtkWidget *combo, wg_uint *width, wg_uint *height)
+{
+    guint index = 0;
+
+    index = gtk_combo_box_get_active(GTK_COMBO_BOX(combo));
+
+    *width  = res_info[index].width;
+    *height = res_info[index].height;
+
+    return;
+}
+
+WG_PRIVATE void
+fill_video_combo(GtkComboBoxText *combo)
+{
+    List_head head;
+    Iterator itr;
+    wg_dirent *dir_entry;
+    wg_char full_path[DEVICE_PATH_MAX];
+    wg_int count = 0;
+
+    list_init(&head);
+
+    wg_lsdir(DEV_PATH, "video", &head);
+
+    iterator_list_init(&itr, &head, GET_OFFSET(wg_dirent, list));
+
+    count = 0;
+    while ((dir_entry = iterator_list_next(&itr)) != NULL){
+        strcpy(full_path, DEV_PATH);
+        strcat(full_path, dir_entry->d_name);
+        gtk_combo_box_text_insert_text(combo, 0, full_path);
+        ++count;
+    }
+
+    wg_lsdir_cleanup(&head);
+
+    if (count == 0){
+        gtk_combo_box_text_append_text(combo, "No device");
+    }
+
+    gtk_combo_box_set_active(GTK_COMBO_BOX(combo), 0);
+    gtk_combo_box_set_focus_on_click(GTK_COMBO_BOX(combo), FALSE); 
+
+    return;
+}
+
+WG_STATIC void
+start_fps(Camera *obj)
+{
+    g_timer_start(obj->fps_timer);
+}
+
+/** 
+* @brief Update fps counter
+* 
+* @param obj wg_camera widget
+* @param val number of frames to update
+*/
+WG_PRIVATE void
+update_fps(Camera *obj, int val)
+{
+    gulong micro = 0UL;
+    double elapsed = 0.0;
+
+    obj->frame_counter += val;
+
+    if ((elapsed = g_timer_elapsed(obj->fps_timer, &micro)) >= FPS_INTERVAL){
+        obj->fps_val = obj->frame_counter / elapsed;
+        obj->frame_counter = 0;
+        g_timer_start(obj->fps_timer);
+        print_fps(obj);
+    }
+}
+
+/** 
+* @brief Stop fps counter
+* 
+* @param obj wg_camera widget
+*/
+WG_PRIVATE void
+stop_fps(Camera *obj)
+{
+    g_timer_stop(obj->fps_timer);
+}
+
+WG_PRIVATE void 
+print_fps(Camera *obj)
+{
+    char text[32];
+
+    sprintf(text, "%.1f", (float)obj->fps_val);
+
+    gtk_label_set_text(GTK_LABEL(obj->fps_display), text);
+}
+
 int
 main(int argc, char *argv[])
 {
-    GtkWidget *window;
-    GtkWidget *button_start = NULL;
-    GtkWidget *button_stop = NULL;
-    GtkWidget *capture_button = NULL;
-    GtkWidget *hbox = NULL;
-    GtkWidget *area = NULL;
-    GtkWidget *color_button = NULL;
-    GtkWidget *display_box = NULL;
-    Camera    *camera = NULL;
-    GtkWidget *gtk_cam = NULL;
-    List_head  video;
+    Camera *camera = NULL;
+    GtkWidget *window = NULL;
+    GtkBuilder      *builder = NULL;
+    GtkWidget *widget = NULL;
     wg_uint width = 0;
     wg_uint height = 0;
-    wg_uint a[] = {12,3, 2, 8, 10, 7};
 
-    wg_sort_uint(a, ELEMNUM(a));
+    enable_threads();
 
+    MEMLEAK_START;
+
+    camera = WG_CALLOC(1, sizeof (Camera));
+
+    gtk_init (&argc, &argv);
+
+    builder = gtk_builder_new ();
+    gtk_builder_add_from_file (
+            builder, "/home/tgorol/Desktop/gui_for_project.xml", NULL);
+    window = GTK_WIDGET (gtk_builder_get_object (builder, "window"));
+    gtk_builder_connect_signals (builder, NULL);
+
+    g_signal_connect (window, "delete_event",
+            G_CALLBACK(delete_event), camera);
+
+    g_signal_connect(window, "destroy",
+            G_CALLBACK(gtk_main_quit), camera);
+
+    camera->window = window;
+
+    /* fill supported resolutions */
+    widget = GTK_WIDGET(
+            gtk_builder_get_object (builder, "resolution_select"));
+
+    fill_resolution_combo(GTK_COMBO_BOX_TEXT(widget));
+
+    get_selected_resolution(widget, &width, &height);
+
+    camera->resolution_combo = widget;
+ 
+    /* fill available video devices */
+    widget = GTK_WIDGET(
+            gtk_builder_get_object (builder, "device_select"));
+
+    fill_video_combo(GTK_COMBO_BOX_TEXT(widget));
+
+    gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(widget));
+
+    camera->device_combo = widget;
+
+    /* setup drawable left area */
+    widget = GTK_WIDGET(
+            gtk_builder_get_object (builder, "draw_left"));
+
+    gtk_widget_set_app_paintable(widget, TRUE);
+    gtk_widget_set_double_buffered(widget, TRUE);
+
+    gtk_widget_set_size_request(widget, width, height);
+
+    g_signal_connect(widget, "draw",
+            G_CALLBACK(on_expose_event), camera);
+
+    camera->left_area = widget;
+
+    /* setup drawable right area */
+    widget = GTK_WIDGET(
+            gtk_builder_get_object (builder, "draw_right"));
+
+    gtk_widget_set_app_paintable(widget, TRUE);
+    gtk_widget_set_double_buffered(widget, TRUE);
+
+    gtk_widget_set_size_request(widget, width, height);
+
+    g_signal_connect(widget, "draw",
+            G_CALLBACK(on_expose_acc), camera);
+
+    camera->right_area = widget;
+
+    /* setup noise reduction check box */
+    widget = GTK_WIDGET(
+            gtk_builder_get_object (builder, "noise_reduction_check"));
+
+    g_signal_connect(GTK_TOGGLE_BUTTON(widget), "toggled",
+            G_CALLBACK(noise_reduction), camera);
+
+    camera->noise_reduction = widget;
+
+    /* setup start_button */
+    widget = GTK_WIDGET(
+            gtk_builder_get_object (builder, "start_capturing"));
+
+    gtk_widget_set_sensitive(widget, TRUE);
+
+    g_signal_connect(widget, "clicked",
+            G_CALLBACK(button_clicked_start), camera);
+
+    gtk_window_set_focus(GTK_WINDOW(window), widget);
+
+    camera->start_capturing = widget;
+
+    /* setup stop button */
+    widget = GTK_WIDGET(
+            gtk_builder_get_object (builder, "stop_capturing"));
+
+    gtk_widget_set_sensitive(widget, FALSE);
+
+    g_signal_connect(widget, "clicked",
+            G_CALLBACK(button_clicked_stop), camera);
+
+    camera->stop_capturing = widget;
+
+    /* setup fps couter display */
+    widget = GTK_WIDGET(
+            gtk_builder_get_object (builder, "fps_display"));
+
+    camera->fps_display = widget;
+
+    /* initialize fps counter */
+    camera->fps_timer     = g_timer_new();
+    camera->frame_counter = 0;
+    camera->fps_val       = 0.0;
+
+
+    g_object_unref (G_OBJECT (builder));
+
+    gui_work_thread_init();
+
+    gtk_widget_show (window);                
+    gtk_main ();
+
+    gui_work_thread_cleanup();
+
+    stop_capture(camera);
+
+    WG_FREE(camera);
+
+    gdk_threads_leave();
+
+    MEMLEAK_STOP;
+
+    return 0;
+
+#if 0
     MEMLEAK_START;
 
     list_init(&video);
@@ -690,6 +984,10 @@ main(int argc, char *argv[])
     camera->fps = 0;
     camera->frame_count = 0;
     camera->status_bar = gtk_statusbar_new();
+    camera->menubar = gtk_menu_bar_new();
+
+    gtk_menu_shell_append(GTK_MENU_SHELL(camera->menubar),
+            gtk_menu_item_new_with_label("File"));
 
     camera->noise_reduction = 
         gui_camera_add_checkbox(GUI_CAMERA(gtk_cam), "Noise Reduction");
@@ -749,18 +1047,23 @@ main(int argc, char *argv[])
 
     hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
     display_box = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
+    top_box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
 
     gtk_box_pack_start(GTK_BOX(display_box), area, TRUE, TRUE, 0);
 
     gtk_box_pack_start(GTK_BOX(display_box), camera->acc_area, TRUE, TRUE, 0);
 
-//    gtk_box_pack_start(GTK_BOX(display_box), camera->status_bar, TRUE, TRUE, 0);
+    //    gtk_box_pack_start(GTK_BOX(display_box), camera->status_bar, TRUE, TRUE, 0);
 
-    gtk_box_pack_start(GTK_BOX(hbox), display_box, FALSE, FALSE, 5);
+    gtk_box_pack_start(GTK_BOX(hbox), display_box, FALSE, FALSE, 2);
 
-    gtk_box_pack_start(GTK_BOX(hbox), gtk_cam, TRUE, TRUE, 5);
+    gtk_box_pack_start(GTK_BOX(hbox), gtk_cam, TRUE, TRUE, 2);
 
-    gtk_container_add (GTK_CONTAINER(window), hbox);
+    gtk_box_pack_start(GTK_BOX(top_box), camera->menubar, FALSE, FALSE, 0);
+
+    gtk_box_pack_start(GTK_BOX(top_box), hbox, FALSE, FALSE, 2);
+
+    gtk_container_add (GTK_CONTAINER(window), top_box);
 
     gtk_widget_show_all(window);
 
@@ -796,6 +1099,7 @@ main(int argc, char *argv[])
     MEMLEAK_STOP;
 
     return 0;
+#endif
 }
 
     wg_status

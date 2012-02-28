@@ -14,7 +14,6 @@ SOURCE=cam.c                  \
 	   img_gs.c    \
 	   img_yuyv.c         \
        img_draw.c         \
-	   gui_camera.c           \
        ef_engine.c    \
        vid.c            \
        sensor.c          \
@@ -28,7 +27,8 @@ MAIN_C=wg_cam_main.c
 INCLUDE=./include/
 
 EXTRA_CFLAGS+=-D_GNU_SOURCE `pkg-config --cflags gtk+-3.0` \
-			  -DGTK_DISABLE_DEPRECATED=1
+			  -DGTK_DISABLE_DEPRECATED=1                   \
+              -Wl,--export-dynamic
 
 ifdef WG_DEBUG
 EXTRA_CFLAGS+=-DWGDEBUG

@@ -467,7 +467,7 @@ gui_camera_fps_stop(Gui_camera *obj)
 }
 
 WG_PRIVATE void 
-update_fps(Gui_camera *obj)
+update_fps(Camera *obj)
 {
     char text[32];
 
