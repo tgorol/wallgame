@@ -61,10 +61,23 @@ get_fallback_mode(CAM_MODE mode);
 cam_status
 cam_init(Wg_camera *cam, const wg_char* dev_path)
 {
+    struct stat st; 
+
     CHECK_FOR_NULL_PARAM(cam);
     CHECK_FOR_NULL_PARAM(dev_path);
 
     memset(cam, '\0', sizeof (Wg_camera));
+
+    if (-1 == stat (dev_path, &st)) {
+        WG_LOG("Cannot identify '%s': errno(%d), %s\n",
+                dev_path, errno, strerror (errno));
+        return CAM_FAILURE;
+    }
+
+    if (!S_ISCHR (st.st_mode)) {
+        WG_LOG("%s is no a device\n", cam->dev_path);
+        return CAM_FAILURE;
+    }
 
     cam->mode = CAM_MODE_INVALID;
     cam->state = CAM_STATE_UNINIT;

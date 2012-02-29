@@ -67,9 +67,8 @@ typedef struct Camera{
     gint    frame_counter;         /*!< number of counted frames  */
     gfloat  fps_val;               /*!< fps value                 */
 
-    GdkPixbuf *pixbuf;
-    GdkPixbuf *acc_pixbuf;
-    GdkPixbuf *hist_pixbuf;
+    GdkPixbuf *right_pixbuf;
+    GdkPixbuf *left_pixbuf;
     GtkWidget *status_bar;
 
     pthread_t  thread;
@@ -116,14 +115,14 @@ on_expose_acc(GtkWidget *widget,
     cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
     cairo_paint(cr);
 
-    if (cam->acc_pixbuf != NULL){
+    if (cam->right_pixbuf != NULL){
         get_selected_resolution(cam->resolution_combo, &width, &height);
 
         w_width = gtk_widget_get_allocated_width(widget);
         w_height = gtk_widget_get_allocated_height(widget);
 
         gdk_cairo_set_source_pixbuf(cr,
-                cam->acc_pixbuf, 
+                cam->right_pixbuf, 
                 (double)((w_width - width) >> 1),
                 (double)((w_height - height) >> 1));
 
@@ -149,14 +148,14 @@ on_expose_event(GtkWidget *widget,
     cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
     cairo_paint(cr);
 
-    if (cam->pixbuf != NULL){
+    if (cam->left_pixbuf != NULL){
         get_selected_resolution(cam->resolution_combo, &width, &height);
 
         w_width = gtk_widget_get_allocated_width(widget);
         w_height = gtk_widget_get_allocated_height(widget);
 
         gdk_cairo_set_source_pixbuf(cr,
-                cam->pixbuf, 
+                cam->left_pixbuf, 
                 (double)((w_width - width) >> 1),
                 (double)((w_height - height) >> 1));
 
@@ -344,7 +343,7 @@ default_cb(Sensor *sensor, Sensor_cb_type type, Wg_image *img, void *user_data)
                 update_image_cb);
 
         work.update_img->src_pixbuf  = pixbuf;
-        work.update_img->dest_pixbuf = &cam->pixbuf;
+        work.update_img->dest_pixbuf = &cam->left_pixbuf;
         work.update_img->area = cam->left_area;
 
         gui_work_add(work.update_img);
@@ -372,7 +371,7 @@ default_cb(Sensor *sensor, Sensor_cb_type type, Wg_image *img, void *user_data)
                 update_image_cb);
 
         work.update_img->src_pixbuf  = pixbuf;
-        work.update_img->dest_pixbuf = &cam->acc_pixbuf;
+        work.update_img->dest_pixbuf = &cam->right_pixbuf;
         work.update_img->area = cam->right_area;
 
         gui_work_add(work.update_img);
@@ -424,9 +423,9 @@ setup_hist(void *data)
 
     gdk_threads_enter();
 
-    width  = gdk_pixbuf_get_width(work->cam->pixbuf);
-    height = gdk_pixbuf_get_height(work->cam->pixbuf);
-    buffer = gdk_pixbuf_get_pixels(work->cam->pixbuf); 
+    width  = gdk_pixbuf_get_width(work->cam->left_pixbuf);
+    height = gdk_pixbuf_get_height(work->cam->left_pixbuf);
+    buffer = gdk_pixbuf_get_pixels(work->cam->left_pixbuf); 
 
     img_rgb_from_buffer(buffer, width, height, &image);
 
@@ -503,11 +502,8 @@ void button_clicked_start
         g_signal_connect(cam->left_area, "button-release-event", 
                 G_CALLBACK(released_mouse), cam);
 
-#if 0
         device = gtk_combo_box_text_get_active_text(
                 GTK_COMBO_BOX_TEXT(cam->device_combo));
-#endif
-        device = "/dev/video0";
 
         get_selected_resolution(cam->resolution_combo,
                 &sensor->width, &sensor->height);
@@ -515,6 +511,11 @@ void button_clicked_start
         strncpy(sensor->video_dev, device, VIDEO_SIZE_MAX);
 
         status = sensor_init(cam->sensor);
+        if (WG_SUCCESS != status){
+            WG_FREE(cam->sensor);
+            cam->sensor = NULL;
+            return;
+        }
 
         sensor_noise_reduction_set_state(cam->sensor, 
                 gtk_toggle_button_get_active(
@@ -616,8 +617,8 @@ static void button_clicked_capture
 
     cam = (Camera*)data;
 
-    if (cam->pixbuf != NULL){
-        gdk_pixbuf_save(cam->pixbuf, "frame.png", "png", &gerr, NULL);
+    if (cam->left_pixbuf != NULL){
+        gdk_pixbuf_save(cam->left_pixbuf, "frame.png", "png", &gerr, NULL);
     }else{
         error_msg = gtk_message_dialog_new(GTK_WINDOW(cam->window),
                 GTK_DIALOG_MODAL,
@@ -718,36 +719,60 @@ get_selected_resolution(GtkWidget *combo, wg_uint *width, wg_uint *height)
     return;
 }
 
+WG_PRIVATE int
+compare_strings(const void *s1, const void *s2)
+{
+    wg_dirent *d1 = NULL;
+    wg_dirent *d2 = NULL;
+
+    d1 = *(wg_dirent**)s1;
+    d2 = *(wg_dirent**)s2;
+
+    return strcmp(d1->d_name, d2->d_name);
+}
+
 WG_PRIVATE void
 fill_video_combo(GtkComboBoxText *combo)
 {
     List_head head;
-    Iterator itr;
     wg_dirent *dir_entry;
+    wg_dirent **dir_entry_array;
     wg_char full_path[DEVICE_PATH_MAX];
-    wg_int count = 0;
+    wg_int i = 0;
+    wg_uint num_path = 0;
 
     list_init(&head);
 
+    /* find all video devices in /dev directory */
     wg_lsdir(DEV_PATH, "video", &head);
 
-    iterator_list_init(&itr, &head, GET_OFFSET(wg_dirent, list));
+    /* sort video device path names */
+    num_path = list_size(&head);
+    dir_entry_array = WG_ALLOCA(num_path * sizeof (wg_dirent*));
+    memset(dir_entry_array, '\0', num_path * sizeof (wg_dirent*));
 
-    count = 0;
-    while ((dir_entry = iterator_list_next(&itr)) != NULL){
+    list_to_array(&head, wg_dirent, list, (void**)dir_entry_array);
+
+    qsort(dir_entry_array, num_path, sizeof (wg_dirent*), compare_strings);
+
+    /* add found video devices to a combobox */
+    for (i = 0; i < num_path; ++i){
+        dir_entry = dir_entry_array[i];
         strcpy(full_path, DEV_PATH);
         strcat(full_path, dir_entry->d_name);
-        gtk_combo_box_text_insert_text(combo, 0, full_path);
-        ++count;
+        gtk_combo_box_text_append_text(combo, full_path);
     }
 
     wg_lsdir_cleanup(&head);
 
-    if (count == 0){
+    if (num_path == 0){
         gtk_combo_box_text_append_text(combo, "No device");
     }
 
+    /* activate first element in combbox */
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo), 0);
+
+    /* disable focus on click */
     gtk_combo_box_set_focus_on_click(GTK_COMBO_BOX(combo), FALSE); 
 
     return;
