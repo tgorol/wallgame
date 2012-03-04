@@ -160,9 +160,9 @@ img_bgrx_median_filter(Wg_image *img, Wg_image *new_img)
             data_green[8] = BGRX_G(pix_val);
             data_blue[8]  = BGRX_B(pix_val);
 
-            wg_sort_uint(data_red,   ELEMNUM(data_red));
-            wg_sort_uint(data_green, ELEMNUM(data_green));
-            wg_sort_uint(data_blue,  ELEMNUM(data_blue));
+            wg_sort_uint_insert(data_red,   ELEMNUM(data_red));
+            wg_sort_uint_insert(data_green, ELEMNUM(data_green));
+            wg_sort_uint_insert(data_blue,  ELEMNUM(data_blue));
 
             *new_pixel = RGB_2_BGRX(data_red[4], data_green[4], data_blue[4]);
         }

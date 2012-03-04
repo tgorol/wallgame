@@ -836,6 +836,9 @@ main(int argc, char *argv[])
     GtkWidget *widget = NULL;
     wg_uint width = 0;
     wg_uint height = 0;
+    wg_uint test[] = {0,0,0,0,0,0,0,0};
+
+    wg_sort_uint_insert(test, ELEMNUM(test));
 
     enable_threads();
 

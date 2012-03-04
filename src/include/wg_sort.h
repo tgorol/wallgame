@@ -7,6 +7,9 @@ wg_sort_double(wg_double *data, wg_uint num);
 WG_PUBLIC void
 wg_sort_uint(wg_uint *data, wg_uint num);
 
+WG_PUBLIC void
+wg_sort_uint_insert(wg_uint *data, wg_uint num);
+
 WG_INLINE void
 wg_sort_uint_inline(wg_uint *data, wg_uint num)
 {

@@ -53,6 +53,38 @@ wg_sort_uint_qsort(wg_uint *data, wg_uint num)
 }
 
 void
+wg_sort_uint_insert(wg_uint *d, wg_uint num)
+{
+    register wg_uint *data = NULL;
+    wg_uint i = 0;
+    wg_uint j = 0;
+    wg_uint tmp = 0;
+    wg_uint tmp_index = 0;
+
+    data = d;
+    for (i = 0; i < num; ++i){
+        if (data[i] > tmp){
+            tmp_index = i;
+            tmp       = data[i];
+        }
+    }
+
+    data[tmp_index] ^= data[0];
+    data[0]         ^= data[tmp_index];
+    data[tmp_index] ^= data[0];
+
+    for (i = 1; i < num; ++i){
+        tmp = data[i];
+        for (j = i; (j != 0) && (tmp > data[j - 1]); --j){
+            data[j] = data[j - 1]; 
+        }
+        data[j] = tmp;
+    }
+
+    return;
+}
+
+void
 wg_sort_uint(wg_uint *data, wg_uint num)
 {
     WG_STATIC const wg_uint h[] = {19, 5, 1, 0};
