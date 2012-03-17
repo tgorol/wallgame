@@ -46,6 +46,34 @@
 /** @brief FPS interwal counter     */
 #define FPS_INTERVAL   0.5
 
+/** @brief Default resolution */
+#define RESOLUTION_DEFAULT_INDEX    0
+
+/** @brief device path 
+ *
+ * @todo find a way to get it from the system
+ */
+#define DEV_PATH  "/dev/"
+
+/** @brief maximum devixe path size */
+#define DEVICE_PATH_MAX  64
+
+typedef struct Resolution{
+    wg_char text[16];        /*!< text of the resolution */
+    wg_uint  width;          /*!< width in pixels        */
+    wg_uint  height;         /*!< height in pixels       */
+}Resolution;
+
+/** 
+* @brief List of supported resolutions
+*/
+WG_PRIVATE const Resolution res_info[] = {
+    {"352x288", 352, 288,} ,
+    {"320x240", 320, 240,} ,
+    {"176x144", 176, 144,} ,
+    {"160x120", 160, 120,}
+};
+
 typedef struct Camera{
     /* gui variables */
     GtkWidget *menubar;
@@ -207,11 +235,21 @@ stop_capture(Camera *cam)
 gint 
 delete_event( GtkWidget *widget, GdkEvent  *event, gpointer   data )
 {
-    Camera *cam = NULL;
+    Camera *camera = NULL;
 
-    cam = (Camera*)data;
+    camera = (Camera*)data;
 
-    stop_capture(cam);
+    stop_capture(camera);
+
+    if (NULL != camera->right_pixbuf){
+        g_object_unref(camera->right_pixbuf);
+        camera->right_pixbuf = NULL;
+    }
+
+    if (NULL != camera->left_pixbuf){
+        g_object_unref(camera->left_pixbuf);
+        camera->left_pixbuf = NULL;
+    }
 
     return FALSE;
 }
@@ -661,34 +699,6 @@ enable_threads(void)
     return;
 }
 
-/** @brief Default resolution */
-#define RESOLUTION_DEFAULT_INDEX    0
-
-/** @brief device path 
- *
- * @todo find a way to get it from the system
- */
-#define DEV_PATH  "/dev/"
-
-/** @brief maximum devixe path size */
-#define DEVICE_PATH_MAX  64
-
-typedef struct Resolution{
-    wg_char text[16];        /*!< text of the resolution */
-    wg_uint  width;          /*!< width in pixels        */
-    wg_uint  height;         /*!< height in pixels       */
-}Resolution;
-
-/** 
-* @brief List of supported resolutions
-*/
-static const Resolution res_info[] = {
-    {"352x288", 352, 288,} ,
-    {"320x240", 320, 240,} ,
-    {"176x144", 176, 144,} ,
-    {"160x120", 160, 120,}
-};
-
 
 WG_PRIVATE void
 fill_resolution_combo(GtkComboBoxText *combo)
@@ -836,9 +846,6 @@ main(int argc, char *argv[])
     GtkWidget *widget = NULL;
     wg_uint width = 0;
     wg_uint height = 0;
-    wg_uint test[] = {0,0,0,0,0,0,0,0};
-
-    wg_sort_uint_insert(test, ELEMNUM(test));
 
     enable_threads();
 

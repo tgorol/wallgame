@@ -485,7 +485,7 @@ cam_set_resolution(Wg_camera *cam, wg_uint width, wg_uint height)
         capture.fmt.pix.width  = width;
         capture.fmt.pix.height = height;
 
-        WG_LOG("Trying new resolution w:%u h:%u\n", width, height);
+        WG_DEBUG("Trying new resolution w:%u h:%u\n", width, height);
         status = cam_output_format_set(cam, &capture);
         if (CAM_SUCCESS != status){
             WG_LOG("%s: Can't change resolution \n", cam->dev_path);
@@ -523,11 +523,11 @@ select_mode(Wg_camera *cam, CAM_MODE mode)
 
     if (cam_cap_video_capture(cam) == WG_TRUE){
         if ((cam_cap_streaming(cam) == WG_TRUE) && MODE_STREAM(mode)){
-            WG_LOG("Webcam switch into STREAMING mode\n");
+            WG_DEBUG("Webcam switch into STREAMING mode\n");
             status = cam_streaming_init(cam);
         }else if ((cam_cap_readwrite(cam) == WG_TRUE)
                 && MODE_READWRITE(mode)){
-            WG_WARN("Webcam switch into READ/WRITE mode\n");
+            WG_DEBUG("Webcam switch into READ/WRITE mode\n");
             status = cam_readwrite_init(cam);
         }else{
             status = CAM_NO_SUPPORT;

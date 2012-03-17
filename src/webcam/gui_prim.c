@@ -6,6 +6,18 @@
 
 #include "include/gui_prim.h"
 
+
+void
+wg_point2d_new(wg_int x, wg_int y, Wg_point2d *point)
+{
+    CHECK_FOR_NULL_PARAM(point);
+
+    point->x = x;
+    point->y = y;
+
+    return;
+}
+
 void
 wg_rect_new(wg_int x, wg_int y, wg_uint width, wg_uint height, Wg_rect *rect)
 {

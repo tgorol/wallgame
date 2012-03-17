@@ -18,11 +18,15 @@ SOURCE=cam.c                  \
        vid.c            \
        sensor.c          \
        gui_work.c        \
-       gui_prim.c
+       gui_prim.c       \
+       collision_detect.c
+
 
 APP_NAME=webcam
 
 MAIN_C=wg_cam_main.c
+
+OUT_NAME=libwebcam
 
 INCLUDE=./include/
 
@@ -36,7 +40,7 @@ endif
 
 include $(BUILD_PATH)/env.mk
 
-LIB_LIST+=./build/lib/lib.a ../build/libwg.a -ljpeg -lm -lgthread-2.0 `pkg-config --libs gtk+-3.0` -lavcodec -lavutil -lswscale
+LIB_LIST+=./build/lib/$(OUT_NAME).a ../build/libwg.a -ljpeg -lm -lgthread-2.0 `pkg-config --libs gtk+-3.0` -lavcodec -lavutil -lswscale
 
 all: clean lib app
 

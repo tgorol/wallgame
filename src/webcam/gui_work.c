@@ -15,17 +15,26 @@
 #include "include/gui_work.h"
 
 WG_PRIVATE Wg_wq wq;
+WG_PRIVATE wg_boolean init_flag = WG_FALSE;
 
 wg_status
 gui_work_thread_init()
 {
-    return wg_wq_init(&wq);
+    wg_status status = WG_SUCCESS;
+
+    if (WG_FALSE == init_flag){
+        status = wg_wq_init(&wq);
+    }
+
+    return status;
 }
 
 void
 gui_work_thread_cleanup()
 {
-    wg_wq_cleanup(&wq);
+    if (WG_TRUE == init_flag){
+        wg_wq_cleanup(&wq);
+    }
 
     return;
 }

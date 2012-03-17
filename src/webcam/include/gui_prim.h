@@ -8,6 +8,11 @@ typedef struct Wg_rect{
     wg_uint height;
 }Wg_rect;
 
+typedef struct Wg_point2d{
+    wg_int x;
+    wg_int y;
+}Wg_point2d;
+
 WG_PUBLIC void
 wg_rect_new(wg_int x, wg_int y, wg_uint width, wg_uint height, Wg_rect *rect);
 
