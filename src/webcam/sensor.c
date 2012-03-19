@@ -146,6 +146,18 @@ sensor_get_noise_reduction_state(Sensor *sensor)
     return flag;
 }
 
+wg_status
+sensor_get_color_range(const Sensor *sensor, Hsv *top, Hsv *bottom)
+{
+    CHECK_FOR_NULL_PARAM(sensor);
+    CHECK_FOR_NULL_PARAM(top);
+    CHECK_FOR_NULL_PARAM(bottom);
+
+    *top    = sensor->top;
+    *bottom = sensor->bottom;
+
+    return WG_SUCCESS;
+}
 
 wg_status
 sensor_add_color(Sensor *sensor, const Hsv *color)

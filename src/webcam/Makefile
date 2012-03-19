@@ -19,7 +19,8 @@ SOURCE=cam.c                  \
        sensor.c          \
        gui_work.c        \
        gui_prim.c       \
-       collision_detect.c
+       collision_detect.c \
+       gui_progress_dialog.c
 
 
 APP_NAME=webcam

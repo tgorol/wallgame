@@ -40,8 +40,20 @@
 #include "include/sensor.h"
 #include "include/gui_work.h"
 #include "include/gui_prim.h"
+#include "include/gui_progress_dialog.h"
+
+#include "include/collision_detect.h"
 
 #include <gdk-pixbuf/gdk-pixbuf.h>
+
+typedef enum WEBCAM_STATE{
+    WEBCAM_STATE_UNINITIALIZED     = 0,
+    WEBCAM_STATE_CALLIBRATE           ,
+    WEBCAM_STATE_START                ,
+    WEBCAM_STATE_STOP                 ,
+    WEBCAM_STATE_GET_COLOR            ,
+    WEBCAM_STATE_GET_PANE
+}WEBCAM_STATE;
 
 /** @brief FPS interwal counter     */
 #define FPS_INTERVAL   0.5
@@ -75,6 +87,9 @@ WG_PRIVATE const Resolution res_info[] = {
 };
 
 typedef struct Camera{
+    /* application state */
+    WEBCAM_STATE state;
+
     /* gui variables */
     GtkWidget *menubar;
     GtkWidget *window;
@@ -82,13 +97,21 @@ typedef struct Camera{
     GtkWidget *device_combo;
     GtkWidget *start_capturing;
     GtkWidget *stop_capturing;
+    GtkWidget *callibrate;
     GtkWidget *left_area;
     GtkWidget *right_area;
     GtkWidget *noise_reduction;
     GtkWidget *fps_display;
 
+    /* Sensor color object range */
+    Hsv top;
+    Hsv bottom;
+
     /* Sensor variables */
     Sensor    *sensor;
+
+    /* Collision detector */
+    Cd_instance pane;
     
     /* fps counter variables */
     GTimer *fps_timer;             /*!< timer used by fps counter */
@@ -126,6 +149,9 @@ update_fps(Camera *obj, int val);
 
 WG_PRIVATE void 
 print_fps(Camera *obj);
+
+WG_STATIC wg_boolean
+go_to_state(Camera *camera, WEBCAM_STATE new_state);
 
 static gboolean
 on_expose_acc(GtkWidget *widget,
@@ -647,8 +673,152 @@ button_clicked_color(GtkWidget *widget, gpointer data){
     gtk_dialog_run(GTK_DIALOG(color_sel));
 }
 
-static void button_clicked_capture
-(GtkWidget *widget, gpointer data){
+WG_STATIC wg_boolean
+callibration_start(void *user_data)
+{
+    Camera *cam = NULL;
+    Sensor *sensor = NULL;
+    const gchar *device = NULL;
+    wg_status status = WG_FAILURE;
+    pthread_attr_t attr;
+
+    cam = (Camera*)user_data;
+
+    if (go_to_state(cam, WEBCAM_STATE_CALLIBRATE) == WG_TRUE){
+        sensor = WG_MALLOC(sizeof (*sensor));
+        if (NULL != sensor){
+            cam->sensor = sensor;
+
+
+            device = gtk_combo_box_text_get_active_text(
+                GTK_COMBO_BOX_TEXT(cam->device_combo));
+
+            get_selected_resolution(cam->resolution_combo,
+                &sensor->width, &sensor->height);
+        
+            strncpy(sensor->video_dev, device, VIDEO_SIZE_MAX);
+
+            status = sensor_init(cam->sensor);
+            if (WG_SUCCESS != status){
+                WG_FREE(cam->sensor);
+                cam->sensor = NULL;
+                return WG_FALSE;
+            }
+
+            sensor_noise_reduction_set_state(cam->sensor, 
+                gtk_toggle_button_get_active(
+                    GTK_TOGGLE_BUTTON(cam->noise_reduction)
+                    ));
+
+            if (WG_SUCCESS == status){
+                sensor_set_default_cb(cam->sensor, (Sensor_def_cb)default_cb, cam);
+
+                pthread_attr_init(&attr);
+                pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+                pthread_create(&cam->thread, &attr, capture, cam);
+                pthread_attr_destroy(&attr);
+            }else{
+                WG_FREE(cam->sensor);
+                cam->sensor = NULL;
+            }
+        }
+    }else{
+        /* @todo Handle thsi through MessageBox */
+    }
+
+    return WG_TRUE;
+}
+
+WG_STATIC wg_boolean
+callibration_screen(void *user_data)
+{
+    Camera    *cam = NULL;
+
+    cam = (Camera*)user_data;
+
+    cam->dragging = WG_FALSE;
+
+    g_signal_connect(cam->left_area, "button-press-event", 
+            G_CALLBACK(pressed_mouse), cam);
+
+    g_signal_connect(cam->left_area, "button-release-event", 
+            G_CALLBACK(released_mouse), cam);
+    return WG_TRUE;
+}
+
+WG_STATIC wg_boolean
+callibration_color(void *user_data)
+{
+    return WG_TRUE;
+}
+
+WG_STATIC wg_boolean
+callibration_finish(void *user_data)
+{
+    Camera    *cam = NULL;
+
+    cam = (Camera*)user_data;
+
+    sensor_get_color_range(cam->sensor, &cam->top, &cam->bottom);
+
+    stop_capture(cam);
+
+    g_signal_handlers_disconnect_by_func(cam->left_area,
+            G_CALLBACK(pressed_mouse), cam);
+
+    g_signal_handlers_disconnect_by_func(cam->left_area,
+            G_CALLBACK(released_mouse), cam);
+
+    gtk_widget_set_sensitive(cam->start_capturing, TRUE);
+
+    return WG_TRUE;
+}
+
+static void 
+button_clicked_callibrate(GtkWidget *widget, gpointer data)
+{
+    Camera *cam = NULL;
+    Sensor *sensor = NULL;
+    const gchar *device = NULL;
+    wg_status status = WG_FAILURE;
+    pthread_attr_t attr;
+    Gui_progress_dialog *pd = NULL;
+
+    pd = gui_progress_dialog_new();
+
+    cam = (Camera*)data;
+
+    gui_progress_dialog_add_screen(pd, 
+       gui_progress_dialog_screen_new(callibration_start, NULL, cam, 
+       "Welcome to calibration wizard. This process is very simple and "
+       "will take only few seconds.\n\n\n"
+       "Click Next to start calibration")
+       );
+
+    gui_progress_dialog_add_screen(pd, 
+       gui_progress_dialog_screen_new(callibration_screen, NULL, cam, 
+       "Show me where is the screen by clicking in each corner of the screen")
+       );
+
+    gui_progress_dialog_add_screen(pd, 
+       gui_progress_dialog_screen_new(callibration_color, NULL, cam, 
+       "Select color range on the object you are using")
+       );
+
+    gui_progress_dialog_add_screen(pd, 
+       gui_progress_dialog_screen_new(callibration_finish, NULL, cam, 
+       "Thank you\n\n\nHave fun")
+       );
+
+    gui_progress_dialog_show(pd);
+
+    return;
+
+}
+
+static void 
+button_clicked_capture(GtkWidget *widget, gpointer data)
+{
     Camera *cam = NULL;
     GError *gerr = NULL;
     GtkWidget *error_msg = NULL;
@@ -853,6 +1023,8 @@ main(int argc, char *argv[])
 
     camera = WG_CALLOC(1, sizeof (Camera));
 
+    camera->state = WEBCAM_STATE_UNINITIALIZED;
+
     gtk_init (&argc, &argv);
 
     builder = gtk_builder_new ();
@@ -930,7 +1102,7 @@ main(int argc, char *argv[])
     widget = GTK_WIDGET(
             gtk_builder_get_object (builder, "start_capturing"));
 
-    gtk_widget_set_sensitive(widget, TRUE);
+    gtk_widget_set_sensitive(widget, FALSE);
 
     g_signal_connect(widget, "clicked",
             G_CALLBACK(button_clicked_start), camera);
@@ -950,6 +1122,17 @@ main(int argc, char *argv[])
 
     camera->stop_capturing = widget;
 
+    /* setup callibrate button */
+    widget = GTK_WIDGET(
+            gtk_builder_get_object (builder, "callibrate"));
+
+    gtk_widget_set_sensitive(widget, TRUE);
+
+    g_signal_connect(widget, "clicked",
+            G_CALLBACK(button_clicked_callibrate), camera);
+
+    camera->callibrate = widget;
+
     /* setup fps couter display */
     widget = GTK_WIDGET(
             gtk_builder_get_object (builder, "fps_display"));
@@ -960,7 +1143,6 @@ main(int argc, char *argv[])
     camera->fps_timer     = g_timer_new();
     camera->frame_counter = 0;
     camera->fps_val       = 0.0;
-
 
     g_object_unref (G_OBJECT (builder));
 
@@ -980,164 +1162,9 @@ main(int argc, char *argv[])
     MEMLEAK_STOP;
 
     return 0;
-
-#if 0
-    MEMLEAK_START;
-
-    list_init(&video);
-
-    wg_lsdir("/dev/", "video", &video);
-
-    wg_lsdir_cleanup(&video);
-
-    if (!g_thread_supported()){
-        g_thread_init(NULL);
-        gdk_threads_init();
-        gdk_threads_enter();
-        WG_LOG("g_thread supported\n");
-    }else{
-        WG_LOG("g_thread not supported\n");
-        return EXIT_FAILURE;
-    }
-
-    gtk_init(&argc, &argv);
-
-    camera = WG_CALLOC(1, sizeof (Camera));
-
-    window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    area   = gtk_drawing_area_new();
-    gtk_cam = gui_camera_new();
-
-    gui_camera_get_active_resolution(GUI_CAMERA(gtk_cam),
-            &width, &height);
-
-    camera->acc_area   = gtk_drawing_area_new();
-    camera->hist_pixbuf = NULL;
-    camera->area = area;
-    camera->gui_camera  = gtk_cam;
-    camera->window = window;
-    camera->fps = 0;
-    camera->frame_count = 0;
-    camera->status_bar = gtk_statusbar_new();
-    camera->menubar = gtk_menu_bar_new();
-
-    gtk_menu_shell_append(GTK_MENU_SHELL(camera->menubar),
-            gtk_menu_item_new_with_label("File"));
-
-    camera->noise_reduction = 
-        gui_camera_add_checkbox(GUI_CAMERA(gtk_cam), "Noise Reduction");
-
-    g_signal_connect(GTK_TOGGLE_BUTTON(camera->noise_reduction), "toggled",
-            G_CALLBACK(noise_reduction), camera);
-
-    gtk_widget_add_events(camera->area, 
-            GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK ); 
-
-    guint ctx = gtk_statusbar_get_context_id(GTK_STATUSBAR(camera->status_bar),
-            "Message");
-
-    gtk_statusbar_push(GTK_STATUSBAR(camera->status_bar), ctx, 
-            "Welcome to Wall Game Plugin");
-
-    gtk_widget_set_app_paintable(camera->acc_area, TRUE);
-    gtk_widget_set_double_buffered(camera->acc_area, TRUE);
-
-    gtk_widget_set_app_paintable(camera->area, TRUE);
-    gtk_widget_set_double_buffered(camera->area, TRUE);
-
-    button_start = gui_camera_get_start_widget(GUI_CAMERA(gtk_cam));
-    button_stop = gui_camera_get_stop_widget(GUI_CAMERA(gtk_cam));
-    capture_button  = gui_camera_get_capture_widget(GUI_CAMERA(gtk_cam));
-    color_button = gui_camera_get_color_widget(GUI_CAMERA(gtk_cam));
-
-    gtk_widget_set_sensitive(button_start, TRUE);
-    gtk_widget_set_sensitive(button_stop, FALSE);
-
-    gtk_window_set_focus(GTK_WINDOW(window), button_start);
-
-    gtk_widget_set_size_request(area, width, height);
-    gtk_widget_set_size_request(camera->acc_area, width, height);
-
-    g_signal_connect(gtk_widget_get_toplevel(area), "draw",
-            G_CALLBACK(on_expose_event), camera);
-    g_signal_connect(gtk_widget_get_toplevel(camera->acc_area), "draw",
-            G_CALLBACK(on_expose_acc), camera);
-
-    g_signal_connect(gtk_widget_get_toplevel(window), "destroy",
-            G_CALLBACK(gtk_main_quit), camera);
-
-    g_signal_connect(button_start, "clicked",
-            G_CALLBACK(button_clicked_start), camera);
-    g_signal_connect(button_stop, "clicked",
-            G_CALLBACK(button_clicked_stop), camera);
-    g_signal_connect(capture_button, "clicked",
-            G_CALLBACK(button_clicked_capture), camera);
-    g_signal_connect(color_button, "clicked",
-            G_CALLBACK(button_clicked_color), camera);
-
-    g_signal_connect (gtk_widget_get_toplevel (window), "delete_event",
-            G_CALLBACK(delete_event), camera);
-
-    gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
-
-    hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
-    display_box = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
-    top_box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
-
-    gtk_box_pack_start(GTK_BOX(display_box), area, TRUE, TRUE, 0);
-
-    gtk_box_pack_start(GTK_BOX(display_box), camera->acc_area, TRUE, TRUE, 0);
-
-    //    gtk_box_pack_start(GTK_BOX(display_box), camera->status_bar, TRUE, TRUE, 0);
-
-    gtk_box_pack_start(GTK_BOX(hbox), display_box, FALSE, FALSE, 2);
-
-    gtk_box_pack_start(GTK_BOX(hbox), gtk_cam, TRUE, TRUE, 2);
-
-    gtk_box_pack_start(GTK_BOX(top_box), camera->menubar, FALSE, FALSE, 0);
-
-    gtk_box_pack_start(GTK_BOX(top_box), hbox, FALSE, FALSE, 2);
-
-    gtk_container_add (GTK_CONTAINER(window), top_box);
-
-    gtk_widget_show_all(window);
-
-    gui_work_thread_init();
-
-    gtk_main();
-
-    stop_capture(camera);
-
-    gui_work_thread_cleanup();
-
-    if (NULL != camera->pixbuf){
-        g_object_unref(camera->pixbuf);
-    }
-
-    if (NULL != camera->pixbuf){
-        g_object_unref(camera->acc_pixbuf);
-    }
-
-    if (NULL != camera->pixbuf){
-        g_object_unref(camera->hist_pixbuf);
-    }
-
-    if (NULL != camera->sensor){
-        sensor_cleanup(camera->sensor);
-        WG_FREE(camera->sensor);
-    }
-
-    WG_FREE(camera);
-
-    gdk_threads_leave();
-
-    MEMLEAK_STOP;
-
-    return 0;
-#endif
 }
 
-    wg_status
+wg_status
 create_histogram(Wg_image *img, wg_uint width, wg_uint height, Wg_image *hist)
 {
     wg_status status = CAM_FAILURE;
@@ -1177,5 +1204,65 @@ create_histogram(Wg_image *img, wg_uint width, wg_uint height, Wg_image *hist)
     img_draw_cleanup_context(&ctx);
 
     return WG_SUCCESS;
+}
+
+WG_STATIC wg_boolean
+go_to_state(Camera *camera, WEBCAM_STATE new_state)
+{
+    switch (camera->state){
+    case WEBCAM_STATE_UNINITIALIZED:
+        switch (new_state){
+        case WEBCAM_STATE_CALLIBRATE:
+            return WG_TRUE;
+        default:
+            return WG_FALSE;
+        }
+        break;
+    case WEBCAM_STATE_CALLIBRATE:
+        switch (new_state){
+        case WEBCAM_STATE_CALLIBRATE:
+        case WEBCAM_STATE_START:
+        case WEBCAM_STATE_GET_COLOR:
+            return WG_TRUE;
+        default:
+            return WG_FALSE;
+        }
+        break;
+    case WEBCAM_STATE_START:
+        switch (new_state){
+        case WEBCAM_STATE_STOP:
+            return WG_TRUE;
+        default:
+            return WG_FALSE;
+        }
+        break;
+    case WEBCAM_STATE_STOP:
+        switch (new_state){
+        case WEBCAM_STATE_START:
+        case WEBCAM_STATE_CALLIBRATE:
+            return WG_TRUE;
+        default:
+            return WG_FALSE;
+        }
+        break;
+    case WEBCAM_STATE_GET_COLOR:
+        switch (new_state){
+        case WEBCAM_STATE_GET_PANE:
+        case WEBCAM_STATE_CALLIBRATE:
+            return WG_TRUE;
+        default:
+            return WG_FALSE;
+        }
+        break;
+    case WEBCAM_STATE_GET_PANE:
+        switch (new_state){
+        case WEBCAM_STATE_CALLIBRATE:
+            return WG_TRUE;
+        default:
+            return WG_FALSE;
+        }
+    }
+
+    return WG_FALSE;
 }
 
