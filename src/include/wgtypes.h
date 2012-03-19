@@ -46,6 +46,12 @@ typedef void (*fvoid)(void)         ;
 #define WG_FLOAT(val)  ((wg_float)val)
 #define WG_DOUBLE(val)  ((wg_double)val)
 
+#define DOUBLE(val)  ((double)val)
+#define FLOAT(val)  ((float)val)
+
+#define WG_INT(val) ((wg_int)val)
+#define WG_UINT(val) ((wg_uint)val)
+
 typedef enum WG_BOOLEAN {
     WG_FALSE = (1 == 0), 
     WG_TRUE  = (1 == 1)

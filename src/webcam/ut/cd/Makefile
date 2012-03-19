@@ -6,7 +6,7 @@ INCLUDE=$(ROOT_DIR)/src/ut/include/ $(ROOT_DIR)/src/ ../../
 
 LIBLIST+=$(OUT_NAME)  webcam
 
-LIB+=$(OUT_DIR) $(ROOT_DIR)/src/build/ ../../build/lib
+LIB+=$(OUT_DIR) $(ROOT_DIR)/src/build/ ../../build/lib 
 
 ifdef WG_DEBUG
 EXTRA_CFLAGS+=-DWGDEBUG 

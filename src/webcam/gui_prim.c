@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <math.h>
 
 #include <wg.h>
 #include <wgtypes.h>
@@ -16,6 +17,18 @@ wg_point2d_new(wg_int x, wg_int y, Wg_point2d *point)
     point->y = y;
 
     return;
+}
+
+wg_float
+wg_point2d_distance(const Wg_point2d *p1, const Wg_point2d *p2)
+{
+    wg_int dx = 0;
+    wg_int dy = 0;
+
+    dx = p2->x - p1->x;
+    dy = p2->y - p1->y;
+
+    return WG_FLOAT(sqrt(DOUBLE(dx * dx + dy * dy)));
 }
 
 void

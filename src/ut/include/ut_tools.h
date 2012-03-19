@@ -19,8 +19,6 @@ typedef struct Ut_stats{
 
 #define UT_PASS_ON(cond)                                                  \
     if (cond){                                                            \
-        fprintf(stdout, "PASS:line %d --> %s\n", __LINE__,                \
-                STRINGIFY(cond));                                         \
         ++stats->passed;                                                  \
     }else{                                                                \
         fprintf(stdout, "FAIL:line %d --> %s\n", __LINE__,                \

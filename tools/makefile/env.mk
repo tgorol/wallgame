@@ -23,7 +23,8 @@ LIBLIST+= ini      \
 		  ghthash  \
 		  pthread  \
 		  dl       \
-		  jpeg     
+		  jpeg     \
+          m
 
 
 
