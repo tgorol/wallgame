@@ -18,10 +18,11 @@
 
 #define BACK_RESPONSE_ID 0
 #define NEXT_RESPONSE_ID 1
+#define NEXT_SCREEN      1
+#define PREVIUOS_SCREEN -1
 
 struct Gui_progress_dialog_screen{
-    action_cb next;
-    action_cb back;
+    action_cb action;
     void *user_data;
     wg_char *text;
     List_head list;
@@ -41,6 +42,15 @@ response(GtkDialog *dialog, gint response_id, gpointer user_data);
 
 WG_STATIC void
 show_screen(Gui_progress_dialog *pd, wg_int val);
+
+WG_STATIC wg_boolean
+call_action(Gui_progress_dialog *pd, Gui_progress_action action_id);
+
+WG_STATIC wg_uint
+increment_screen_index(Gui_progress_dialog *pd, wg_int val);
+
+WG_STATIC wg_boolean
+is_last_screen(Gui_progress_dialog *pd);
 
 Gui_progress_dialog *
 gui_progress_dialog_new()
@@ -81,7 +91,7 @@ gui_progress_dialog_cleanup(Gui_progress_dialog *pd)
 }
 
 Gui_progress_dialog_screen *
-gui_progress_dialog_screen_new(action_cb next, action_cb prev, void *user_data,
+gui_progress_dialog_screen_new(action_cb action, void *user_data,
         const wg_char *text)
 {
     Gui_progress_dialog_screen *pds = NULL;
@@ -97,8 +107,7 @@ gui_progress_dialog_screen_new(action_cb next, action_cb prev, void *user_data,
     pds->text = (wg_char*)(pds + 1);
     strcpy(pds->text, text);
 
-    pds->next = next;
-    pds->back = prev;
+    pds->action = action;
     pds->user_data = user_data;
 
     list_init(&pds->list);
@@ -169,10 +178,28 @@ gui_progress_dialog_show(Gui_progress_dialog *pd)
     }
 
     show_screen(pd, 0);
+    call_action(pd, GUI_PROGRESS_ENTER);
 
     gtk_widget_show_all(dialog);
 
     return;
+}
+
+WG_STATIC wg_boolean
+is_last_screen(Gui_progress_dialog *pd)
+{
+    return pd->active_index >= pd->size;
+}
+
+WG_STATIC wg_uint
+increment_screen_index(Gui_progress_dialog *pd, wg_int val)
+{
+    pd->active_index += val;
+    if (pd->active_index > pd->size){
+        pd->active_index -= val;
+    }
+
+    return pd->active_index;
 }
 
 WG_STATIC void
@@ -180,12 +207,9 @@ show_screen(Gui_progress_dialog *pd, wg_int val)
 {
     GtkWidget *widget = NULL;
 
-    pd->active_index += val;
-    if (pd->active_index > pd->size){
-        pd->active_index -= val;
-    }
+    increment_screen_index(pd, val);
 
-    if (pd->active_index < pd->size){
+    if (!is_last_screen(pd)){
         gtk_text_buffer_set_text(pd->buffer, 
                 pd->screens_array[pd->active_index]->text, -1);
 
@@ -211,51 +235,62 @@ show_screen(Gui_progress_dialog *pd, wg_int val)
                     NEXT_RESPONSE_ID); 
             gtk_button_set_label(GTK_BUTTON(widget), "Next");
         }
-    }else{
-        gtk_widget_destroy(GTK_WIDGET(pd->dialog));
-        gui_progress_dialog_cleanup(pd);
     }
 
     return;
+}
+
+WG_STATIC wg_boolean
+call_action(Gui_progress_dialog *pd, Gui_progress_action action_id)
+{
+    wg_boolean flag = WG_TRUE;
+    action_cb action = NULL;
+    Gui_progress_dialog_screen *pds = NULL;
+
+    if (!is_last_screen(pd)){
+        pds = pd->screens_array[pd->active_index];
+        action = pds->action;
+        if (action != NULL){
+            flag = action(action_id, pds->user_data);
+        }
+    }
+
+    return flag;
 }
 
 WG_STATIC void
 response(GtkDialog *dialog, gint response_id, gpointer user_data)
 {
     Gui_progress_dialog *pd = NULL;
-    Gui_progress_dialog_screen *pds = NULL;
-    action_cb action = NULL;
     wg_boolean flag = WG_TRUE;
 
     pd = (Gui_progress_dialog*)user_data;
 
     switch (response_id){
     case NEXT_RESPONSE_ID:
-        pds = pd->screens_array[pd->active_index];
-        action =pds->next;
-        if (action != NULL){
-            flag = action(pds->user_data);
-        }
+        flag = call_action(pd, GUI_PROGRESS_NEXT);
 
         if (flag == WG_TRUE){
-            show_screen(pd, 1);   
+            call_action(pd, GUI_PROGRESS_LEAVE);
+            show_screen(pd, NEXT_SCREEN);   
+            call_action(pd, GUI_PROGRESS_ENTER);
         }
         break;
     case BACK_RESPONSE_ID:
-        pds = pd->screens_array[pd->active_index];
-        action =pds->back;
-        if (action != NULL){
-            flag = action(pds->user_data);
-        }
+        flag = call_action(pd, GUI_PROGRESS_BACK);
 
         if (flag == WG_TRUE){
-            show_screen(pd, -1);   
+            call_action(pd, GUI_PROGRESS_LEAVE);
+            show_screen(pd, PREVIUOS_SCREEN);   
+            call_action(pd, GUI_PROGRESS_LEAVE);
         }
         break;
-    case GTK_RESPONSE_DELETE_EVENT:
+    }
+
+    if ((is_last_screen(pd) == WG_TRUE) ||
+            (response_id == GTK_RESPONSE_DELETE_EVENT)){
         gtk_widget_destroy(pd->dialog);
         gui_progress_dialog_cleanup(pd);
-        break;
     }
 
     return;
