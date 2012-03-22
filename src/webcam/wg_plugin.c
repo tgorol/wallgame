@@ -140,12 +140,24 @@ WG_PRIVATE void
 xy_cb(const Sensor *sensor, Sensor_cb_type type, wg_uint x, wg_uint y, 
         void *user_data)
 {
+    Wg_point2d hit_point;
+    Camera *cam = NULL;
+
+    cam = (Camera*)user_data;
+
+    wg_point2d_new(x, y, &hit_point);
+    cd_add_position(&cam->cd, &hit_point);
+
     return;
 }
 
 WG_PRIVATE void 
 hit_cb(wg_float x, wg_float y)
 {
+    static wg_uint count = 0;
+    WG_LOG("Hit at x=%3.2f y=%3.2f %s\n", x, y, (count & 0x1) ? "--" : " ");
+
+    ++count;
 
     return;
 }
@@ -190,6 +202,9 @@ void button_clicked_start
             sensor_set_default_cb(cam->sensor, (Sensor_def_cb)default_cb, cam);
 
             sensor_set_cb(cam->sensor, CB_XY, (Sensor_def_cb)xy_cb, cam);
+
+            sensor_add_color(cam->sensor, &cam->top);
+            sensor_add_color(cam->sensor, &cam->bottom);
 
             cd_set_hit_callback(&cam->cd, hit_cb);
 
