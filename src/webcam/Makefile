@@ -22,7 +22,8 @@ SOURCE=cam.c                  \
        collision_detect.c \
        gui_progress_dialog.c  \
        wg_cam_calibrate.c  \
-       wg_plugin.c
+       wg_plugin.c       \
+       gui_display.c
 
 
 APP_NAME=webcam

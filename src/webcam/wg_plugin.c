@@ -848,6 +848,8 @@ wg_plugin_init(int argc, char *argv[], Camera *camera)
     widget = GTK_WIDGET(
             gtk_builder_get_object (builder, "draw_left"));
 
+    gui_display_init(widget, &camera->left_display);
+
     gtk_widget_set_app_paintable(widget, TRUE);
     gtk_widget_set_double_buffered(widget, TRUE);
 
