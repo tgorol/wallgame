@@ -28,7 +28,8 @@ typedef struct Sensor Sensor;
 
 typedef void (*Sensor_def_cb)(const Sensor *, ...);
 typedef void (*Sensor_cb)(const Sensor *, Sensor_cb_type, ...);
-typedef void (*Sensor_xy_cb)(const Sensor *sensor, wg_uint x, wg_uint y);
+typedef void (*Sensor_xy_cb)(const Sensor *sensor, Sensor_cb_type type, 
+        wg_uint x, wg_uint y, void *user_data);
 typedef wg_int (*Sensor_hook_int)(const Sensor *sensor, void *data);
 
 struct Sensor{

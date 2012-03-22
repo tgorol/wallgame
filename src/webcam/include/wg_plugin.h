@@ -1,6 +1,13 @@
 #ifndef _WG_PLUGIN_H
 #define _WG_PLUGIN_H
 
+/* todo get rid of this from here */
+typedef struct Update_image{
+    GdkPixbuf *src_pixbuf;
+    GdkPixbuf **dest_pixbuf;
+    GtkWidget *area;
+}Update_image;
+
 typedef enum WEBCAM_STATE{
     WEBCAM_STATE_UNINITIALIZED     = 0,
     WEBCAM_STATE_CALLIBRATE           ,
@@ -35,8 +42,8 @@ typedef struct Camera{
     Sensor    *sensor;
 
     /* Collision detector */
-    Cd_instance pane;
-    
+    Cd_instance cd;
+
     /* fps counter variables */
     GTimer *fps_timer;             /*!< timer used by fps counter */
     gint    frame_counter;         /*!< number of counted frames  */
@@ -48,6 +55,8 @@ typedef struct Camera{
 
     pthread_t  thread;
     Wg_video_out vid;
+
+    /* used for gathering color from screen */
     wg_boolean dragging;
     wg_uint x1;
     wg_uint y1;
@@ -72,5 +81,27 @@ fill_resolution_combo(GtkComboBoxText *combo);
 
 WG_PUBLIC void
 stop_capture(Camera *cam);
+
+WG_PUBLIC wg_status
+wg_plugin_init(int argc, char *argv[], Camera *camera);
+
+WG_PUBLIC void
+wg_plugin_start(Camera *camera);
+
+WG_PUBLIC void
+wg_plugin_cleanup(Camera *camera);
+
+
+WG_PUBLIC void
+wg_plugin_start_fps(Camera *obj);
+
+WG_PUBLIC void 
+wg_plugin_print_fps(Camera *obj);
+
+WG_PUBLIC void
+wg_plugin_update_fps(Camera *obj, wg_int val);
+
+WG_PUBLIC void
+wg_plugin_stop_fps(Camera *obj);
 
 #endif

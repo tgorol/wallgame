@@ -211,6 +211,9 @@ ef_acc_get_max(Wg_image *acc, wg_uint *row_par, wg_uint *col_par,
     CHECK_FOR_NULL_PARAM(col_par);
     CHECK_FOR_NULL_PARAM(votes);
 
+    x = (wg_uint)-1;
+    y = (wg_uint)-1;
+
     if (acc->type != IMG_CIRCLE_ACC){
         WG_ERROR("Invalig image format! Passed %d expect %d\n", 
                 acc->type, IMG_CIRCLE_ACC);

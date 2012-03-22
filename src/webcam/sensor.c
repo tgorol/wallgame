@@ -62,6 +62,9 @@ WG_PRIVATE void
 call_user_callback(const Sensor *const sensor, Sensor_cb_type type, 
         const Wg_image *const image);
 
+WG_PRIVATE void
+call_user_xy_callback(const Sensor *const sensor, wg_uint x, wg_uint y);
+
 wg_status
 sensor_init(Sensor *sensor)
 {
@@ -347,6 +350,8 @@ sensor_start(Sensor *sensor)
 
             call_user_callback(sensor, CB_IMG, &image);
 
+            call_user_xy_callback(sensor, x, y);
+
             img_cleanup(&image);
             img_cleanup(&hsv_image);
             img_cleanup(&filtered_image);
@@ -472,12 +477,14 @@ WG_PRIVATE void
 call_user_xy_callback(const Sensor *const sensor, wg_uint x, wg_uint y)
 {
     register Sensor_xy_cb user_callback = NULL;
+    void *user_data = NULL;
 
     CHECK_FOR_NULL_PARAM(sensor);
 
+    user_data     = sensor->user_data[CB_XY];
     user_callback = (Sensor_xy_cb)sensor->cb[CB_XY];
     if (NULL != user_callback){
-        user_callback(sensor, x, y);
+        user_callback(sensor, CB_XY, x, y, user_data);
     }
 
     return;

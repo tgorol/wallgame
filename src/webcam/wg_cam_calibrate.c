@@ -9,8 +9,6 @@
 #include <wgtypes.h>
 #include <wgmacros.h>
 #include <wg_linked_list.h>
-//#include <wg_iterator.h>
-//#include <wg_lsdir.h>
 #include <wg_sync_linked_list.h>
 #include <wg_wq.h>
 
@@ -28,6 +26,15 @@
 #include "include/wg_plugin.h"
 
 #include "include/wg_cam_callibrate.h"
+
+#define SCREEN_CORNER_NUM   4
+
+typedef struct Callibration_data{
+    Camera *camera;
+    wg_boolean is_camera_initialized;
+    wg_uint corner_count;
+    Wg_point2d corners[SCREEN_CORNER_NUM];
+}Callibration_data;
 
 typedef struct Setup_hist{
     Wg_rect rect;
@@ -140,6 +147,113 @@ released_mouse(GtkWidget *widget, GdkEvent  *event, gpointer user_data)
     return FALSE;
 }
 
+WG_PRIVATE gboolean
+screen_corner_release_mouse(GtkWidget *widget, GdkEvent  *event,
+        gpointer user_data)
+{
+    Callibration_data *data = NULL;
+    GdkEventButton *event_button = NULL;
+
+    data = (Callibration_data*)user_data;
+    event_button = (GdkEventButton*)event;
+
+    data->corner_count %= SCREEN_CORNER_NUM;
+
+    wg_point2d_new(event_button->x, event_button->y, 
+            &data->corners[data->corner_count]);
+
+    WG_LOG("Click at x=%3d y=%3d\n", 
+            (int)event_button->x, (int)event_button->y); 
+
+    ++data->corner_count;
+
+    return WG_FALSE;
+}
+
+WG_PRIVATE void
+update_image_cb(void *data)
+{
+    Update_image *img = NULL;
+
+    img = (Update_image*)data;
+
+    gdk_threads_enter();
+
+    if (*img->dest_pixbuf != NULL){
+        g_object_unref(*img->dest_pixbuf);
+        *img->dest_pixbuf = NULL;
+    }
+
+    *img->dest_pixbuf = img->src_pixbuf;
+
+    gtk_widget_queue_draw(img->area);
+
+    gdk_threads_leave();
+
+    return;
+}
+
+void
+callibration_default_cb(Sensor *sensor, Sensor_cb_type type, Wg_image *img, 
+        void *user_data)
+{
+    Camera *cam = NULL;
+    Wg_image rgb_img;
+    union {
+        Update_image *update_img;
+    }work;
+    GdkPixbuf *pixbuf = NULL;
+
+    cam = (Camera*)user_data;
+    switch (type){
+    case CB_ENTER:
+        wg_plugin_start_fps(cam);
+        break;
+    case CB_EXIT:
+        wg_plugin_stop_fps(cam);
+        break;
+    case CB_SETUP_START:
+        break;
+    case CB_SETUP_STOP:
+        break;
+    case CB_IMG_ACC:
+        wg_plugin_update_fps(cam, 1);
+        break;
+    case CB_IMG:
+        img_convert_to_pixbuf(img, &pixbuf, NULL);
+
+        /* update frame */
+        work.update_img = gui_work_create(sizeof (Update_image), 
+                update_image_cb);
+
+        work.update_img->src_pixbuf  = pixbuf;
+        work.update_img->dest_pixbuf = &cam->left_pixbuf;
+        work.update_img->area = cam->left_area;
+
+        gui_work_add(work.update_img);
+        break;
+    case CB_IMG_EDGE:
+        /* update frame */
+        img_gs_2_rgb(img, &rgb_img);
+        img_convert_to_pixbuf(&rgb_img, &pixbuf, NULL);
+
+        img_cleanup(&rgb_img);
+
+        work.update_img = gui_work_create(sizeof (Update_image), 
+                update_image_cb);
+
+        work.update_img->src_pixbuf  = pixbuf;
+        work.update_img->dest_pixbuf = &cam->right_pixbuf;
+        work.update_img->area = cam->right_area;
+
+        gui_work_add(work.update_img);
+        break;
+    default:
+        cam = NULL;
+    }
+    return;
+}
+
 WG_PRIVATE wg_boolean
 callibration_start(Gui_progress_action action, void *user_data)
 {
@@ -148,12 +262,21 @@ callibration_start(Gui_progress_action action, void *user_data)
     const gchar *device = NULL;
     wg_status status = WG_FAILURE;
     pthread_attr_t attr;
+    Callibration_data *data = NULL;
 
-    cam = (Camera*)user_data;
+    data = (Callibration_data*)user_data;
+
+    cam = data->camera;
 
     switch (action){
     case GUI_PROGRESS_ENTER:
+        if (data->is_camera_initialized == WG_TRUE){
+            break;
+        }
+        gtk_widget_set_sensitive(cam->start_capturing, FALSE);
+
         if (go_to_state(cam, WEBCAM_STATE_CALLIBRATE) == WG_TRUE){
+            data->is_camera_initialized = WG_TRUE;
             sensor = WG_MALLOC(sizeof (*sensor));
             if (NULL != sensor){
                 cam->sensor = sensor;
@@ -181,7 +304,7 @@ callibration_start(Gui_progress_action action, void *user_data)
 
                 if (WG_SUCCESS == status){
                     sensor_set_default_cb(cam->sensor,
-                            (Sensor_def_cb)default_cb, cam);
+                            (Sensor_def_cb)callibration_default_cb, cam);
 
                     pthread_attr_init(&attr);
                     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
@@ -196,6 +319,9 @@ callibration_start(Gui_progress_action action, void *user_data)
             /* @todo Handle thsi through MessageBox */
         }
         break;
+    case GUI_PROGRESS_BACK:
+        stop_capture(cam);
+        break;
     default:
         break;
     }
@@ -206,21 +332,55 @@ callibration_start(Gui_progress_action action, void *user_data)
 WG_PRIVATE wg_boolean
 callibration_screen(Gui_progress_action action, void *user_data)
 {
+    wg_boolean exit_perm = WG_FALSE;
+    Camera    *cam = NULL;
+    Callibration_data *data = NULL;
+    Cd_pane pane;
+    wg_status status = WG_FAILURE;
+
+    data = (Callibration_data*)user_data;
+
+    cam = data->camera;
     switch (action){
     case GUI_PROGRESS_ENTER:
+        g_signal_connect(cam->left_area, "button-release-event", 
+                G_CALLBACK(screen_corner_release_mouse), data);
+        data->corner_count = 0;
+        break;
+    case GUI_PROGRESS_NEXT:
+        exit_perm = (data->corner_count == SCREEN_CORNER_NUM);
+        break;
+    case GUI_PROGRESS_LEAVE:
+        g_signal_handlers_disconnect_by_func(cam->left_area,
+                G_CALLBACK(screen_corner_release_mouse), data);
+
+        pane.v1 = data->corners[0];
+        pane.v2 = data->corners[1];
+        pane.v3 = data->corners[2];
+        pane.v4 = data->corners[3];
+        pane.orientation = CD_PANE_RIGHT;
+
+        status = cd_define_pane(&pane, &cam->cd);
+        if (WG_SUCCESS == status){
+            exit_perm = WG_TRUE;
+        }
         break;
     default:
         break;
     }
-    return WG_TRUE;
+
+    return exit_perm;
 }
 
 WG_PRIVATE wg_boolean
 callibration_color(Gui_progress_action action, void *user_data)
 {
     Camera    *cam = NULL;
+    Callibration_data *data = NULL;
 
-    cam = (Camera*)user_data;
+    data = (Callibration_data*)user_data;
+
+    cam = data->camera;
     switch (action){
     case GUI_PROGRESS_ENTER:
         cam->dragging = WG_FALSE;
@@ -230,6 +390,14 @@ callibration_color(Gui_progress_action action, void *user_data)
 
         g_signal_connect(cam->left_area, "button-release-event", 
                 G_CALLBACK(released_mouse), cam);
+        break;
+    case GUI_PROGRESS_LEAVE:
+        g_signal_handlers_disconnect_by_func(cam->left_area,
+                G_CALLBACK(pressed_mouse), cam);
+
+        g_signal_handlers_disconnect_by_func(cam->left_area,
+                G_CALLBACK(released_mouse), cam);
+
         break;
     default:
         break;
@@ -241,8 +409,10 @@ WG_PRIVATE wg_boolean
 callibration_finish(Gui_progress_action action, void *user_data)
 {
     Camera    *cam = NULL;
+    Callibration_data *data = NULL;
 
-    cam = (Camera*)user_data;
+    data = (Callibration_data*)user_data;
+    cam = data->camera;
 
     switch (action){
     case GUI_PROGRESS_LEAVE:
@@ -250,13 +420,9 @@ callibration_finish(Gui_progress_action action, void *user_data)
 
         stop_capture(cam);
 
-        g_signal_handlers_disconnect_by_func(cam->left_area,
-                G_CALLBACK(pressed_mouse), cam);
-
-        g_signal_handlers_disconnect_by_func(cam->left_area,
-                G_CALLBACK(released_mouse), cam);
-
         gtk_widget_set_sensitive(cam->start_capturing, TRUE);
+
+        WG_FREE(data);
         break;
     default:
         break;
@@ -269,30 +435,35 @@ void
 gui_callibration_screen(Camera *cam)
 {
     Gui_progress_dialog *pd = NULL;
+    Callibration_data *data = NULL;
 
     CHECK_FOR_NULL_PARAM(cam);
 
     pd = gui_progress_dialog_new();
+    data = WG_MALLOC(sizeof (Callibration_data));
+
+    data->camera = cam;
+    data->is_camera_initialized = WG_FALSE;
 
     gui_progress_dialog_add_screen(pd, 
-       gui_progress_dialog_screen_new(callibration_start, cam, 
+       gui_progress_dialog_screen_new(callibration_start, data, 
        "Welcome to calibration wizard. This process is very simple and "
        "will take only few seconds.\n\n\n"
        "Click Next to start calibration")
        );
 
     gui_progress_dialog_add_screen(pd, 
-       gui_progress_dialog_screen_new(callibration_screen, cam, 
+       gui_progress_dialog_screen_new(callibration_screen, data, 
        "Show me where is the screen by clicking in each corner of the screen")
        );
 
     gui_progress_dialog_add_screen(pd, 
-       gui_progress_dialog_screen_new(callibration_color, cam, 
+       gui_progress_dialog_screen_new(callibration_color, data, 
        "Select color range on the object you are using")
        );
 
     gui_progress_dialog_add_screen(pd, 
-       gui_progress_dialog_screen_new(callibration_finish, cam, 
+       gui_progress_dialog_screen_new(callibration_finish, data, 
        "Thank you\n\n\nHave fun")
        );
 

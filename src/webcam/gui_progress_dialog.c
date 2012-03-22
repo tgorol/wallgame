@@ -282,7 +282,7 @@ response(GtkDialog *dialog, gint response_id, gpointer user_data)
         if (flag == WG_TRUE){
             call_action(pd, GUI_PROGRESS_LEAVE);
             show_screen(pd, PREVIUOS_SCREEN);   
-            call_action(pd, GUI_PROGRESS_LEAVE);
+            call_action(pd, GUI_PROGRESS_ENTER);
         }
         break;
     }
