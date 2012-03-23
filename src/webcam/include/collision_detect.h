@@ -5,8 +5,8 @@
 #define CD_PIPELINE_SIZE 5
 
 typedef enum Cd_orientation {
-    CD_PANE_LEFT    = 0, 
-    CD_PANE_RIGHT
+    CD_PANE_RIGHT   = 0 ,
+    CD_PANE_LEFT        , 
 }Cd_orientation;
 
 typedef void (*cd_pane_hit_cb)(wg_float x, wg_float y);
@@ -63,6 +63,9 @@ cd_set_hit_callback(Cd_instance *pane, cd_pane_hit_cb hit_cb);
 
 WG_PUBLIC wg_status
 cd_add_position(Cd_instance *pane, const Wg_point2d *point);
+
+WG_PUBLIC wg_status
+cd_get_pane(Cd_instance *pane, Cd_pane *pane_dimention);
 
 #endif
 

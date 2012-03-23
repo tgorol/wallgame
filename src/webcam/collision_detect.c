@@ -109,6 +109,17 @@ cd_set_hit_callback(Cd_instance *pane, cd_pane_hit_cb hit_cb)
 }
 
 wg_status
+cd_get_pane(Cd_instance *pane, Cd_pane *pane_dimention)
+{
+    CHECK_FOR_NULL_PARAM(pane);
+    CHECK_FOR_NULL_PARAM(pane_dimention);
+
+    *pane_dimention = pane->pane_dimention;
+
+    return WG_SUCCESS;
+}
+
+wg_status
 cd_add_position(Cd_instance *pane, const Wg_point2d *point)
 {
     wg_uint hit_index = 0;
@@ -293,11 +304,11 @@ fix_pane_veticles(Cd_pane *pane_dimention)
         return WG_FAILURE;
     }
 
-    if (screen[V0]->y > screen[V1]->y){
+    if (screen[V0]->y < screen[V1]->y){
        swap_points(&screen[V0], &screen[V1]);
     }
 
-    if (screen[V2]->y > screen[V3]->y){
+    if (screen[V2]->y < screen[V3]->y){
        swap_points(&screen[V2], &screen[V3]);
     }
    

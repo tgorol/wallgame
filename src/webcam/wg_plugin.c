@@ -816,6 +816,9 @@ wg_plugin_cleanup(Camera *camera)
 
     stop_capture(camera);
 
+    gui_display_cleanup(&camera->left_display);
+    gui_display_cleanup(&camera->right_display);
+
     gdk_threads_leave();
 
     return;
