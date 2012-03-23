@@ -26,6 +26,7 @@
 #include "include/wg_plugin.h"
 
 #include "include/wg_cam_callibrate.h"
+#include "include/gui_display.h"
 
 #define SCREEN_CORNER_NUM   4
 
@@ -58,43 +59,16 @@ WG_PRIVATE void
 setup_hist(void *data)
 {
     Setup_hist *work = NULL;
-    Wg_image image;
-    Wg_image rect_image;
-    Wg_image hsv_image;
-    wg_uint width = 0;
-    wg_uint height = 0;
-    wg_uint t_width = 0;
-    wg_uint t_height = 0;
-    wg_uchar *buffer = NULL;
-    wg_uint i = 0;
     Hsv *color = NULL;
-    wg_uint size = 0;
+    Wg_image hsv_image;
+    wg_uint i = 0;
     wg_uint num = 0;
+    wg_size size = 0;
 
     work = (Setup_hist*)data;
 
-    gdk_threads_enter();
 
-    width  = gdk_pixbuf_get_width(work->cam->left_pixbuf);
-    height = gdk_pixbuf_get_height(work->cam->left_pixbuf);
-    buffer = gdk_pixbuf_get_pixels(work->cam->left_pixbuf); 
-
-    img_rgb_from_buffer(buffer, width, height, &image);
-
-    gdk_threads_leave();
-
-    t_width = gtk_widget_get_allocated_width(work->cam->left_area);
-    t_height = gtk_widget_get_allocated_height(work->cam->left_area);
-
-    img_fill(work->rect.width, work->rect.height,
-            RGB24_COMPONENT_NUM, IMG_RGB, &rect_image);
-
-    wg_rect_move(&work->rect, 
-            -((t_width - width) >> 1), -((t_height - height) >> 1));
-
-    img_get_subimage(&image, work->rect.x, work->rect.y, &rect_image);
-
-    img_rgb_2_hsv_gtk(&rect_image, &hsv_image);
+    gui_display_copy(&work->cam->left_display, &work->rect, &hsv_image);
 
     img_get_data(&hsv_image, (wg_uchar**)&color, &num, &size);
 
@@ -102,9 +76,7 @@ setup_hist(void *data)
         sensor_add_color(work->cam->sensor, color);
     }
 
-    img_cleanup(&image);
     img_cleanup(&hsv_image);
-    img_cleanup(&rect_image);
 
     return;
 }
@@ -170,38 +142,12 @@ screen_corner_release_mouse(GtkWidget *widget, GdkEvent  *event,
     return WG_FALSE;
 }
 
-WG_PRIVATE void
-update_image_cb(void *data)
-{
-    Update_image *img = NULL;
-
-    img = (Update_image*)data;
-
-    gdk_threads_enter();
-
-    if (*img->dest_pixbuf != NULL){
-        g_object_unref(*img->dest_pixbuf);
-        *img->dest_pixbuf = NULL;
-    }
-
-    *img->dest_pixbuf = img->src_pixbuf;
-
-    gtk_widget_queue_draw(img->area);
-
-    gdk_threads_leave();
-
-    return;
-}
-
 void
 callibration_default_cb(Sensor *sensor, Sensor_cb_type type, Wg_image *img, 
         void *user_data)
 {
     Camera *cam = NULL;
     Wg_image rgb_img;
-    union {
-        Update_image *update_img;
-    }work;
     GdkPixbuf *pixbuf = NULL;
 
     cam = (Camera*)user_data;
@@ -222,15 +168,9 @@ callibration_default_cb(Sensor *sensor, Sensor_cb_type type, Wg_image *img,
     case CB_IMG:
         img_convert_to_pixbuf(img, &pixbuf, NULL);
 
-        /* update frame */
-        work.update_img = gui_work_create(sizeof (Update_image), 
-                update_image_cb);
+        gui_display_set_pixbuf(&cam->left_display, 0, 0, pixbuf); 
 
-        work.update_img->src_pixbuf  = pixbuf;
-        work.update_img->dest_pixbuf = &cam->left_pixbuf;
-        work.update_img->area = cam->left_area;
-
-        gui_work_add(work.update_img);
+        g_object_unref(pixbuf);
         break;
     case CB_IMG_EDGE:
         /* update frame */
@@ -239,14 +179,9 @@ callibration_default_cb(Sensor *sensor, Sensor_cb_type type, Wg_image *img,
 
         img_cleanup(&rgb_img);
 
-        work.update_img = gui_work_create(sizeof (Update_image), 
-                update_image_cb);
+        gui_display_set_pixbuf(&cam->right_display, 0, 0, pixbuf); 
 
-        work.update_img->src_pixbuf  = pixbuf;
-        work.update_img->dest_pixbuf = &cam->right_pixbuf;
-        work.update_img->area = cam->right_area;
-
-        gui_work_add(work.update_img);
+        g_object_unref(pixbuf);
         break;
     default:
         cam = NULL;
@@ -337,13 +272,16 @@ callibration_screen(Gui_progress_action action, void *user_data)
     Callibration_data *data = NULL;
     Cd_pane pane;
     wg_status status = WG_FAILURE;
+    GtkWidget *widget = NULL;
 
     data = (Callibration_data*)user_data;
 
     cam = data->camera;
     switch (action){
     case GUI_PROGRESS_ENTER:
-        g_signal_connect(cam->left_area, "button-release-event", 
+        widget = cam->left_display.widget;
+
+        g_signal_connect(widget, "button-release-event", 
                 G_CALLBACK(screen_corner_release_mouse), data);
         data->corner_count = 0;
         break;
@@ -351,7 +289,9 @@ callibration_screen(Gui_progress_action action, void *user_data)
         exit_perm = (data->corner_count == SCREEN_CORNER_NUM);
         break;
     case GUI_PROGRESS_LEAVE:
-        g_signal_handlers_disconnect_by_func(cam->left_area,
+        widget = cam->left_display.widget;
+
+        g_signal_handlers_disconnect_by_func(widget,
                 G_CALLBACK(screen_corner_release_mouse), data);
 
         pane.v1 = data->corners[0];
@@ -377,6 +317,7 @@ callibration_color(Gui_progress_action action, void *user_data)
 {
     Camera    *cam = NULL;
     Callibration_data *data = NULL;
+    GtkWidget *widget = NULL;
 
     data = (Callibration_data*)user_data;
 
@@ -385,19 +326,22 @@ callibration_color(Gui_progress_action action, void *user_data)
     case GUI_PROGRESS_ENTER:
         cam->dragging = WG_FALSE;
 
-        g_signal_connect(cam->left_area, "button-press-event", 
+        widget = cam->left_display.widget;
+
+        g_signal_connect(widget, "button-press-event", 
                 G_CALLBACK(pressed_mouse), cam);
 
-        g_signal_connect(cam->left_area, "button-release-event", 
+        g_signal_connect(widget, "button-release-event", 
                 G_CALLBACK(released_mouse), cam);
         break;
     case GUI_PROGRESS_LEAVE:
-        g_signal_handlers_disconnect_by_func(cam->left_area,
+        widget = cam->left_display.widget;
+
+        g_signal_handlers_disconnect_by_func(widget,
                 G_CALLBACK(pressed_mouse), cam);
 
-        g_signal_handlers_disconnect_by_func(cam->left_area,
+        g_signal_handlers_disconnect_by_func(widget,
                 G_CALLBACK(released_mouse), cam);
-
         break;
     default:
         break;
@@ -418,17 +362,30 @@ callibration_finish(Gui_progress_action action, void *user_data)
     case GUI_PROGRESS_LEAVE:
         sensor_get_color_range(cam->sensor, &cam->top, &cam->bottom);
 
-        stop_capture(cam);
-
         gtk_widget_set_sensitive(cam->start_capturing, TRUE);
-
-        WG_FREE(data);
         break;
     default:
         break;
     }
 
     return WG_TRUE;
+}
+
+WG_PRIVATE void
+callibration_exit(wg_uint screen_id, void *user_data)
+{
+    Camera    *cam = NULL;
+    Callibration_data *data = NULL;
+
+    if (screen_id == 0){
+        data = (Callibration_data*)user_data;
+        cam = data->camera;
+
+        stop_capture(cam);
+        WG_FREE(user_data);
+    }
+
+    return;
 }
 
 void
@@ -444,6 +401,8 @@ gui_callibration_screen(Camera *cam)
 
     data->camera = cam;
     data->is_camera_initialized = WG_FALSE;
+
+    gui_progress_dialog_set_exit_action(pd, callibration_exit);
 
     gui_progress_dialog_add_screen(pd, 
        gui_progress_dialog_screen_new(callibration_start, data, 

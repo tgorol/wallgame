@@ -2,13 +2,14 @@
 #define _WG_PLUGIN_H
 
 /* todo get rid of this from here */
-#include "include/gui_display.h"
+#include "gui_display.h"
 
 /* todo get rid of this from here */
 typedef struct Update_image{
-    GdkPixbuf *src_pixbuf;
-    GdkPixbuf **dest_pixbuf;
-    GtkWidget *area;
+    GdkPixbuf *pixbuf;
+    Gui_display *display;
+    wg_uint x;
+    wg_uint y;
 }Update_image;
 
 typedef enum WEBCAM_STATE{
@@ -32,13 +33,12 @@ typedef struct Camera{
     GtkWidget *start_capturing;
     GtkWidget *stop_capturing;
     GtkWidget *callibrate;
-    GtkWidget *left_area;
-    GtkWidget *right_area;
     GtkWidget *noise_reduction;
     GtkWidget *fps_display;
 
-    /* left display */
+    /* Displays isplay */
     Gui_display left_display;
+    Gui_display right_display;
 
     /* Sensor color object range */
     Hsv top;

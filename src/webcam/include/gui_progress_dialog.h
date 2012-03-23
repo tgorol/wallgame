@@ -6,10 +6,12 @@ typedef enum Gui_progress_action{
     GUI_PROGRESS_BACK   =   0,
     GUI_PROGRESS_NEXT        ,
     GUI_PROGRESS_ENTER       ,
-    GUI_PROGRESS_LEAVE
+    GUI_PROGRESS_LEAVE       ,
+    GUI_PROGRESS_EXIT
 }Gui_progress_action;
 
 typedef wg_boolean (*action_cb)(Gui_progress_action button, void *data);
+typedef void (*exit_action_cb)(wg_uint screen_id, void *data);
 
 typedef struct Gui_progress_dialog_screen Gui_progress_dialog_screen;
 
@@ -34,5 +36,9 @@ gui_progress_dialog_add_screen(Gui_progress_dialog *pd,
 
 WG_PUBLIC void
 gui_progress_dialog_show(Gui_progress_dialog *pd);
+
+WG_PUBLIC void
+gui_progress_dialog_set_exit_action(Gui_progress_dialog *pd,
+        exit_action_cb action);
 
 #endif

@@ -35,6 +35,7 @@ struct Gui_progress_dialog{
     Gui_progress_dialog_screen **screens_array;
     GtkTextBuffer *buffer;
     GtkWidget *dialog;
+    exit_action_cb exit_action;
 };
 
 WG_STATIC void
@@ -66,6 +67,7 @@ gui_progress_dialog_new()
     pd->active_index = 0;
     pd->screens_array = NULL;
     pd->size = 0;
+    pd->exit_action = NULL;
 
     return pd;
 }
@@ -127,7 +129,21 @@ void
 gui_progress_dialog_add_screen(Gui_progress_dialog *pd,
         Gui_progress_dialog_screen *pds)
 {
+    CHECK_FOR_NULL_PARAM(pd);
+    CHECK_FOR_NULL_PARAM(pds);
+
     list_add(&pd->screens, &pds->list);
+
+    return;
+}
+
+void
+gui_progress_dialog_set_exit_action(Gui_progress_dialog *pd,
+        exit_action_cb action)
+{
+    CHECK_FOR_NULL_PARAM(pd);
+
+    pd->exit_action = action;
 
     return;
 }
@@ -259,6 +275,23 @@ call_action(Gui_progress_dialog *pd, Gui_progress_action action_id)
 }
 
 WG_STATIC void
+call_exit_action(Gui_progress_dialog *pd)
+{
+    exit_action_cb action = NULL;
+    Gui_progress_dialog_screen *pds = NULL;
+    wg_uint i = 0;
+
+    action = pd->exit_action;
+    if (action != NULL){
+        for (i = 0; i < pd->size; ++i){
+            action(i, pd->screens_array[i]->user_data);
+        }
+    }
+
+    return;
+}
+
+WG_STATIC void
 response(GtkDialog *dialog, gint response_id, gpointer user_data)
 {
     Gui_progress_dialog *pd = NULL;
@@ -289,6 +322,7 @@ response(GtkDialog *dialog, gint response_id, gpointer user_data)
 
     if ((is_last_screen(pd) == WG_TRUE) ||
             (response_id == GTK_RESPONSE_DELETE_EVENT)){
+        call_exit_action(pd);
         gtk_widget_destroy(pd->dialog);
         gui_progress_dialog_cleanup(pd);
     }

@@ -420,73 +420,6 @@ fill_video_combo(GtkComboBoxText *combo)
     return;
 }
 
-WG_PRIVATE gboolean
-on_expose_acc(GtkWidget *widget,
-        cairo_t *cr,
-        gpointer data)
-{
-    Camera *cam = NULL;
-    wg_uint width = 0;
-    wg_uint height = 0;
-    int w_width = 0;
-    int w_height = 0;
-
-    cam = (Camera*)data;
-
-    cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-    cairo_paint(cr);
-
-    if (cam->right_pixbuf != NULL){
-        get_selected_resolution(cam->resolution_combo, &width, &height);
-
-        w_width = gtk_widget_get_allocated_width(widget);
-        w_height = gtk_widget_get_allocated_height(widget);
-
-        gdk_cairo_set_source_pixbuf(cr,
-                cam->right_pixbuf, 
-                (double)((w_width - width) >> 1),
-                (double)((w_height - height) >> 1));
-
-        cairo_paint(cr);
-    }
-
-    return TRUE;
-}
-
-WG_PRIVATE gboolean
-on_expose_event(GtkWidget *widget,
-        cairo_t *cr,
-        gpointer data)
-{
-    Camera *cam = NULL;
-    wg_uint width = 0;
-    wg_uint height = 0;
-    int w_width = 0;
-    int w_height = 0;
-
-    cam = (Camera*)data;
-
-    cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-    cairo_paint(cr);
-
-    if (cam->left_pixbuf != NULL){
-        get_selected_resolution(cam->resolution_combo, &width, &height);
-
-        w_width = gtk_widget_get_allocated_width(widget);
-        w_height = gtk_widget_get_allocated_height(widget);
-
-        gdk_cairo_set_source_pixbuf(cr,
-                cam->left_pixbuf, 
-                (double)((w_width - width) >> 1),
-                (double)((w_height - height) >> 1));
-
-        cairo_paint(cr);
-    }
-
-
-    return TRUE;
-}
-
 void
 wg_plugin_start_fps(Camera *obj)
 {
@@ -534,29 +467,6 @@ update_fps_cb(void *data)
         g_timer_start(obj->fps_timer);
         print_fps(obj);
     }
-
-    return;
-}
-
-WG_PRIVATE void
-update_image_cb(void *data)
-{
-    Update_image *img = NULL;
-
-    img = (Update_image*)data;
-
-    gdk_threads_enter();
-
-    if (*img->dest_pixbuf != NULL){
-        g_object_unref(*img->dest_pixbuf);
-        *img->dest_pixbuf = NULL;
-    }
-
-    *img->dest_pixbuf = img->src_pixbuf;
-
-    gtk_widget_queue_draw(img->area);
-
-    gdk_threads_leave();
 
     return;
 }
@@ -672,11 +582,6 @@ default_cb(Sensor *sensor, Sensor_cb_type type, Wg_image *img, void *user_data)
 {
     Camera *cam = NULL;
     Wg_image rgb_img;
-    union {
-        Update_image *update_img;
-        Update_fps   *update_fps;
-        Encode_frame   *encode_frame;
-    }work;
     GdkPixbuf *pixbuf = NULL;
 
     cam = (Camera*)user_data;
@@ -700,27 +605,7 @@ default_cb(Sensor *sensor, Sensor_cb_type type, Wg_image *img, void *user_data)
     case CB_IMG:
         img_convert_to_pixbuf(img, &pixbuf, NULL);
 
-        /* update frame */
-        work.update_img = gui_work_create(sizeof (Update_image), 
-                update_image_cb);
-
-        work.update_img->src_pixbuf  = pixbuf;
-        work.update_img->dest_pixbuf = &cam->left_pixbuf;
-        work.update_img->area = cam->left_area;
-
-        gui_work_add(work.update_img);
-
-#if 0
-        work.encode_frame = gui_work_create(sizeof (Encode_frame), 
-                encode_frame);
-
-        img_copy(img, &work.encode_frame->img);
-
-        work.encode_frame->out = &cam->vid;
-
-        gui_work_add(work.encode_frame);
-#endif
-
+        gui_display_set_pixbuf(&cam->left_display, 0, 0, pixbuf);
         break;
     case CB_IMG_EDGE:
         /* update frame */
@@ -729,14 +614,7 @@ default_cb(Sensor *sensor, Sensor_cb_type type, Wg_image *img, void *user_data)
 
         img_cleanup(&rgb_img);
 
-        work.update_img = gui_work_create(sizeof (Update_image), 
-                update_image_cb);
-
-        work.update_img->src_pixbuf  = pixbuf;
-        work.update_img->dest_pixbuf = &cam->right_pixbuf;
-        work.update_img->area = cam->right_area;
-
-        gui_work_add(work.update_img);
+        gui_display_set_pixbuf(&cam->right_display, 0, 0, pixbuf);
         break;
     default:
         cam = NULL;
@@ -848,31 +726,17 @@ wg_plugin_init(int argc, char *argv[], Camera *camera)
     widget = GTK_WIDGET(
             gtk_builder_get_object (builder, "draw_left"));
 
-    gui_display_init(widget, &camera->left_display);
-
-    gtk_widget_set_app_paintable(widget, TRUE);
-    gtk_widget_set_double_buffered(widget, TRUE);
-
     gtk_widget_set_size_request(widget, width, height);
 
-    g_signal_connect(widget, "draw",
-            G_CALLBACK(on_expose_event), camera);
-
-    camera->left_area = widget;
+    gui_display_init(widget, &camera->left_display);
 
     /* setup drawable right area */
     widget = GTK_WIDGET(
             gtk_builder_get_object (builder, "draw_right"));
 
-    gtk_widget_set_app_paintable(widget, TRUE);
-    gtk_widget_set_double_buffered(widget, TRUE);
-
     gtk_widget_set_size_request(widget, width, height);
 
-    g_signal_connect(widget, "draw",
-            G_CALLBACK(on_expose_acc), camera);
-
-    camera->right_area = widget;
+    gui_display_init(widget, &camera->right_display);
 
     /* setup noise reduction check box */
     widget = GTK_WIDGET(
