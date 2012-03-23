@@ -606,6 +606,8 @@ default_cb(Sensor *sensor, Sensor_cb_type type, Wg_image *img, void *user_data)
         img_convert_to_pixbuf(img, &pixbuf, NULL);
 
         gui_display_set_pixbuf(&cam->left_display, 0, 0, pixbuf);
+
+        g_object_unref(pixbuf);
         break;
     case CB_IMG_EDGE:
         /* update frame */
@@ -615,6 +617,8 @@ default_cb(Sensor *sensor, Sensor_cb_type type, Wg_image *img, void *user_data)
         img_cleanup(&rgb_img);
 
         gui_display_set_pixbuf(&cam->right_display, 0, 0, pixbuf);
+
+        g_object_unref(pixbuf);
         break;
     default:
         cam = NULL;

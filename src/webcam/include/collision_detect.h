@@ -3,11 +3,11 @@
 
 #define CD_POSITION_NUM  64
 #define CD_PIPELINE_SIZE 3
-#define HIT_COUNT_NUM 2
+#define HIT_COUNT_NUM 1
 
 typedef enum Cd_orientation {
-    CD_PANE_RIGHT   = 0 ,
-    CD_PANE_LEFT        , 
+    CD_PANE_LEFT    = 0    , 
+    CD_PANE_RIGHT          ,
 }Cd_orientation;
 
 typedef void (*cd_pane_hit_cb)(wg_float x, wg_float y);

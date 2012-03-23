@@ -347,7 +347,7 @@ callibration_screen(Gui_progress_action action, void *user_data)
             pane.v2 = data->corners[1];
             pane.v3 = data->corners[2];
             pane.v4 = data->corners[3];
-            pane.orientation = CD_PANE_LEFT;
+            pane.orientation = CD_PANE_RIGHT;
 
             status = cd_define_pane(&pane, &cam->cd);
             if (WG_SUCCESS == status){

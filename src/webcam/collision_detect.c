@@ -198,7 +198,7 @@ is_hit_detected(const Cd_instance *pane, wg_uint *index)
     CHECK_FOR_NULL_PARAM(pane);
     CHECK_FOR_NULL_PARAM(index);
 
-    i = pane->position_index - CD_PIPELINE_SIZE;
+    i = pane->position_index - CD_PIPELINE_SIZE - 1;
 
     i = (i < 0) ? CD_POSITION_NUM - i : i;
 
@@ -303,11 +303,11 @@ fix_pane_veticles(Cd_pane *pane_dimention)
         return WG_FAILURE;
     }
 
-    if (screen[V0]->y < screen[V1]->y){
+    if (screen[V0]->y > screen[V1]->y){
        swap_points(&screen[V0], &screen[V1]);
     }
 
-    if (screen[V2]->y < screen[V3]->y){
+    if (screen[V2]->y > screen[V3]->y){
        swap_points(&screen[V2], &screen[V3]);
     }
    
