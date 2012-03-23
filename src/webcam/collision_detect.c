@@ -21,7 +21,6 @@ typedef enum CD_STATE{
 }CD_STATE;
 
 #define WG_SIGN(val) ((val) > 0 ? 1 : -1)
-#define HIT_COUNT_NUM 2
 #define PANE_VERT_MARGIN_IN_PIX 30
 
 typedef enum PANE_VERTICLES{

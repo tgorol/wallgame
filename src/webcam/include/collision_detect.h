@@ -1,8 +1,9 @@
 #ifndef _COLLISION_DETECT_H
 #define _COLLISION_DETECT_H
 
-#define CD_POSITION_NUM  32
-#define CD_PIPELINE_SIZE 5
+#define CD_POSITION_NUM  64
+#define CD_PIPELINE_SIZE 3
+#define HIT_COUNT_NUM 2
 
 typedef enum Cd_orientation {
     CD_PANE_RIGHT   = 0 ,
