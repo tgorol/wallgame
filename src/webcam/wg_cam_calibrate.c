@@ -33,6 +33,13 @@
 #define COLOR_PANE_G   0.0
 #define COLOR_PANE_B   0.0
 
+#define COLOR_POINT_R  0.0
+#define COLOR_POINT_G  0.0
+#define COLOR_POINT_B  1.0
+
+#define POINT_STROKE_SIZE 8
+#define LINE_STROKE_SIZE 2
+
 typedef struct Callibration_data{
     Camera *camera;
     wg_boolean is_camera_initialized;
@@ -128,9 +135,11 @@ screen_corner_release_mouse(GtkWidget *widget, GdkEvent  *event,
 {
     Callibration_data *data = NULL;
     GdkEventButton *event_button = NULL;
+    Wg_point2d p1;
+    Wg_point2d p2;
 
     data = (Callibration_data*)user_data;
-    event_button = (GdkEventButton*)event;
+    event_button = &event->button;
 
     data->corner_count %= SCREEN_CORNER_NUM;
 
@@ -141,6 +150,11 @@ screen_corner_release_mouse(GtkWidget *widget, GdkEvent  *event,
             (int)event_button->x, (int)event_button->y); 
 
     ++data->corner_count;
+
+    wg_point2d_new(event_button->x, event_button->y, &p1);
+    wg_point2d_new(event_button->x, event_button->y, &p2);
+    gui_display_draw_line(&data->camera->left_display, &p1, &p2,
+            COLOR_POINT_R, COLOR_POINT_G, COLOR_POINT_B, POINT_STROKE_SIZE);
 
     return WG_FALSE;
 }
@@ -278,22 +292,22 @@ paint_pane(Gui_display *display, const Cd_pane *pane_dimention)
     wg_point2d_new(pane_dimention->v1.x , pane_dimention->v1.y, &p1); 
     wg_point2d_new(pane_dimention->v2.x , pane_dimention->v2.y, &p2); 
     gui_display_draw_line(display, &p1, &p2,
-            COLOR_PANE_R, COLOR_PANE_G, COLOR_PANE_B);
+            COLOR_PANE_R, COLOR_PANE_G, COLOR_PANE_B, LINE_STROKE_SIZE);
 
     wg_point2d_new(pane_dimention->v2.x , pane_dimention->v2.y, &p1); 
     wg_point2d_new(pane_dimention->v3.x , pane_dimention->v3.y, &p2); 
     gui_display_draw_line(display, &p1, &p2,
-            COLOR_PANE_R, COLOR_PANE_G, COLOR_PANE_B);
+            COLOR_PANE_R, COLOR_PANE_G, COLOR_PANE_B, LINE_STROKE_SIZE);
 
     wg_point2d_new(pane_dimention->v3.x , pane_dimention->v3.y, &p1); 
     wg_point2d_new(pane_dimention->v4.x , pane_dimention->v4.y, &p2); 
     gui_display_draw_line(display, &p1, &p2,
-            COLOR_PANE_R, COLOR_PANE_G, COLOR_PANE_B);
+            COLOR_PANE_R, COLOR_PANE_G, COLOR_PANE_B, LINE_STROKE_SIZE);
 
     wg_point2d_new(pane_dimention->v4.x , pane_dimention->v4.y, &p1); 
     wg_point2d_new(pane_dimention->v1.x , pane_dimention->v1.y, &p2); 
     gui_display_draw_line(display, &p1, &p2,
-            COLOR_PANE_R, COLOR_PANE_G, COLOR_PANE_B);
+            COLOR_PANE_R, COLOR_PANE_G, COLOR_PANE_B, LINE_STROKE_SIZE);
 
     return;
 }

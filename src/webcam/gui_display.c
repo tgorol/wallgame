@@ -33,6 +33,7 @@ typedef struct Gui_display_line{
     double r;
     double g;
     double b;
+    double size;
 }Gui_display_line;
 
 WG_PRIVATE gboolean
@@ -119,7 +120,7 @@ gui_display_clean_lines(Gui_display *display)
 
 wg_status
 gui_display_draw_line(Gui_display *display, const Wg_point2d *p1, 
-const Wg_point2d *p2, double r, double g, double b)
+const Wg_point2d *p2, double r, double g, double b, double size)
 {
     Gui_display_line *line = NULL;
 
@@ -137,6 +138,7 @@ const Wg_point2d *p2, double r, double g, double b)
     line->r = r;
     line->g = g;
     line->b = b;
+    line->size = size;
 
     list_add(&display->lines, &line->list);
     refresh(display);
@@ -266,7 +268,8 @@ paint_line(cairo_t *cr, const Gui_display_line *line)
     cairo_set_source_rgb(cr, line->r, line->g, line->b);
     cairo_move_to(cr, (double)line->p1.x, (double)line->p1.y);
     cairo_line_to(cr, (double)line->p2.x, (double)line->p2.y);
-    cairo_set_line_width (cr, 3);
+    cairo_set_line_width (cr, line->size);
+    cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
     cairo_stroke(cr);
 
     return;

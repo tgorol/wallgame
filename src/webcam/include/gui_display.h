@@ -32,7 +32,7 @@ gui_display_copy(Gui_display *display, Wg_rect *rect, Wg_image *img);
 
 WG_PUBLIC wg_status
 gui_display_draw_line(Gui_display *display, const Wg_point2d *p1, 
-const Wg_point2d *p2, double r, double g, double b);
+const Wg_point2d *p2, double r, double g, double b, double size);
 
 WG_PUBLIC wg_status
 gui_display_clean_lines(Gui_display *display);
