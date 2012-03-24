@@ -66,7 +66,7 @@ wg_config_cleanup(Wg_config *config)
     iterator_list_init(&itr, &config->lines, GET_OFFSET(Config_line, list));
 
     while ((line = iterator_list_next(&itr)) != NULL){
-        WG_FREE(line);
+        release_line(line);
     }
 
     WG_FREE(config->filename);

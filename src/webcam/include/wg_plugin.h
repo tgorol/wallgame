@@ -35,6 +35,7 @@ typedef struct Camera{
     GtkWidget *callibrate;
     GtkWidget *noise_reduction;
     GtkWidget *fps_display;
+    GtkWidget *device_name;
 
     /* Displays isplay */
     Gui_display left_display;

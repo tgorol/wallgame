@@ -61,7 +61,7 @@
 #define DEV_PATH  "/dev/"
 
 /** @brief maximum devixe path size */
-#define DEVICE_PATH_MAX  64
+#define DEVICE_PATH_MAX  128
 
 
 typedef struct Resolution{
@@ -166,7 +166,7 @@ void button_clicked_start
 (GtkWidget *widget, gpointer data){
     Sensor *sensor = NULL;
     Camera *cam = NULL;
-    const gchar *device = NULL;
+    gchar *device = NULL;
     wg_status status = WG_FAILURE;
     pthread_attr_t attr;
 
@@ -185,6 +185,9 @@ void button_clicked_start
                 &sensor->width, &sensor->height);
         
         strncpy(sensor->video_dev, device, VIDEO_SIZE_MAX);
+
+        g_free(device);
+        device = NULL;
 
         status = sensor_init(cam->sensor);
         if (WG_SUCCESS != status){
@@ -380,8 +383,10 @@ fill_video_combo(GtkComboBoxText *combo)
     wg_dirent *dir_entry;
     wg_dirent **dir_entry_array;
     wg_char full_path[DEVICE_PATH_MAX];
+    wg_char device_name[CAM_DEVICE_NAME_MAX];
     wg_int i = 0;
     wg_uint num_path = 0;
+    Wg_camera camera;
 
     list_init(&head);
 
@@ -402,7 +407,18 @@ fill_video_combo(GtkComboBoxText *combo)
         dir_entry = dir_entry_array[i];
         strcpy(full_path, DEV_PATH);
         strcat(full_path, dir_entry->d_name);
-        gtk_combo_box_text_append_text(combo, full_path);
+
+        if (CAM_SUCCESS == cam_init(&camera, full_path)){
+            if (CAM_SUCCESS == cam_open(&camera, 0, 0)){
+                cam_cap_get_device_name(&camera, device_name, 
+                        sizeof (device_name));
+
+                cam_close(&camera);
+
+                gtk_combo_box_text_append_text(combo, full_path);
+            }
+
+        }
     }
 
     wg_lsdir_cleanup(&head);
@@ -673,6 +689,33 @@ stop_capture(Camera *cam)
     return;
 }
 
+WG_PRIVATE void
+device_changed_signal(GtkComboBox *widget, gpointer user_data)
+{
+    gchar *device = NULL;
+    char device_name[CAM_DEVICE_NAME_MAX];
+    Camera *cam = NULL;
+    Wg_camera camera;
+
+    cam = (Camera*)user_data;
+
+    device = gtk_combo_box_text_get_active_text(
+            GTK_COMBO_BOX_TEXT(cam->device_combo));
+
+    if (CAM_SUCCESS == cam_init(&camera, device)){
+        if (CAM_SUCCESS == cam_open(&camera, 0, 0)){
+            cam_cap_get_device_name(&camera, device_name, 
+                    sizeof (device_name));
+            
+            gtk_label_set_text(GTK_LABEL(cam->device_name), device_name);
+
+            cam_close(&camera);
+        }
+    }
+
+    g_free(device);
+}
+
 wg_status
 wg_plugin_init(int argc, char *argv[], Camera *camera)
 {
@@ -705,6 +748,11 @@ wg_plugin_init(int argc, char *argv[], Camera *camera)
             G_CALLBACK(gtk_main_quit), camera);
 
     camera->window = window;
+    /* setup device name label */
+    widget = GTK_WIDGET(
+            gtk_builder_get_object (builder, "device_name"));
+
+    camera->device_name = widget;
 
     /* fill supported resolutions */
     widget = GTK_WIDGET(
@@ -720,11 +768,14 @@ wg_plugin_init(int argc, char *argv[], Camera *camera)
     widget = GTK_WIDGET(
             gtk_builder_get_object (builder, "device_select"));
 
+    camera->device_combo = widget;
+
+    g_signal_connect(GTK_COMBO_BOX(widget), "changed", 
+               G_CALLBACK(device_changed_signal), camera);
+
     fill_video_combo(GTK_COMBO_BOX_TEXT(widget));
 
-    gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(widget));
 
-    camera->device_combo = widget;
 
     /* setup drawable left area */
     widget = GTK_WIDGET(
