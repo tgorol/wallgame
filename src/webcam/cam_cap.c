@@ -55,6 +55,16 @@ cam_cap_get(Wg_camera *cam)
     return cam_status;
 }
 
+cam_status
+cam_cap_get_device_name(Wg_camera *cam, wg_char *device_name, wg_size size)
+{
+    CHECK_FOR_NULL_PARAM(cam);
+
+    strncpy(device_name, cam->cap.card, size);
+
+    return WG_SUCCESS;
+}
+
 /**
  * @brief Print capabilities of a webcam
  *

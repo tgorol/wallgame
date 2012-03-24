@@ -1,7 +1,12 @@
 #ifndef _CAM_CAP_H
 #define _CAM_CAP_H
 
+#define CAM_DEVICE_NAME_MAX  32
+
 WG_PUBLIC cam_status cam_cap_get(Wg_camera *cam);
+
+WG_PUBLIC cam_status
+cam_cap_get_device_name(Wg_camera *cam, wg_char *device_name, wg_size size);
 
 WG_PUBLIC cam_status cam_cap_print(Wg_camera *cam);
 
