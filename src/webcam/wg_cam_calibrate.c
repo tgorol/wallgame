@@ -274,6 +274,9 @@ callibration_start(Gui_progress_action action, void *user_data)
     case GUI_PROGRESS_BACK:
         stop_capture(cam);
         break;
+    case GUI_PROGRESS_NEXT:
+        stop_capture(cam);
+        break;
     default:
         break;
     }

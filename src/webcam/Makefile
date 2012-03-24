@@ -23,7 +23,8 @@ SOURCE=cam.c                  \
        gui_progress_dialog.c  \
        wg_cam_calibrate.c  \
        wg_plugin.c       \
-       gui_display.c
+       gui_display.c      \
+       wg_config.c
 
 
 APP_NAME=webcam
