@@ -131,6 +131,7 @@ void button_clicked_stop
     gtk_widget_set_sensitive(cam->start_capturing, TRUE);
     gtk_widget_set_sensitive(cam->resolution_combo, TRUE);
     gtk_widget_set_sensitive(cam->device_combo, TRUE);
+    gtk_widget_set_sensitive(cam->callibrate, TRUE);
     gtk_window_set_focus(GTK_WINDOW(cam->window), cam->start_capturing);
 }
 
@@ -217,6 +218,7 @@ void button_clicked_start
             gtk_widget_set_sensitive(widget, FALSE);
             gtk_widget_set_sensitive(cam->stop_capturing, TRUE);
             gtk_widget_set_sensitive(cam->resolution_combo, FALSE);
+            gtk_widget_set_sensitive(cam->callibrate, FALSE);
             gtk_widget_set_sensitive(cam->device_combo, FALSE);
             gtk_window_set_focus(GTK_WINDOW(cam->window), cam->stop_capturing);
         }else{
