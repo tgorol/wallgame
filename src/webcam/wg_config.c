@@ -110,13 +110,11 @@ wg_config_add_value(Wg_config *config, const wg_char *key, wg_char *value)
     CHECK_FOR_NULL_PARAM(value);
 
     if (get_value(config, key, &line) == WG_SUCCESS){
-        strncpy(line->text, value, CONFIG_MAX_LINE_SIZE);
+        snprintf(line->text, CONFIG_MAX_LINE_SIZE, "%s%s%s", 
+                key, CONFIG_DELIM, value);
     }else{
-        len = strlen(key);
-        strncpy(line_text, key, CONFIG_MAX_LINE_SIZE);
-        strncat(line_text, CONFIG_DELIM, CONFIG_MAX_LINE_SIZE - len);
-        ++len;
-        strncat(line_text, value, CONFIG_MAX_LINE_SIZE - len);
+        snprintf(line_text, CONFIG_MAX_LINE_SIZE, "%s%s%s", 
+                key, CONFIG_DELIM, value);
 
         line = create_line(line_text);
         list_add(&config->lines, &line->list);
@@ -219,7 +217,7 @@ read_file(Wg_config *config)
 
     CHECK_FOR_NULL_PARAM(config);
 
-    config_file = fopen(config->filename, "r");
+    config_file = fopen(config->filename, "a+");
     if (NULL == config_file){
         WG_PRINT("%s:%s\n", config->filename, strerror(errno));
         return WG_FAILURE;

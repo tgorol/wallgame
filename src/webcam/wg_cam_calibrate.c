@@ -41,6 +41,7 @@
 
 #define POINT_STROKE_SIZE 8
 #define LINE_STROKE_SIZE 2
+#define BUFFER_SIZE    64
 
 #define PREVIOUS_SETUP_FILENAME "prev.data"
 #define PREV_PANE               "pane"
@@ -59,6 +60,7 @@ typedef struct Callibration_data{
     wg_uint corner_count;
     Wg_point2d corners[SCREEN_CORNER_NUM];
     Previous_setup setup;
+    wg_uint is_config_leaded:1;
 }Callibration_data;
 
 typedef struct Setup_hist{
@@ -256,8 +258,9 @@ callibration_start(Gui_progress_action action, void *user_data)
             data->is_camera_initialized = WG_TRUE;
             sensor = WG_MALLOC(sizeof (*sensor));
             if (NULL != sensor){
-                cam->sensor = sensor;
+                gui_display_clean_lines(&cam->left_display);
 
+                cam->sensor = sensor;
 
                 device = gtk_combo_box_text_get_active_text(
                         GTK_COMBO_BOX_TEXT(cam->device_combo));
@@ -348,10 +351,9 @@ callibration_screen(Gui_progress_action action, void *user_data)
     wg_boolean exit_perm = WG_FALSE;
     Camera    *cam = NULL;
     Callibration_data *data = NULL;
-    Cd_pane pane;
+    Cd_pane pane_dimention;
     wg_status status = WG_FAILURE;
     GtkWidget *widget = NULL;
-    Cd_pane pane_dimention;
 
     data = (Callibration_data*)user_data;
 
@@ -363,6 +365,16 @@ callibration_screen(Gui_progress_action action, void *user_data)
             g_signal_connect(widget, "button-release-event", 
                     G_CALLBACK(screen_corner_release_mouse), data);
             data->corner_count = 0;
+
+            if (data->is_config_leaded == 1){
+                pane_dimention = data->setup.pane;
+                data->corners[0] = pane_dimention.v1;
+                data->corners[1] = pane_dimention.v2;
+                data->corners[2] = pane_dimention.v3;
+                data->corners[3] = pane_dimention.v4;
+                paint_pane(&cam->left_display, &pane_dimention);
+                data->corner_count = 4;
+            }
             break;
         case GUI_PROGRESS_NEXT:
             exit_perm = (data->corner_count == SCREEN_CORNER_NUM);
@@ -373,13 +385,13 @@ callibration_screen(Gui_progress_action action, void *user_data)
             g_signal_handlers_disconnect_by_func(widget,
                     G_CALLBACK(screen_corner_release_mouse), data);
 
-            pane.v1 = data->corners[0];
-            pane.v2 = data->corners[1];
-            pane.v3 = data->corners[2];
-            pane.v4 = data->corners[3];
-            pane.orientation = CD_PANE_RIGHT;
+            pane_dimention.v1 = data->corners[0];
+            pane_dimention.v2 = data->corners[1];
+            pane_dimention.v3 = data->corners[2];
+            pane_dimention.v4 = data->corners[3];
+            pane_dimention.orientation = CD_PANE_RIGHT;
 
-            status = cd_init(&pane, &cam->cd);
+            status = cd_init(&pane_dimention, &cam->cd);
             if (WG_SUCCESS == status){
                 exit_perm = WG_TRUE;
             }
@@ -495,10 +507,12 @@ gui_callibration_screen(Camera *cam)
     data->camera = cam;
     data->is_camera_initialized = WG_FALSE;
 
+    data->is_config_leaded = 1;
     status = load_previous_config(PREVIOUS_SETUP_FILENAME, 
             &data->setup);
     if (WG_FAILURE == status){
         WG_LOG("No previous configuration file\n");
+        data->is_config_leaded = 0;
     }
 
     gui_progress_dialog_set_exit_action(pd, callibration_exit);
@@ -719,12 +733,12 @@ create_point(const Wg_point2d* point, char *value, size_t num)
 WG_PRIVATE wg_status
 create_pane(const Cd_pane *pane, char *value, size_t num)
 {
-    char val[4][64];
+    char val[4][BUFFER_SIZE];
 
-    create_point(&pane->v1, val[0], 64);
-    create_point(&pane->v2, val[1], 64);
-    create_point(&pane->v3, val[2], 64);
-    create_point(&pane->v4, val[3], 64);
+    create_point(&pane->v1, val[0], BUFFER_SIZE);
+    create_point(&pane->v2, val[1], BUFFER_SIZE);
+    create_point(&pane->v3, val[2], BUFFER_SIZE);
+    create_point(&pane->v4, val[3], BUFFER_SIZE);
 
     snprintf(value, num, "%s %s %s %s %s", val[0], val[1], val[2], val[3],
         pane->orientation == CD_PANE_RIGHT ? "RIGHT" : "LEFT");
@@ -748,19 +762,10 @@ save_config(const wg_char *filename, const Previous_setup *setup)
 {
     wg_status status = WG_FAILURE;
     Wg_config config;
-    wg_char value[64];
-    FILE *f = NULL;
+    wg_char value[BUFFER_SIZE];
 
     CHECK_FOR_NULL_PARAM(filename);
     CHECK_FOR_NULL_PARAM(setup);
-
-    f = fopen(filename, "w"); 
-    if (NULL == f){
-        WG_LOG("Can not create %s file\n", filename);
-        return WG_FAILURE;
-    }
-
-    fclose(f);
 
     status = wg_config_init(filename, &config);
     if (WG_FAILURE == status){
