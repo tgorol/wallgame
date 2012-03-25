@@ -26,14 +26,23 @@
 
 #include "include/gui_display.h"
 
+/*! \defgroup gui_display widget to display custom images
+    \ingroup gui
+*/
+
+/*! @{ */
+
+/** 
+* @brief Describe a line displayed by gui_display
+*/
 typedef struct Gui_display_line{
-    List_head list;    
-    Wg_point2d p1;
-    Wg_point2d p2;
-    double r;
-    double g;
-    double b;
-    double size;
+    List_head list;    /*!< list of lines         */
+    Wg_point2d p1;     /*!< end of line           */
+    Wg_point2d p2;     /*!< end of line           */
+    double r;          /*!< red color component   */
+    double g;          /*!< green color component */
+    double b;          /*!< blue color component  */
+    double size;       /*!< size of line          */
 }Gui_display_line;
 
 WG_PRIVATE gboolean
@@ -45,6 +54,15 @@ refresh(Gui_display *display);
 WG_PRIVATE void
 update_image_cb(void *data);
 
+/** 
+* @brief Init display
+* 
+* @param widget   widget to assiociate with display
+* @param display  instance of gui_display to initialize
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
 gui_display_init(GtkWidget *widget, Gui_display *display)
 {
@@ -68,6 +86,28 @@ gui_display_init(GtkWidget *widget, Gui_display *display)
     return WG_SUCCESS;
 }
 
+/** 
+* @brief Release gui_display allocated resources
+* 
+* @param display gui_display instance
+*/
+void
+gui_display_cleanup(Gui_display *display)
+{
+    gui_display_clean_lines(display);
+
+    return;
+}
+
+/** 
+* @brief Get widget associated with gui_display
+* 
+* @param display gui_display instance
+* @param widget  memory to store widget
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
 gui_display_get_widget(Gui_display *display, GtkWidget **widget)
 {
@@ -79,14 +119,17 @@ gui_display_get_widget(Gui_display *display, GtkWidget **widget)
     return WG_SUCCESS;
 }
 
-void
-gui_display_cleanup(Gui_display *display)
-{
-    gui_display_clean_lines(display);
 
-    return;
-}
-
+/** 
+* @brief Get dimention
+* 
+* @param display gui_display instance
+* @param width   memory to store width
+* @param height  memory to store height
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
 gui_display_get_size(Gui_display *display, wg_uint *width, wg_uint *height)
 {
@@ -100,6 +143,14 @@ gui_display_get_size(Gui_display *display, wg_uint *width, wg_uint *height)
     return WG_SUCCESS;
 }
 
+/** 
+* @brief Clean all lines
+* 
+* @param display gui_display instance
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
 gui_display_clean_lines(Gui_display *display)
 {
@@ -118,6 +169,20 @@ gui_display_clean_lines(Gui_display *display)
     return WG_SUCCESS;
 }
 
+/** 
+* @brief Draw line
+* 
+* @param display gui_display instance
+* @param p1      end of line
+* @param p2      end of line
+* @param r       red color component
+* @param g       green color component
+* @param b       blue color component
+* @param size    width of the line
+* 
+* @retval
+* @todo return line instance for futher reference
+*/
 wg_status
 gui_display_draw_line(Gui_display *display, const Wg_point2d *p1, 
 const Wg_point2d *p2, double r, double g, double b, double size)
@@ -146,6 +211,15 @@ const Wg_point2d *p2, double r, double g, double b, double size)
     return WG_SUCCESS;
 }
 
+/** 
+* @brief Copy part of display
+* 
+* @param display gui_diaplay instance
+* @param rect    rectangle to copy
+* @param img
+* 
+* @return 
+*/
 wg_status
 gui_display_copy(Gui_display *display, Wg_rect *rect, Wg_image *img)
 {
@@ -154,6 +228,7 @@ gui_display_copy(Gui_display *display, Wg_rect *rect, Wg_image *img)
     Wg_image rect_image;
     wg_uint width  = 0;
     wg_uint height = 0;
+    cam_status status = CAM_FAILURE;
 
     gdk_threads_enter();
 
@@ -161,16 +236,33 @@ gui_display_copy(Gui_display *display, Wg_rect *rect, Wg_image *img)
     height = gdk_pixbuf_get_height(display->pixbuf);
     buffer = gdk_pixbuf_get_pixels(display->pixbuf); 
 
-    img_rgb_from_buffer(buffer, width, height, &image);
+    status = img_rgb_from_buffer(buffer, width, height, &image);
+    if (CAM_FAILURE == status){
+        return WG_FAILURE;
+    }
 
     gdk_threads_leave();
 
-    img_fill(rect->width, rect->height,
+    status = img_fill(rect->width, rect->height,
             RGB24_COMPONENT_NUM, IMG_RGB, &rect_image);
+    if (CAM_FAILURE == status){
+        img_cleanup(&image);
+        return WG_FAILURE;
+    }
 
-    img_get_subimage(&image, rect->x, rect->y, &rect_image);
+    status = img_get_subimage(&image, rect->x, rect->y, &rect_image);
+    if (CAM_FAILURE == status){
+        img_cleanup(&image);
+        img_cleanup(&rect_image);
+        return WG_FAILURE;
+    }
 
-    img_rgb_2_hsv_gtk(&rect_image, img);
+    status = img_rgb_2_hsv_gtk(&rect_image, img);
+    if (CAM_FAILURE == status){
+        img_cleanup(&image);
+        img_cleanup(&rect_image);
+        return WG_FAILURE;
+    }
 
     img_cleanup(&image);
     img_cleanup(&rect_image);
@@ -178,6 +270,17 @@ gui_display_copy(Gui_display *display, Wg_rect *rect, Wg_image *img)
     return WG_SUCCESS;
 }
 
+/** 
+* @brief Set background pixbuf
+* 
+* @param display gui_display imnstance
+* @param x      horizontal offset
+* @param y      vertical offset
+* @param pixbuf pixbuf instance
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
 gui_display_set_pixbuf(Gui_display *display, wg_uint x, wg_uint y, 
         GdkPixbuf *pixbuf){
@@ -320,3 +423,5 @@ update_image_cb(void *data)
 
     return;
 }
+
+/*! @} */

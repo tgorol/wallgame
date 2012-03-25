@@ -15,44 +15,70 @@
 
 #include "include/gui_progress_dialog.h"
 
+/*! \defgroup gui User interface
+ */
 
+/*! \defgroup gui_wizard_progress wizard screen list
+    \ingroup gui
+*/
+
+/*! @{ */
+
+/*! \brief Back button id */
 #define BACK_RESPONSE_ID 0
+
+/*! \brief Next button id */
 #define NEXT_RESPONSE_ID 1
+
+/*! \brief Next dialog id */
 #define NEXT_SCREEN      1
+
+/*! \brief Prievious dialog id */
 #define PREVIUOS_SCREEN -1
 
+/** 
+* @brief Dialogs
+*/
 struct Gui_progress_dialog_screen{
-    action_cb action;
-    void *user_data;
-    wg_char *text;
-    List_head list;
+    action_cb action;        /*!< action callback */
+    void *user_data;         /*!< user data       */
+    wg_char *text;           /*!< text to display */
+    List_head list;          /*!< list            */
 };
 
+/** 
+* @brief Progress dialogs
+*/
 struct Gui_progress_dialog{
-    List_head screens;
-    wg_uint active_index;
-    wg_uint size;
-    Gui_progress_dialog_screen **screens_array;
-    GtkTextBuffer *buffer;
-    GtkWidget *dialog;
-    exit_action_cb exit_action;
+    List_head screens;          /*!< dialog list                      */
+    wg_uint active_index;       /*!< displaying dialog id             */
+    wg_uint size;               /*!< number of displays               */ 
+    Gui_progress_dialog_screen **screens_array; /*!< dialogs in array */
+    GtkTextBuffer *buffer;      /*!< widget used to display text      */
+    GtkWidget *dialog;          /*!< dialog gtk instance              */
+    exit_action_cb exit_action; /*!< exit callback                    */
 };
 
-WG_STATIC void
+WG_PRIVATE void
 response(GtkDialog *dialog, gint response_id, gpointer user_data);
 
-WG_STATIC void
+WG_PRIVATE void
 show_screen(Gui_progress_dialog *pd, wg_int val);
 
-WG_STATIC wg_boolean
+WG_PRIVATE wg_boolean
 call_action(Gui_progress_dialog *pd, Gui_progress_action action_id);
 
-WG_STATIC wg_uint
+WG_PRIVATE wg_uint
 increment_screen_index(Gui_progress_dialog *pd, wg_int val);
 
-WG_STATIC wg_boolean
+WG_PRIVATE wg_boolean
 is_last_screen(Gui_progress_dialog *pd);
 
+/** 
+* @brief Create new progress dialogs.
+* 
+* @return insrance of new progress dialogs
+*/
 Gui_progress_dialog *
 gui_progress_dialog_new()
 {
@@ -72,6 +98,11 @@ gui_progress_dialog_new()
     return pd;
 }
 
+/** 
+* @brief Clean all resources alloctes by gui_progress_dialog_new()
+* 
+* @param pd instance of progress dialogs
+*/
 void
 gui_progress_dialog_cleanup(Gui_progress_dialog *pd)
 {
@@ -92,6 +123,15 @@ gui_progress_dialog_cleanup(Gui_progress_dialog *pd)
     return;
 }
 
+/** 
+* @brief Create new screen
+* 
+* @param action       action associated with screen
+* @param user_data    user data
+* @param text         text to display
+* 
+* @return dialog instance
+*/
 Gui_progress_dialog_screen *
 gui_progress_dialog_screen_new(action_cb action, void *user_data,
         const wg_char *text)
@@ -117,6 +157,11 @@ gui_progress_dialog_screen_new(action_cb action, void *user_data,
     return pds;
 }
 
+/** 
+* @brief Clean all resources allocated by gui_progress_dialog_screen_new()
+* 
+* @param pds dialog instance
+*/
 void
 gui_progress_dialog_screen_cleanup(Gui_progress_dialog_screen *pds)
 {
@@ -125,6 +170,12 @@ gui_progress_dialog_screen_cleanup(Gui_progress_dialog_screen *pds)
     return;
 }
 
+/** 
+* @brief Add new dialog to progress dialog
+* 
+* @param pd   progress dialogs instance
+* @param pds  dialog instance to add
+*/
 void
 gui_progress_dialog_add_screen(Gui_progress_dialog *pd,
         Gui_progress_dialog_screen *pds)
@@ -137,6 +188,14 @@ gui_progress_dialog_add_screen(Gui_progress_dialog *pd,
     return;
 }
 
+/** 
+* @brief Add exit callback
+*
+* Exit callback is called as last before closing dialog progress
+* 
+* @param pd      progress screen instance
+* @param action  exit action
+*/
 void
 gui_progress_dialog_set_exit_action(Gui_progress_dialog *pd,
         exit_action_cb action)
@@ -148,6 +207,11 @@ gui_progress_dialog_set_exit_action(Gui_progress_dialog *pd,
     return;
 }
 
+/** 
+* @brief Show progress dialogs
+* 
+* @param pd progress dialogs instance
+*/
 void
 gui_progress_dialog_show(Gui_progress_dialog *pd)
 {
@@ -201,13 +265,13 @@ gui_progress_dialog_show(Gui_progress_dialog *pd)
     return;
 }
 
-WG_STATIC wg_boolean
+WG_PRIVATE wg_boolean
 is_last_screen(Gui_progress_dialog *pd)
 {
     return pd->active_index >= pd->size;
 }
 
-WG_STATIC wg_uint
+WG_PRIVATE wg_uint
 increment_screen_index(Gui_progress_dialog *pd, wg_int val)
 {
     pd->active_index += val;
@@ -218,7 +282,7 @@ increment_screen_index(Gui_progress_dialog *pd, wg_int val)
     return pd->active_index;
 }
 
-WG_STATIC void
+WG_PRIVATE void
 show_screen(Gui_progress_dialog *pd, wg_int val)
 {
     GtkWidget *widget = NULL;
@@ -256,7 +320,7 @@ show_screen(Gui_progress_dialog *pd, wg_int val)
     return;
 }
 
-WG_STATIC wg_boolean
+WG_PRIVATE wg_boolean
 call_action(Gui_progress_dialog *pd, Gui_progress_action action_id)
 {
     wg_boolean flag = WG_TRUE;
@@ -274,7 +338,7 @@ call_action(Gui_progress_dialog *pd, Gui_progress_action action_id)
     return flag;
 }
 
-WG_STATIC void
+WG_PRIVATE void
 call_exit_action(Gui_progress_dialog *pd)
 {
     exit_action_cb action = NULL;
@@ -291,7 +355,7 @@ call_exit_action(Gui_progress_dialog *pd)
     return;
 }
 
-WG_STATIC void
+WG_PRIVATE void
 response(GtkDialog *dialog, gint response_id, gpointer user_data)
 {
     Gui_progress_dialog *pd = NULL;
@@ -329,3 +393,5 @@ response(GtkDialog *dialog, gint response_id, gpointer user_data)
 
     return;
 }
+
+/*! @} */

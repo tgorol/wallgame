@@ -10,17 +10,23 @@
 #include "include/gui_prim.h"
 #include "include/collision_detect.h"
 
+/*! \defgroup collision Collision detector
+*/
 
+/*! @{ */
+
+/** 
+* @brief Collistion detector states machine
+*/
 typedef enum CD_STATE{
-    CD_STATE_INVALID       = 0,
-    CD_STATE_INIT             ,
-    CD_STATE_FILL_PIPELINE    ,
-    CD_STATE_START            ,
-    CD_STATE_STOP             ,
-    CD_STATE_HIT_RECORDED
+    CD_STATE_INVALID       = 0,   /*!< invalid state              */
+    CD_STATE_INIT             ,   /*!< state after initialization */
+    CD_STATE_FILL_PIPELINE    ,   /*!< filling pipeline           */
+    CD_STATE_START            ,   /*!< detection started          */
+    CD_STATE_STOP             ,   /*!< detection stoped           */
+    CD_STATE_HIT_RECORDED         /*!< hit on surface detected    */
 }CD_STATE;
 
-#define WG_SIGN(val) ((val) > 0 ? 1 : -1)
 #define PANE_VERT_MARGIN_IN_PIX 30
 
 typedef enum PANE_VERTICLES{
@@ -31,30 +37,39 @@ typedef enum PANE_VERTICLES{
     PANE_VERTICLES_NUM
 }PANE_VERTICLES;
 
-WG_INLINE wg_boolean
+WG_PRIVATE wg_boolean
 is_valid_point(const Wg_point2d *point);
 
-WG_INLINE wg_boolean
+WG_PRIVATE wg_boolean
 is_hit_detected(const Cd_instance *pane, wg_uint *index);
 
-WG_STATIC wg_status
+WG_PRIVATE wg_status
 fix_pane_veticles(Cd_pane *pane);
 
-WG_STATIC wg_status
+WG_PRIVATE wg_status
 fill_bars(Cd_instance *pane);
 
-WG_STATIC wg_status
+WG_PRIVATE wg_status
 fill_horizontal_bar(const Wg_point2d *p0, const Wg_point2d *p1, Cd_bar *bar);
 
-WG_STATIC wg_status
+WG_PRIVATE wg_status
 fill_vertical_bar(const Wg_point2d *p0, const Wg_point2d *p1, Cd_bar *bar);
 
-WG_STATIC wg_boolean
+WG_PRIVATE wg_boolean
 is_hit_on_pane(Cd_instance *pane, const Wg_point2d *in_pos, 
         wg_float *x, wg_float *y);
 
+/** 
+* @brief Initialize collistion detector
+* 
+* @param pane_dimention  surface to detect events for
+* @param pane            cd instance
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
-cd_define_pane(const Cd_pane *pane_dimention, Cd_instance *pane)
+cd_init(const Cd_pane *pane_dimention, Cd_instance *pane)
 {
     wg_status status = WG_FAILURE;
 
@@ -78,6 +93,22 @@ cd_define_pane(const Cd_pane *pane_dimention, Cd_instance *pane)
     return status;
 }
 
+/** 
+* @brief Release resources allocated by cd_init()
+* 
+* @param pane cd instance
+*/
+void
+cd_cleanup(Cd_instance *pane)
+{
+    return;
+}
+
+/** 
+* @brief Reset collistion detector
+* 
+* @param pane cd instance
+*/
 void
 cd_reset_pane(Cd_instance *pane)
 {
@@ -86,9 +117,20 @@ cd_reset_pane(Cd_instance *pane)
     pane->position_index = 0;
     pane->state = CD_STATE_STOP;
 
+    memset(pane->position, '\0', sizeof (pane->position));
+
     return;
 }
 
+/** 
+* @brief Get hit callback
+*  
+* @param pane    cd instance
+* @param hit_cb  memory to store callback
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 cd_pane_hit_cb
 cd_get_hit_callback(Cd_instance *pane, cd_pane_hit_cb hit_cb)
 {
@@ -97,6 +139,14 @@ cd_get_hit_callback(Cd_instance *pane, cd_pane_hit_cb hit_cb)
     return pane->hit_cb;
 }
 
+/** 
+* @brief Set hit callback
+*
+* Hit callback is callback for each hit at the surface
+* 
+* @param pane   cd instance
+* @param hit_cb hit callback
+*/
 void
 cd_set_hit_callback(Cd_instance *pane, cd_pane_hit_cb hit_cb)
 {
@@ -107,6 +157,15 @@ cd_set_hit_callback(Cd_instance *pane, cd_pane_hit_cb hit_cb)
     return;
 }
 
+/** 
+* @brief Get surface
+*  
+* @param pane           cd instance
+* @param pane_dimention memory to store surface
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
 cd_get_pane(Cd_instance *pane, Cd_pane *pane_dimention)
 {
@@ -118,6 +177,15 @@ cd_get_pane(Cd_instance *pane, Cd_pane *pane_dimention)
     return WG_SUCCESS;
 }
 
+/** 
+* @brief Add new position of the object
+* 
+* @param pane   cd instance
+* @param point  new position
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
 cd_add_position(Cd_instance *pane, const Wg_point2d *point)
 {
@@ -179,13 +247,13 @@ cd_add_position(Cd_instance *pane, const Wg_point2d *point)
     return WG_SUCCESS;
 }
 
-WG_INLINE wg_boolean
+WG_PRIVATE wg_boolean
 is_valid_point(const Wg_point2d *point)
 {
-   return ((point->x != (wg_uint)-1) && (point->y != (wg_uint)-1)); 
+   return ((point->x != CD_INVALID_COORD) && (point->y != CD_INVALID_COORD)); 
 }
 
-WG_INLINE wg_boolean
+WG_PRIVATE wg_boolean
 is_hit_detected(const Cd_instance *pane, wg_uint *index)
 {
     wg_int i      = 0;
@@ -230,7 +298,7 @@ is_hit_detected(const Cd_instance *pane, wg_uint *index)
     return ret;
 }
 
-WG_STATIC int
+WG_PRIVATE int
 sort_verticles_left(const void *v1, const void *v2)
 {
     Wg_point2d **p1 = NULL;
@@ -242,7 +310,7 @@ sort_verticles_left(const void *v1, const void *v2)
     return (*p2)->x - (*p1)->x;
 }
 
-WG_STATIC int
+WG_PRIVATE int
 sort_verticles_right(const void *v1, const void *v2)
 {
     Wg_point2d **p1 = NULL;
@@ -254,7 +322,7 @@ sort_verticles_right(const void *v1, const void *v2)
     return (*p1)->x - (*p2)->x;
 }
 
-WG_STATIC void
+WG_PRIVATE void
 sort_pane_verticles(Wg_point2d **points, wg_uint num, 
         Cd_orientation orientation)
 {
@@ -266,7 +334,7 @@ sort_pane_verticles(Wg_point2d **points, wg_uint num,
     return;
 }
 
-WG_STATIC void
+WG_PRIVATE void
 swap_points(Wg_point2d **p1, Wg_point2d **p2)
 {
     Wg_point2d *tmp = NULL;
@@ -278,7 +346,7 @@ swap_points(Wg_point2d **p1, Wg_point2d **p2)
     return;
 }
 
-WG_STATIC wg_status
+WG_PRIVATE wg_status
 fix_pane_veticles(Cd_pane *pane_dimention)
 {
     Wg_point2d *screen[PANE_VERTICLES_NUM];
@@ -322,7 +390,7 @@ fix_pane_veticles(Cd_pane *pane_dimention)
     return WG_SUCCESS;
 }
 
-WG_STATIC wg_status
+WG_PRIVATE wg_status
 fill_vertical_bar(const Wg_point2d *p0, const Wg_point2d *p1, Cd_bar *bar)
 {
     CHECK_FOR_NULL_PARAM(p0);
@@ -344,7 +412,7 @@ fill_vertical_bar(const Wg_point2d *p0, const Wg_point2d *p1, Cd_bar *bar)
     return WG_SUCCESS;
 }
 
-WG_STATIC wg_status
+WG_PRIVATE wg_status
 fill_horizontal_bar(const Wg_point2d *p0, const Wg_point2d *p1, Cd_bar *bar)
 {
     wg_float dx = WG_FLOAT(0.0);
@@ -371,7 +439,7 @@ fill_horizontal_bar(const Wg_point2d *p0, const Wg_point2d *p1, Cd_bar *bar)
     return WG_SUCCESS;
 }
 
-WG_STATIC wg_status
+WG_PRIVATE wg_status
 fill_bars(Cd_instance *pane)
 {
     CHECK_FOR_NULL_PARAM(pane);
@@ -397,7 +465,7 @@ fill_bars(Cd_instance *pane)
 
 
 
-WG_STATIC wg_boolean
+WG_PRIVATE wg_boolean
 is_hit_on_pane(Cd_instance *pane, const Wg_point2d *in_pos, 
         wg_float *x, wg_float *y)
 {
@@ -439,3 +507,4 @@ is_hit_on_pane(Cd_instance *pane, const Wg_point2d *in_pos,
     return WG_TRUE;
 }
 
+/*! @} */

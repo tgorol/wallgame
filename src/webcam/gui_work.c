@@ -14,9 +14,23 @@
 
 #include "include/gui_work.h"
 
+/*! \defgroup gui_work User interface work queue.
+*
+*    Mostly used to update UI
+*    \ingroup gui
+*/
+
+/*! @{ */
+
 WG_PRIVATE Wg_wq wq;
 WG_PRIVATE wg_boolean init_flag = WG_FALSE;
 
+/** 
+* @brief Initialize gui_work
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
 gui_work_thread_init()
 {
@@ -29,6 +43,9 @@ gui_work_thread_init()
     return status;
 }
 
+/** 
+* @brief Release resources allocated by gui_work
+*/
 void
 gui_work_thread_cleanup()
 {
@@ -39,13 +56,30 @@ gui_work_thread_cleanup()
     return;
 }
 
-
+/** 
+* @brief Create new work
+*
+* Allocate work instance. The instance contain 'size' number of bytes for
+* using as user data. This cam be filled by user. When work is scheduled to 
+* execute pointer to this data is passed as user data parameter.
+* Retuned instance can be casted to user defined structure.
+* 
+* @param size     size of bytes to allocate for user use
+* @param work_cb  work function;
+* 
+* @return instance of new work. 
+*/
 void *
 gui_work_create(wg_size size, Wg_wq_cb work_cb)
 {
     return wg_wq_work_create(size, work_cb);
 }
 
+/** 
+* @brief Destroy work
+* 
+* @param data work instance retuned by gui_work_create()
+*/
 void
 gui_work_destroy(void *data)
 {
@@ -54,6 +88,11 @@ gui_work_destroy(void *data)
     return;
 }
 
+/** 
+* @brief Add work to queue
+* 
+* @param data instance retuned by gui_work_create()
+*/
 void
 gui_work_add(void *data)
 {
@@ -61,3 +100,5 @@ gui_work_add(void *data)
 
     return;
 }
+
+/*! @} */

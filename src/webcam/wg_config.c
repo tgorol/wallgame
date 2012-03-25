@@ -35,6 +35,7 @@ wg_config_init(const wg_char *filename, Wg_config *config)
 {
     size_t size = 0;
     wg_char *fname = NULL;
+    wg_status status = WG_FAILURE;
 
     CHECK_FOR_NULL_PARAM(filename);
     CHECK_FOR_NULL_PARAM(config);
@@ -52,9 +53,9 @@ wg_config_init(const wg_char *filename, Wg_config *config)
 
     list_init(&config->lines);
 
-    read_file(config);
+    status = read_file(config);
 
-    return WG_SUCCESS;
+    return status;
 }
 
 void
@@ -62,6 +63,8 @@ wg_config_cleanup(Wg_config *config)
 {
     Iterator itr;
     Config_line *line = NULL;
+
+    wg_config_sync(config);
 
     iterator_list_init(&itr, &config->lines, GET_OFFSET(Config_line, list));
 

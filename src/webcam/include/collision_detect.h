@@ -5,6 +5,8 @@
 #define CD_PIPELINE_SIZE 3
 #define HIT_COUNT_NUM 1
 
+#define CD_INVALID_COORD ((wg_uint)-1)
+
 typedef enum Cd_orientation {
     CD_PANE_LEFT    = 0    , 
     CD_PANE_RIGHT          ,
@@ -43,15 +45,18 @@ typedef struct Cd_instance{
     int             state;
     Wg_point2d      position[CD_POSITION_NUM];
     wg_uint         position_index;
-    Cd_bar top_bar;
-    Cd_bar bottom_bar;
-    Cd_bar left_bar;
-    Cd_bar right_bar;
+    Cd_bar          top_bar;
+    Cd_bar          bottom_bar;
+    Cd_bar          left_bar;
+    Cd_bar          right_bar;
 } Cd_instance;
 
 
 WG_PUBLIC wg_status
-cd_define_pane(const Cd_pane *pane_dimention, Cd_instance *pane);
+cd_init(const Cd_pane *pane_dimention, Cd_instance *pane);
+
+WG_PUBLIC void
+cd_cleanup(Cd_instance *pane);
 
 WG_PUBLIC void
 cd_reset_pane(Cd_instance *pane);

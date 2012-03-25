@@ -35,8 +35,6 @@
 #include "include/img.h"
 #include "include/img_draw.h"
 
-#include "include/gui_camera.h"
-
 #include "include/sensor.h"
 #include "include/gui_work.h"
 #include "include/gui_prim.h"

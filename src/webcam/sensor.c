@@ -27,36 +27,16 @@
 
 #include "include/ef_engine.h"
 
-/* Do not increase this value above 100 */
+/*! \defgroup sensor Object detector
+*/
+
+/*! @{ */
+
+/*! \brief Number of buffers
+ *
+ *  Do not increase this value above 100 
+ */
 #define BG_FRAMES_NUM 25
-
-#define TH_HIGH    240
-#define TH_LOW     100
-
-typedef struct Workq_data{
-    Wg_image img;
-    Sensor *sensor;
-}Workq_data;
-
-
-WG_PRIVATE wg_status
-collect_frames(Sensor *sensor, Wg_image *img, wg_uint num);
-
-WG_PRIVATE void
-release_frames(Wg_image *img, wg_int num);
-
-WG_PRIVATE wg_status
-convert_frames(Wg_image *img, wg_uint num);
-
-WG_PRIVATE wg_status
-get_background(Wg_image *img, wg_uint num, Wg_image *bg);
-
-WG_PRIVATE void
-get_average_pixel(Wg_image *img, wg_uint num,
-        wg_uint y, wg_uint x, gray_pixel *pixel);
-
-WG_PRIVATE wg_status
-setup(Sensor *sensor);
 
 WG_PRIVATE void
 call_user_callback(const Sensor *const sensor, Sensor_cb_type type, 
@@ -65,6 +45,14 @@ call_user_callback(const Sensor *const sensor, Sensor_cb_type type,
 WG_PRIVATE void
 call_user_xy_callback(const Sensor *const sensor, wg_uint x, wg_uint y);
 
+/** 
+* @brief Initialize sensor
+* 
+* @param sensor sensor instance
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
 sensor_init(Sensor *sensor)
 {
@@ -105,6 +93,33 @@ sensor_init(Sensor *sensor)
     return status;
 }
 
+/** 
+* @brief Release resource allocated by sensor
+* 
+* @param sensor sensor instance
+*/
+void
+sensor_cleanup(Sensor *sensor)
+{
+    /* stop plugin just in case */
+    sensor_stop(sensor);
+
+    pthread_cond_destroy(&sensor->finish);
+    pthread_mutex_destroy(&sensor->lock);
+
+    wg_wq_cleanup(&sensor->detection_wq);
+
+    return;
+}
+
+/** 
+* @brief Enable noise reduction
+* 
+* @param sensor sensor instance
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
 sensor_start_noise_reduction(Sensor *sensor)
 {
@@ -115,6 +130,14 @@ sensor_start_noise_reduction(Sensor *sensor)
     return WG_SUCCESS;
 }
 
+/** 
+* @brief Stop noise reduction
+* 
+* @param sensor sensor instance
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
 sensor_stop_noise_reduction(Sensor *sensor)
 {
@@ -125,6 +148,16 @@ sensor_stop_noise_reduction(Sensor *sensor)
     return WG_SUCCESS;
 }
 
+/** 
+* @brief Enable/Disable noise reduction
+*
+* If state == WG_TRUE enable noise reduction
+* 
+* @param sensor sensor instance
+* @param state  noise reduction state.
+* 
+* @return 
+*/
 wg_status
 sensor_noise_reduction_set_state(Sensor *sensor, wg_boolean state)
 {
@@ -137,6 +170,14 @@ sensor_noise_reduction_set_state(Sensor *sensor, wg_boolean state)
     return WG_SUCCESS;
 }
 
+/** 
+* @brief Get noise reduction state
+* 
+* @param sensor sensor instance
+* 
+* @retval WG_TRUE enabled
+* @retval WG_TRUE disabled
+*/
 wg_boolean
 sensor_get_noise_reduction_state(Sensor *sensor)
 {
@@ -149,6 +190,16 @@ sensor_get_noise_reduction_state(Sensor *sensor)
     return flag;
 }
 
+/** 
+* @brief Get color range for object detection
+* 
+* @param sensor  sensor instance
+* @param top     top color
+* @param bottom  bottom color
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
 sensor_get_color_range(const Sensor *sensor, Hsv *top, Hsv *bottom)
 {
@@ -162,6 +213,15 @@ sensor_get_color_range(const Sensor *sensor, Hsv *top, Hsv *bottom)
     return WG_SUCCESS;
 }
 
+/** 
+* @brief Add color for object detection
+* 
+* @param sensor sensor instance
+* @param color  color value
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
 sensor_add_color(Sensor *sensor, const Hsv *color)
 {
@@ -201,20 +261,17 @@ sensor_add_color(Sensor *sensor, const Hsv *color)
     return WG_SUCCESS;
 }
 
-void
-sensor_cleanup(Sensor *sensor)
-{
-    /* stop plugin just in case */
-    sensor_stop(sensor);
 
-    pthread_cond_destroy(&sensor->finish);
-    pthread_mutex_destroy(&sensor->lock);
-
-    wg_wq_cleanup(&sensor->detection_wq);
-
-    return;
-}
-
+/** 
+* @brief Start sensor
+*
+* This function must be called from a seperate thread context.
+* 
+* @param sensor sensor instance
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
 sensor_start(Sensor *sensor)
 {
@@ -226,8 +283,6 @@ sensor_start(Sensor *sensor)
     Wg_image filtered_image;
     Wg_image tmp_image;
     Wg_image bgrx_image;
-    Img_draw ctx;
-    rgb24_pixel color;
     Hsv top;
     Hsv bottom;
     Wg_cam_decompressor decomp;
@@ -240,10 +295,6 @@ sensor_start(Sensor *sensor)
     wg_uint v = 0;
 
     ef_init();
-
-    color[0] = 0;
-    color[1] = 0;
-    color[2] = 255;
 
     status.cam = cam_open(&sensor->camera, 0, ENABLE_DECOMPRESSOR);
     if (CAM_SUCCESS != status.cam){
@@ -262,15 +313,6 @@ sensor_start(Sensor *sensor)
     }
 
     call_user_callback(sensor, CB_SETUP_START, NULL);
-
-#if 0
-    status.wg = setup(sensor);
-    if (WG_SUCCESS != status.wg){
-        cam_close(&sensor->camera);
-        call_user_callback(sensor, CB_SETUP_ERROR, NULL);
-        return WG_FAILURE;
-    }
-#endif
 
     call_user_callback(sensor, CB_SETUP_STOP, NULL);
 
@@ -344,10 +386,6 @@ sensor_start(Sensor *sensor)
             call_user_callback(sensor, CB_IMG_ACC, NULL);
 #endif  /* G_CENTER */
            
-            img_draw_get_context(image.type, &ctx);
-            img_draw_cross(&ctx, &image, y, x, &color);
-            img_draw_cleanup_context(&ctx);
-
             call_user_callback(sensor, CB_IMG, &image);
 
             call_user_xy_callback(sensor, x, y);
@@ -380,6 +418,14 @@ sensor_start(Sensor *sensor)
     return WG_SUCCESS;
 }
 
+/** 
+* @brief Stop sensor
+* 
+* @param sensor sensor instance
+* 
+* @retval WG_SUCCESS
+* @retval WG_FALSE
+*/
 wg_status
 sensor_stop(Sensor *sensor)
 {
@@ -405,6 +451,16 @@ sensor_stop(Sensor *sensor)
     return WG_SUCCESS;
 }
 
+/** 
+* @brief Set default callback
+* 
+* @param sensor    sensor instance
+* @param cb        callback function
+* @param user_data user defined data
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
 sensor_set_default_cb(Sensor *sensor, Sensor_def_cb cb, void *user_data)
 {
@@ -420,6 +476,17 @@ sensor_set_default_cb(Sensor *sensor, Sensor_def_cb cb, void *user_data)
     return WG_SUCCESS;
 }
 
+/** 
+* @brief Set specific callback
+* 
+* @param sensor    sensor instance
+* @param type      callback type
+* @param cb        callback function
+* @param user_data user defined data
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
 sensor_set_cb(Sensor *sensor, Sensor_cb_type type, 
         Sensor_def_cb cb, void *user_data)
@@ -432,6 +499,16 @@ sensor_set_cb(Sensor *sensor, Sensor_cb_type type,
     return WG_SUCCESS;
 }
 
+/** 
+* @brief Get specific callback
+* 
+* @param sensor sensor instance
+* @param type   callback type
+* @param cb     callback function
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
 sensor_get_cb(Sensor *sensor, Sensor_cb_type type, Sensor_def_cb *cb)
 {
@@ -443,35 +520,6 @@ sensor_get_cb(Sensor *sensor, Sensor_cb_type type, Sensor_def_cb *cb)
     return WG_SUCCESS;
 }
 
-WG_PRIVATE wg_status
-setup(Sensor *sensor)
-{
-    Wg_image bg[BG_FRAMES_NUM];
-    wg_status status = WG_FAILURE;
-
-    CHECK_FOR_NULL_PARAM(sensor);
-
-    status = collect_frames(sensor, bg, ELEMNUM(bg));
-    if (WG_SUCCESS != status){
-        return WG_FAILURE;
-    }
-
-    status = convert_frames(bg, ELEMNUM(bg));
-    if (WG_SUCCESS != status){
-        release_frames(bg, ELEMNUM(bg));
-        return WG_FAILURE;
-    }
-
-    status = get_background(bg, ELEMNUM(bg), &sensor->background);
-    if (WG_SUCCESS != status){
-        release_frames(bg, ELEMNUM(bg));
-        return WG_FAILURE;
-    }
-
-    release_frames(bg, ELEMNUM(bg));
-
-    return WG_SUCCESS;
-}
 
 WG_PRIVATE void
 call_user_xy_callback(const Sensor *const sensor, wg_uint x, wg_uint y)
@@ -490,18 +538,6 @@ call_user_xy_callback(const Sensor *const sensor, wg_uint x, wg_uint y)
     return;
 }
 
-WG_PRIVATE void
-release_frames(Wg_image *img, wg_int num)
-{
-    wg_int i = 0;
-
-    for (i = 0; i < num; ++i){
-        img_cleanup(&img[i]);
-        memset(&img[i], '\0', sizeof (Wg_image));
-    }
-
-    return;
-}
 
 WG_PRIVATE void
 call_user_callback(const Sensor *const sensor, Sensor_cb_type type, 
@@ -519,117 +555,4 @@ call_user_callback(const Sensor *const sensor, Sensor_cb_type type,
     return;
 }
 
-WG_PRIVATE void
-get_average_pixel(Wg_image *img, wg_uint num,
-        wg_uint y, wg_uint x, gray_pixel *pixel)
-{
-    wg_uint i = 0;
-    wg_uint sum = 0;
-    gray_pixel *img_pix = 0;
-
-    for (i = 0 ; i < num; ++i){
-        img_get_pixel(&img[i], y, x, (wg_uchar**) &img_pix);
-        sum += *img_pix;
-    }
-
-    *pixel = sum / num;
-
-    return;
-}
-
-
-WG_PRIVATE wg_status
-get_background(Wg_image *img, wg_uint num, Wg_image *bg)
-{
-    Wg_image bg_img;
-    cam_status status = CAM_FAILURE;
-    wg_uint x = 0;
-    wg_uint y = 0;
-    gray_pixel *bg_pix = 0;
-
-    status = img_fill(img[0].width, img[0].height, img[0].components_per_pixel,
-            img[0].type, &bg_img);
-    if (CAM_SUCCESS != status){
-        return WG_FAILURE;
-    }
-
-    for (x = 0; x < bg_img.width; ++x){
-        for (y = 0; y < bg_img.height; ++y){
-            img_get_pixel(&bg_img, y, x, (wg_uchar **)&bg_pix);
-            get_average_pixel(img, num, y, x, bg_pix);
-        }
-    }
-
-    *bg = bg_img;
-
-    return WG_SUCCESS;
-}
-
-WG_PRIVATE wg_status
-convert_frames(Wg_image *img, wg_uint num)
-{
-    Wg_image *local_img = NULL;
-    wg_uint i = 0;
-    cam_status status = WG_FAILURE;
-    wg_size size = 0;
-
-    size = num * sizeof (Wg_image);
-    local_img = WG_ALLOCA(size);
-    memset(local_img, '\0', size);
-
-    /* convert images to grayscale pixel format*/
-    for (i = 0; i < num ; ++i){
-        status = img_rgb_2_grayscale(&img[i], &local_img[i]);
-        if (CAM_SUCCESS != status){
-            release_frames(local_img, i);
-            return WG_FAILURE;
-        }
-    }
-
-    /* copy converted images */
-    for (i = 0; i < num; ++i){
-        img_cleanup(&img[i]);
-        img[i] = local_img[i];
-    }
-
-    return WG_SUCCESS;
-}
-
-WG_PRIVATE wg_status
-collect_frames(Sensor *sensor, Wg_image *img, wg_uint num)
-{
-    cam_status status = CAM_FAILURE;
-    Wg_cam_decompressor decompressor;
-    Wg_frame frame;
-    wg_uint i = 0;
-
-    CHECK_FOR_NULL_PARAM(sensor);
-    CHECK_FOR_NULL_PARAM(img);
-
-    memset(img, '\0', num * sizeof (Wg_image));
-
-    cam_frame_init(&frame);
-
-    cam_decompressor(&sensor->camera, &decompressor);
-
-    for (i = 0; i < num; ++i){
-        status = cam_read(&sensor->camera, &frame);
-        if (CAM_SUCCESS != status){
-            release_frames(img, i);
-            return WG_FAILURE;
-        }
-        status = invoke_decompressor(&decompressor, 
-                frame.start, frame.size, 
-                frame.width, frame.height, &img[i]);
-        if (CAM_SUCCESS != status){
-            cam_discard_frame(&sensor->camera, &frame);
-            release_frames(img, i);
-            return WG_FAILURE;
-        }
-
-        cam_discard_frame(&sensor->camera, &frame);
-    }
-
-    return WG_SUCCESS;
-}
-
+/*! @} */

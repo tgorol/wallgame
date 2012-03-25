@@ -189,6 +189,7 @@
 #define STRI(s) #s
 #define STR(s) STRI(s)
 
+#define WG_SIGN(val) ((val) > 0 ? 1 : -1)
 
 #define ELEMNUM(array)                                    \
     (sizeof (array) / sizeof (array[0]))

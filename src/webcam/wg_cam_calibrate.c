@@ -28,6 +28,8 @@
 #include "include/wg_cam_callibrate.h"
 #include "include/gui_display.h"
 
+#include "include/wg_config.h"
+
 #define SCREEN_CORNER_NUM   4
 #define COLOR_PANE_R   1.0
 #define COLOR_PANE_G   0.0
@@ -40,11 +42,23 @@
 #define POINT_STROKE_SIZE 8
 #define LINE_STROKE_SIZE 2
 
+#define PREVIOUS_SETUP_FILENAME "prev.data"
+#define PREV_PANE               "pane"
+#define PREV_COLOR_TOP          "color_top"
+#define PREV_COLOR_BOTTOM       "color_bottom"
+
+typedef struct Previous_setup{
+    Hsv bottom;
+    Hsv top;
+    Cd_pane pane;
+}Previous_setup;
+
 typedef struct Callibration_data{
     Camera *camera;
     wg_boolean is_camera_initialized;
     wg_uint corner_count;
     Wg_point2d corners[SCREEN_CORNER_NUM];
+    Previous_setup setup;
 }Callibration_data;
 
 typedef struct Setup_hist{
@@ -64,6 +78,17 @@ callibration_color(Gui_progress_action action, void *user_data);
 WG_PRIVATE wg_boolean
 callibration_finish(Gui_progress_action action, void *user_data);
 
+WG_PRIVATE wg_status
+parse_color(char *value, Hsv *color);
+
+WG_PRIVATE wg_status
+parse_pane(char *value, Cd_pane *pane);
+
+WG_PRIVATE wg_status
+load_previous_config(const wg_char *filename, Previous_setup *setup);
+
+WG_PRIVATE wg_status
+save_config(const wg_char *filename, const Previous_setup *setup);
 
 WG_PRIVATE void
 setup_hist(void *data)
@@ -275,7 +300,9 @@ callibration_start(Gui_progress_action action, void *user_data)
         stop_capture(cam);
         break;
     case GUI_PROGRESS_NEXT:
+#if 0
         stop_capture(cam);
+#endif
         break;
     default:
         break;
@@ -352,13 +379,15 @@ callibration_screen(Gui_progress_action action, void *user_data)
             pane.v4 = data->corners[3];
             pane.orientation = CD_PANE_RIGHT;
 
-            status = cd_define_pane(&pane, &cam->cd);
+            status = cd_init(&pane, &cam->cd);
             if (WG_SUCCESS == status){
                 exit_perm = WG_TRUE;
             }
 
             cd_get_pane(&cam->cd, &pane_dimention);
             paint_pane(&cam->left_display, &pane_dimention);
+
+            data->setup.pane = pane_dimention;
 
             break;
         default:
@@ -399,6 +428,11 @@ callibration_color(Gui_progress_action action, void *user_data)
             g_signal_handlers_disconnect_by_func(widget,
                     G_CALLBACK(released_mouse), cam);
             break;
+        case GUI_PROGRESS_NEXT:
+            sensor_get_color_range(cam->sensor,
+                    &data->setup.top, &data->setup.bottom);
+
+            break;
         default:
             break;
     }
@@ -415,10 +449,12 @@ callibration_finish(Gui_progress_action action, void *user_data)
     cam = data->camera;
 
     switch (action){
-        case GUI_PROGRESS_LEAVE:
+        case GUI_PROGRESS_NEXT:
             sensor_get_color_range(cam->sensor, &cam->top, &cam->bottom);
 
             gtk_widget_set_sensitive(cam->start_capturing, TRUE);
+
+            save_config(PREVIOUS_SETUP_FILENAME, &data->setup);
             break;
         default:
             break;
@@ -449,6 +485,7 @@ gui_callibration_screen(Camera *cam)
 {
     Gui_progress_dialog *pd = NULL;
     Callibration_data *data = NULL;
+    wg_status status = WG_FAILURE;
 
     CHECK_FOR_NULL_PARAM(cam);
 
@@ -457,6 +494,12 @@ gui_callibration_screen(Camera *cam)
 
     data->camera = cam;
     data->is_camera_initialized = WG_FALSE;
+
+    status = load_previous_config(PREVIOUS_SETUP_FILENAME, 
+            &data->setup);
+    if (WG_FAILURE == status){
+        WG_LOG("No previous configuration file\n");
+    }
 
     gui_progress_dialog_set_exit_action(pd, callibration_exit);
 
@@ -483,4 +526,257 @@ gui_callibration_screen(Camera *cam)
             );
 
     gui_progress_dialog_show(pd);
+}
+
+WG_PRIVATE wg_status
+load_previous_config(const wg_char *filename, Previous_setup *setup)
+{
+    wg_status status = WG_FAILURE;
+    Wg_config config;
+    wg_char value[64];
+
+    CHECK_FOR_NULL_PARAM(filename);
+    CHECK_FOR_NULL_PARAM(setup);
+
+    status = wg_config_init(filename, &config);
+    if (WG_FAILURE == status){
+        WG_LOG("No previous configuration file\n");
+        return WG_FAILURE;
+    }
+
+    status = wg_config_get_value(&config, PREV_COLOR_TOP, value, 
+            sizeof (value));
+    if (WG_FAILURE == status){
+        WG_LOG("Key %s does not exists\n", PREV_COLOR_TOP);
+        wg_config_cleanup(&config);
+        return WG_FAILURE;
+    }
+
+    status = parse_color(value, &setup->top);
+    if (WG_FAILURE == status){
+        WG_LOG("Key %s parsing error\n", PREV_COLOR_TOP);
+        wg_config_cleanup(&config);
+        return WG_FAILURE;
+    }
+
+    status = wg_config_get_value(&config, PREV_COLOR_BOTTOM, value, 
+            sizeof (value));
+    if (WG_FAILURE == status){
+        WG_LOG("Key %s does not exists\n", PREV_COLOR_BOTTOM);
+        wg_config_cleanup(&config);
+        return WG_FAILURE;
+    }
+
+    status = parse_color(value, &setup->bottom);
+    if (WG_FAILURE == status){
+        WG_LOG("Key %s parsing error\n", PREV_COLOR_BOTTOM);
+        wg_config_cleanup(&config);
+        return WG_FAILURE;
+    }
+
+    status = wg_config_get_value(&config, PREV_PANE, value, 
+            sizeof (value));
+    if (WG_FAILURE == status){
+        WG_LOG("Key %s does not exists\n", PREV_PANE);
+        wg_config_cleanup(&config);
+        return WG_FAILURE;
+    }
+
+    status = parse_pane(value, &setup->pane);
+    if (WG_FAILURE == status){
+        WG_LOG("Key %s parsing error\n", PREV_PANE);
+        wg_config_cleanup(&config);
+        return WG_FAILURE;
+    }
+
+    wg_config_cleanup(&config);
+
+    return WG_SUCCESS;
+}
+
+WG_PRIVATE wg_status
+get_point(char *value, Wg_point2d *point)
+{
+    wg_uint x = 0;
+    wg_uint y = 0;
+    char *tok = NULL;
+
+    CHECK_FOR_NULL_PARAM(value);
+    CHECK_FOR_NULL_PARAM(point);
+
+    tok = strtok(value, " ");
+    if (NULL == tok){
+        return WG_FAILURE;
+    }
+    x = atoi(tok); 
+
+    tok = strtok(NULL, " ");
+    if (NULL == tok){
+        return WG_FAILURE;
+    }
+    y = atoi(tok); 
+
+    wg_point2d_new(x, y, point);
+
+    return WG_SUCCESS;
+}
+
+wg_status
+get_orientation(char *value, Cd_orientation *orientation)
+{
+    char *tok = NULL;
+
+    CHECK_FOR_NULL_PARAM(value);
+    CHECK_FOR_NULL_PARAM(orientation);
+
+    tok = strtok(value, " ");
+    if (NULL == tok){
+        return WG_FAILURE;
+    }
+
+    *orientation =
+        (strcmp(tok, "LEFT") == 0) ? CD_PANE_LEFT : CD_PANE_RIGHT;
+
+    return WG_SUCCESS;
+}
+
+WG_PRIVATE wg_status
+parse_pane(char *value, Cd_pane *pane)
+{
+    CHECK_FOR_NULL_PARAM(value);
+    CHECK_FOR_NULL_PARAM(pane);
+
+    if (get_point(value, &pane->v1) == WG_FAILURE){
+        return WG_FAILURE;
+    }
+    if (get_point(NULL, &pane->v2) == WG_FAILURE){
+        return WG_FAILURE;
+    }
+    if (get_point(NULL, &pane->v3) == WG_FAILURE){
+        return WG_FAILURE;
+    }
+    if (get_point(NULL, &pane->v4) == WG_FAILURE){
+        return WG_FAILURE;
+    }
+
+    if (get_orientation(NULL, &pane->orientation) == WG_FAILURE){
+        return WG_FAILURE;
+    }
+
+    return WG_SUCCESS;
+}
+
+WG_PRIVATE wg_status
+get_color_component(char *value, wg_double *component)
+{
+    char *tok = NULL;
+
+    CHECK_FOR_NULL_PARAM(value);
+    CHECK_FOR_NULL_PARAM(component);
+
+    tok = strtok(value, " ");
+    if (NULL == tok){
+        return WG_FAILURE;
+    }
+
+    *component = atof(tok); 
+
+    return WG_SUCCESS;
+}
+
+WG_PRIVATE wg_status
+parse_color(char *value, Hsv *color)
+{
+    CHECK_FOR_NULL_PARAM(value);
+    CHECK_FOR_NULL_PARAM(color);
+
+    if (get_color_component(value, &color->hue) == WG_FAILURE){
+        return WG_FAILURE;
+    }
+
+    if (get_color_component(NULL, &color->sat) == WG_FAILURE){
+        return WG_FAILURE;
+    }
+
+    if (get_color_component(NULL, &color->val) == WG_FAILURE){
+        return WG_FAILURE;
+    }
+
+    return WG_SUCCESS;
+}
+
+WG_PRIVATE wg_status
+create_point(const Wg_point2d* point, char *value, size_t num)
+{
+    CHECK_FOR_NULL_PARAM(point);
+    CHECK_FOR_NULL_PARAM(value);
+
+    snprintf(value, num, "%u %u", point->x, point->y);
+
+    return WG_SUCCESS;
+}
+
+WG_PRIVATE wg_status
+create_pane(const Cd_pane *pane, char *value, size_t num)
+{
+    char val[4][64];
+
+    create_point(&pane->v1, val[0], 64);
+    create_point(&pane->v2, val[1], 64);
+    create_point(&pane->v3, val[2], 64);
+    create_point(&pane->v4, val[3], 64);
+
+    snprintf(value, num, "%s %s %s %s %s", val[0], val[1], val[2], val[3],
+        pane->orientation == CD_PANE_RIGHT ? "RIGHT" : "LEFT");
+
+    return WG_SUCCESS;
+}
+
+WG_PRIVATE wg_status
+create_color(const Hsv *color, char *value, size_t num)
+{
+    CHECK_FOR_NULL_PARAM(color);
+    CHECK_FOR_NULL_PARAM(value);
+
+    snprintf(value, num, "%lf %lf %lf", color->hue, color->sat, color->val);
+
+    return WG_SUCCESS;
+}
+
+WG_PRIVATE wg_status
+save_config(const wg_char *filename, const Previous_setup *setup)
+{
+    wg_status status = WG_FAILURE;
+    Wg_config config;
+    wg_char value[64];
+    FILE *f = NULL;
+
+    CHECK_FOR_NULL_PARAM(filename);
+    CHECK_FOR_NULL_PARAM(setup);
+
+    f = fopen(filename, "w"); 
+    if (NULL == f){
+        WG_LOG("Can not create %s file\n", filename);
+        return WG_FAILURE;
+    }
+
+    fclose(f);
+
+    status = wg_config_init(filename, &config);
+    if (WG_FAILURE == status){
+        return WG_FAILURE;
+    }
+   
+    create_color(&setup->top, value, sizeof (value));
+    wg_config_add_value(&config, PREV_COLOR_TOP, value);
+
+    create_color(&setup->bottom, value, sizeof (value));
+    wg_config_add_value(&config, PREV_COLOR_BOTTOM, value);
+
+    create_pane(&setup->pane, value, sizeof (value));
+    wg_config_add_value(&config, PREV_PANE, value);
+
+    wg_config_cleanup(&config);
+
+    return WG_SUCCESS;
 }

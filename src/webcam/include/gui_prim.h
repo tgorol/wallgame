@@ -1,16 +1,22 @@
 #ifndef _GUI_PRIM_H
 #define _GUI_PRIM_H
 
+/** 
+* @brief Rectancke
+*/
 typedef struct Wg_rect{
-    wg_int x;
-    wg_int y;
-    wg_uint width;
-    wg_uint height;
+    wg_int x;       /*!< x origin */
+    wg_int y;       /*!< y orogin */
+    wg_uint width;  /*!< width    */
+    wg_uint height; /*!< height   */
 }Wg_rect;
 
+/** 
+* @brief Point in 2D pane
+*/
 typedef struct Wg_point2d{
-    wg_int x;
-    wg_int y;
+    wg_int x;       /*!< x coordinate */
+    wg_int y;       /*!< y coordinate */
 }Wg_point2d;
 
 WG_PUBLIC void
