@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <unistd.h>
 #include <time.h>
 #include <string.h>
@@ -6,38 +7,55 @@
 #include <wg.h>
 #include <wgtypes.h>
 #include <wgmacros.h>
+#include <wg_trans.h>
 
 #include <wg_msg.h>
 #include <wgp.h>
 
-#define LOOP_NUM 1000
+#define LOOP_NUM 10000
 
 WG_PRIVATE void get_random_coordinate(float *coord);
 
-wg_status
-init(Wgp_info *info){
-     strncpy(info->name, "dummy plugin", MAX_PLUGIN_NAME_SIZE);
-     info->version = 1L;
-     strncpy(info->description, "Dummy plugin description", MAX_PLUGIN_DESC_SIZE);
-
-     return WG_SUCCESS;
-}
-
-wg_int
-run(void *gh, Msg_handler handler) 
+int
+main(int argc, char *argv[])
 {
-    Wg_message msg;
+    wg_status status = WG_FAILURE;
+    Transport trans;
+    char msg[129];
+    float x;
+    float y;
+
     int i = 0;
 
-    msg.type = MSG_XY;
+    printf("Dummy plugin\n");
+
+    if (argc == 1){
+        printf("Error - wrong command line\n");
+        return EXIT_FAILURE;
+    }
+
+    printf("Connecting to socket : %s\n", argv[1]);
+
+    status = trans_unix_new(&trans, argv[1]);
+    if (WG_SUCCESS != status){
+        printf("Error - couldn't connect to socket\n");
+        return EXIT_FAILURE;
+    }
 
     srand(time(NULL));
 
     for (i = 0; i < LOOP_NUM; ++i){
-        get_random_coordinate(&msg.value.point.x);
-        get_random_coordinate(&msg.value.point.y);
-        handler(gh, &msg);
+        trans_unix_connect(&trans);
+        get_random_coordinate(&x);
+        get_random_coordinate(&y);
+
+        sprintf(msg, "%d %d\n", (int)x, (int)y);
+
+        trans_unix_send(&trans, (wg_uchar*)msg, strlen(msg));
+        trans_unix_disconnect(&trans);
     }
+
+    trans_unix_close(&trans);
 
     return 0;
 }

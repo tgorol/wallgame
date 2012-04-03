@@ -16,6 +16,7 @@ INCLUDE+= /opt/include/               \
           $(ROOT_DIR)/src/include/    
 
 LIB+= /opt/lib/      \
+      $(ROOT_DIR)/src/build
 		  
 
 LIBLIST+= ini      \
@@ -35,13 +36,13 @@ else
 endif
 
 ifneq "$(strip $(LIB))" ""
-	LIB_PATH=$(foreach lib, $(LIB), -L$(lib))
+	LIB_PATH+=$(foreach lib, $(LIB), -L$(lib))
 else
 	LIB_PATH=""
 endif
 
 ifneq "$(strip $(LIBLIST))" ""
-	LIB_LIST=$(foreach lib, $(LIBLIST), -l$(subst lib,,$(basename $(lib))))
+	LIB_LIST+=$(foreach lib, $(LIBLIST), -l$(subst lib,,$(basename $(lib))))
 else
 	LIB_LIST=""
 endif
