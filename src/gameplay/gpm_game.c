@@ -45,6 +45,8 @@ typedef struct Game{
     WorkQ msg_queue;      /*!< message queue                   */
     Wg_slab  msg_slab;    /*!< message slab                    */
     Wgp_plugin plugin;    /*!< game plugin                     */
+
+    pid_t plugin_pid;
 }Game;
 
 
@@ -103,7 +105,8 @@ gpm_game_init(void)
  * @retval WG_FAILURE
  */
 wg_status
-gpm_game_run(wg_char *argv[], wg_char *address, const wg_char *plugin_name)
+gpm_game_run(wg_char *argv[], const wg_char *address,
+        const wg_char *plugin_name)
 {
     pid_t game_pid = 0;
     wg_status status = WG_FAILURE;

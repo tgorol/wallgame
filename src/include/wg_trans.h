@@ -11,7 +11,7 @@ typedef struct Transport{
 }Transport;
 
 WG_PUBLIC wg_status
-trans_unix_new(Transport *trans, wg_char *address);
+trans_unix_new(Transport *trans, const wg_char *address);
 
 wg_status
 trans_unix_connect(Transport *trans);

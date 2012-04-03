@@ -16,6 +16,9 @@
 #include "include/gpm_ini.h"
 #include "include/gpm_game.h"
 
+WG_PRIVATE wg_status
+create_args(const wg_char* plug_path, const wg_char *pipe, 
+        char ***argv);
 
 wg_status 
 cb_exit(wg_int argc, wg_char *args[], void *private_data)
@@ -65,10 +68,11 @@ cb_start(wg_int argc, wg_char *args[], void *private_data)
     const Config_field *path = NULL;
     const Config_field *pipe = NULL;
     const Config_field *plugin = NULL;
-    wg_char *full_path = NULL;
+    const wg_char *pipe_name = NULL;
+    const wg_char *path_name = NULL;
     wg_status status = WG_FAILURE;
-    wg_char **argv = NULL;
-    List_head argv_list;
+    wg_char **argv_app = NULL;
+    wg_char **argv_plugin = NULL;
 
     if (argc != 2){
         WG_LOG("No argument. Pass id of the game to run\n");
@@ -96,7 +100,6 @@ cb_start(wg_int argc, wg_char *args[], void *private_data)
         return WG_FAILURE;
     }
 
-
     /* get game path             */
     status = gpm_ini_get_field_by_id(game, GAME_PATH, &path);
     if (WG_FAILURE == status){
@@ -118,39 +121,25 @@ cb_start(wg_int argc, wg_char *args[], void *private_data)
         return WG_FAILURE;
     }
 
-    /* substitute %p with pipe name  */
-    status = wg_substitute((const wg_char*)&path->value.string, '%', "p", 
-                (const wg_char*)&pipe->value.string, &full_path);
+    /* create argv for plugin */
+    pipe_name = (const wg_char*)&pipe->value.string;
+    path_name = (const wg_char*)&plugin->value.string;
+    status = create_args(path_name, pipe_name, &argv_plugin);
     CHECK_FOR_FAILURE(status);
 
-    list_init(&argv_list);
+    /* create argv for application */
+    path_name = (const wg_char*)&path->value.string;
+    status = create_args(path_name, pipe_name, &argv_app);
+    CHECK_FOR_FAILURE(status);
 
-    /* parse game parameters */
-    status = gpm_console_parse(full_path, &argv_list);
-    if (WG_FAILURE == status){
-        WG_FREE(full_path);
-        return WG_FAILURE;
-    }
-
-    WG_FREE(full_path);
-
-    /* convert game parameters into an array */
-    status = gpm_console_tokens_to_array(&argv_list, &argv);
-    if (WG_FAILURE == status){
-        gpm_console_remove_token_list(&argv_list);
-        return WG_FAILURE;
-    }
-
-    gpm_console_remove_token_list(&argv_list);
-
-    /* start the game */
-    status = gpm_game_run(argv, (wg_char*)&pipe->value.string, 
-            plugin->value.string);
+    /* start the application */
+    status = gpm_game_run(argv_app, pipe_name, plugin->value.string);
     if (WG_FAILURE == status){
         return WG_FAILURE;
     }
 
-    gpm_console_remove_args(argv);
+    gpm_console_remove_args(argv_app);
+    gpm_console_remove_args(argv_plugin);
     gpm_game_set_id(game_id);
 
     WG_LOG("Game Started !\n");
@@ -233,6 +222,42 @@ cb_send(wg_int argc, wg_char *args[], void *private_data)
         }
         ++args;
     }
+
+    return WG_SUCCESS;
+}
+
+WG_PRIVATE wg_status
+create_args(const wg_char* plug_path, const wg_char *pipe, 
+        char ***argv)
+{
+    wg_status status = WG_FAILURE;
+    wg_char *full_path = NULL;
+    List_head argv_list;
+
+
+    /* substitute %p with pipe name  */
+    status = wg_substitute(plug_path, '%', "p", pipe, &full_path);
+    CHECK_FOR_FAILURE(status);
+
+    list_init(&argv_list);
+
+    /* parse game parameters */
+    status = gpm_console_parse(full_path, &argv_list);
+    if (WG_FAILURE == status){
+        WG_FREE(full_path);
+        return WG_FAILURE;
+    }
+
+    WG_FREE(full_path);
+
+    /* convert game parameters into an array */
+    status = gpm_console_tokens_to_array(&argv_list, argv);
+    if (WG_FAILURE == status){
+        gpm_console_remove_token_list(&argv_list);
+        return WG_FAILURE;
+    }
+
+    gpm_console_remove_token_list(&argv_list);
 
     return WG_SUCCESS;
 }

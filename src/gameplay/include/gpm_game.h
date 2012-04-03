@@ -4,7 +4,7 @@
 #define MAX_PATH_LENGTH   512
 
 WG_PUBLIC wg_status
-gpm_game_run(wg_char *argv[], wg_char * address_index, 
+gpm_game_run(wg_char *argv[], const wg_char * address_index, 
         const wg_char *plugin_name);
 
 WG_PUBLIC wg_status

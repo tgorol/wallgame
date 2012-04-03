@@ -31,7 +31,7 @@
  * @retval WG_FAILURE
  */
 wg_status
-trans_unix_new(Transport *trans, wg_char *address)
+trans_unix_new(Transport *trans, const wg_char *address)
 {
     wg_status status = WG_FAILURE;
 

@@ -11,13 +11,18 @@ LIBLIST+=$(OUT_NAME)
 
 include $(BUILD_PATH)/env.mk
 
-MODULE_NAMES=gameplay config common transport sensor plugins webcam tools \
-             image cam 
+MODULE_NAMES=gameplay config common transport sensor tools image cam 
+
+PLUG_INS=webcam plugins
 
 
-.PHONY: $(MODULE_NAMES) app
+.PHONY: $(MODULE_NAMES) app $(PLUG_INS)
 
-all: clean mkdir $(MODULE_NAMES) app
+all: clean mkdir modules app plugins
+
+plugins: $(PLUGINS)
+
+modules: $(MODULE_NAMES)
 	
 gameplay:
 	make OUT_DIR=$(OUT_DIR) OUT_NAME=$(OUT_NAME) -C $@ lib

@@ -55,6 +55,7 @@ wgp_load(const wg_char *name, Wgp_plugin *plugin)
     /* open a plugin                        */
     lib = dlopen(name, RTLD_LAZY);
     if (NULL == lib){
+        WG_LOG("%s\n", dlerror());
         return WG_FAILURE; 
     }
 
