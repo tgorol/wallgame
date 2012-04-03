@@ -1,30 +1,15 @@
 
-SOURCE=cam.c                  \
-	   cam_cap.c              \
-	   cam_output.c           \
-	   cam_readwrite.c        \
-	   cam_streaming.c        \
-	   cam_frame.c            \
-	   cam_format_selector.c  \
-	   img.c              \
-	   img_jpeg.h         \
-	   img_hsv.c          \
-	   img_bgrx.c         \
-	   img_rgb24.c          \
-	   img_gs.c    \
-	   img_yuyv.c         \
-       img_draw.c         \
-       ef_engine.c    \
-       vid.c            \
-       sensor.c          \
-       gui_work.c        \
-       gui_prim.c       \
-       collision_detect.c \
-       gui_progress_dialog.c  \
-       wg_cam_calibrate.c  \
-       wg_plugin.c       \
-       gui_display.c      \
-       wg_config.c
+SOURCE= ef_engine.c            \
+        vid.c                  \
+        sensor.c               \
+        gui_work.c             \
+        gui_prim.c             \
+        collision_detect.c     \
+        gui_progress_dialog.c  \
+        wg_cam_calibrate.c     \
+        wg_plugin.c            \
+        gui_display.c          \
+        wg_config.c
 
 
 APP_NAME=webcam

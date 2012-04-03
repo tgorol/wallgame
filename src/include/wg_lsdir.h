@@ -1,7 +1,6 @@
 #ifndef WG_LSDIR_H
 #define WG_LSDIR_H
 
-
 /** 
 * @brief Directory instance
 */

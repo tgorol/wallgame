@@ -29,13 +29,6 @@ typedef enum CD_STATE{
 
 #define PANE_VERT_MARGIN_IN_PIX 30
 
-typedef enum PANE_VERTICLES{
-    V0 = 0,
-    V1    ,
-    V2    ,
-    V3    ,
-    PANE_VERTICLES_NUM
-}PANE_VERTICLES;
 
 WG_PRIVATE wg_boolean
 is_valid_point(const Wg_point2d *point);
@@ -81,14 +74,9 @@ cd_init(const Cd_pane *pane_dimention, Cd_instance *pane)
     pane->hit_cb         = NULL;
     pane->position_index = 0;
 
-    memset(&pane->position_index, '\0', sizeof (pane->position_index));
+    cd_reset_pane(pane);
 
-    status = fix_pane_veticles(&pane->pane_dimention);
-    if (WG_SUCCESS != status){
-        return WG_FAILURE;
-    }
-
-    fill_bars(pane);
+    cd_set_pane(pane, pane_dimention);
 
     return status;
 }
@@ -173,6 +161,86 @@ cd_get_pane(Cd_instance *pane, Cd_pane *pane_dimention)
     CHECK_FOR_NULL_PARAM(pane_dimention);
 
     *pane_dimention = pane->pane_dimention;
+
+    return WG_SUCCESS;
+}
+
+/** 
+* @brief Set pane dimantion
+* 
+* @param pane           cd instance
+* @param pane_dimention new pane dimention 
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
+wg_status
+cd_set_pane(Cd_instance *pane, const Cd_pane *pane_dimention)
+{
+    wg_status status = WG_FAILURE;
+    CHECK_FOR_NULL_PARAM(pane);
+    CHECK_FOR_NULL_PARAM(pane_dimention);
+
+    status = fix_pane_veticles(&pane->pane_dimention);
+    if (WG_SUCCESS != status){
+        return WG_FAILURE;
+    }
+
+    fill_bars(pane);
+
+    return status;
+}
+
+/** 
+* @brief Set pane dimetion from array
+* 
+* @param pane    cd instance
+* @param array[PANE_VERTICLES_NUM] new pane vertexes
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
+wg_status
+cd_set_pane_from_array(Cd_instance *pane, Wg_point2d array[PANE_VERTICLES_NUM])
+{
+    Cd_pane pane_dimention;
+
+    CHECK_FOR_NULL_PARAM(pane);
+    CHECK_FOR_NULL_PARAM(array);
+
+    pane_dimention.v1 = array[V0];
+    pane_dimention.v2 = array[V1];
+    pane_dimention.v3 = array[V2];
+    pane_dimention.v4 = array[V3];
+
+    cd_set_pane(pane, &pane_dimention);
+
+    return WG_SUCCESS;
+}
+
+/** 
+* @brief Get pane as array
+* 
+* @param pane        cd instance
+* @param array[PANE_VERTICLES_NUM] array to store pane vertexes
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
+wg_status
+cd_get_pane_as_array(Cd_instance *pane, Wg_point2d array[PANE_VERTICLES_NUM])
+{
+    Cd_pane *pane_dimetion = NULL;
+
+    CHECK_FOR_NULL_PARAM(pane);
+    CHECK_FOR_NULL_PARAM(array);
+
+    pane_dimetion = &pane->pane_dimention;
+
+    array[V0] = pane_dimetion->v1;
+    array[V1] = pane_dimetion->v2;
+    array[V2] = pane_dimetion->v3;
+    array[V3] = pane_dimetion->v4;
 
     return WG_SUCCESS;
 }

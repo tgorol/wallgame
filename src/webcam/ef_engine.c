@@ -6,18 +6,14 @@
 #include <wgtypes.h>
 #include <wg.h>
 #include <wgmacros.h>
+#include <wg_linked_list.h>
+#include <wg_iterator.h>
 
 #include <wg_fixarith.h>
 
-#include <linux/videodev2.h>
+#include <img.h>
+#include <cam.h>
 
-#include "include/cam.h"
-#include "include/img.h"
-#include "include/img_gs.h"
-#include "include/img_bgrx.h"
-#include "include/img_rgb24.h"
-#include "include/img_draw.h"
-#include "include/img_hsv.h"
 #include "include/ef_engine.h"
 
  

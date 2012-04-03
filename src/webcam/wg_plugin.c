@@ -21,19 +21,10 @@
 #include <wg_sync_linked_list.h>
 #include <wg_wq.h>
 #include <wg_sort.h>
+#include <img.h>
+#include <cam.h>
 
-#include <linux/videodev2.h>
-
-#include "include/cam.h"
-#include "include/cam_cap.h"
-#include "include/cam_frame.h"
-#include "include/cam_output.h"
-#include "include/cam_readwrite.h"
-#include "include/cam_format_selector.h"
 #include "include/vid.h"
-
-#include "include/img.h"
-#include "include/img_draw.h"
 
 #include "include/sensor.h"
 #include "include/gui_work.h"

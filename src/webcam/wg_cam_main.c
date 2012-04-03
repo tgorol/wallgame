@@ -7,14 +7,12 @@
 #include <wg_linked_list.h>
 #include <wg_sync_linked_list.h>
 #include <wg_wq.h>
+#include <img.h>
+#include <cam.h>
 
 #include <gtk/gtk.h>
 #include <gdk/gdk.h>
 
-#include <linux/videodev2.h>
-
-#include "include/cam.h"
-#include "include/img.h"
 #include "include/gui_prim.h"
 #include "include/sensor.h"
 #include "include/vid.h"

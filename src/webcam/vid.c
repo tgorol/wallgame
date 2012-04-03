@@ -5,17 +5,15 @@
 #include <wgtypes.h>
 #include <wg.h>
 #include <wgmacros.h>
-
-#include <linux/videodev2.h>
+#include <wg_linked_list.h>
+#include <wg_iterator.h>
+#include <img.h>
+#include <cam.h>
 
 #include <libswscale/swscale.h>
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 
-#include "include/cam.h"
-#include "include/img.h"
-#include "include/img_bgrx.h"
-#include "include/img_rgb24.h"
 #include "include/vid.h"
 
 #define IS_POW_2(val) ((((~val) + 1) & (val)) == val)

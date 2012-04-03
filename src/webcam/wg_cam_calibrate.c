@@ -11,11 +11,9 @@
 #include <wg_linked_list.h>
 #include <wg_sync_linked_list.h>
 #include <wg_wq.h>
+#include <img.h>
+#include <cam.h>
 
-#include <linux/videodev2.h>
-
-#include "include/cam.h"
-#include "include/img.h"
 #include "include/sensor.h"
 #include "include/gui_prim.h"
 #include "include/gui_progress_dialog.h"
@@ -352,6 +350,30 @@ paint_pane(Gui_display *display, const Cd_pane *pane_dimention)
     return;
 }
 
+WG_PRIVATE void
+pane_dimention_to_array(const Cd_pane *pane_dimention, 
+        Wg_point2d array[PANE_VERTICLES_NUM])
+{
+    array[V0] = pane_dimention->v1;
+    array[V1] = pane_dimention->v2;
+    array[V2] = pane_dimention->v3;
+    array[V3] = pane_dimention->v4;
+
+    return;
+}
+
+WG_PRIVATE void
+pane_dimention_from_array(Cd_pane *pane_dimention, 
+        Wg_point2d array[PANE_VERTICLES_NUM])
+{
+    pane_dimention->v1 = array[V0];
+    pane_dimention->v2 = array[V1];
+    pane_dimention->v3 = array[V2];
+    pane_dimention->v4 = array[V3];
+
+    return;
+}
+
 WG_PRIVATE wg_boolean
 callibration_screen(Gui_progress_dialog_screen *pds, 
         Gui_progress_action action, void *user_data)
@@ -376,10 +398,7 @@ callibration_screen(Gui_progress_dialog_screen *pds,
 
             if (data->load_config == 1){
                 pane_dimention = data->setup.pane;
-                data->corners[0] = pane_dimention.v1;
-                data->corners[1] = pane_dimention.v2;
-                data->corners[2] = pane_dimention.v3;
-                data->corners[3] = pane_dimention.v4;
+                pane_dimention_to_array(&pane_dimention, data->corners);
                 paint_pane(&cam->left_display, &pane_dimention);
                 data->corner_count = 4;
             }
@@ -400,10 +419,7 @@ callibration_screen(Gui_progress_dialog_screen *pds,
             g_signal_handlers_disconnect_by_func(widget,
                     G_CALLBACK(screen_corner_release_mouse), data);
 
-            pane_dimention.v1 = data->corners[0];
-            pane_dimention.v2 = data->corners[1];
-            pane_dimention.v3 = data->corners[2];
-            pane_dimention.v4 = data->corners[3];
+            pane_dimention_from_array(&pane_dimention, data->corners);
             pane_dimention.orientation = CD_PANE_RIGHT;
 
             status = cd_init(&pane_dimention, &cam->cd);
@@ -523,7 +539,6 @@ gui_callibration_screen(Camera *cam)
     Gui_progress_dialog *pd = NULL;
     Callibration_data *data = NULL;
     GtkWidget *widget       = NULL;
-    wg_status status        = WG_FAILURE;
 
     CHECK_FOR_NULL_PARAM(cam);
 

@@ -12,6 +12,14 @@ typedef enum Cd_orientation {
     CD_PANE_RIGHT          ,
 }Cd_orientation;
 
+typedef enum PANE_VERTICLES{
+    V0 = 0,
+    V1    ,
+    V2    ,
+    V3    ,
+    PANE_VERTICLES_NUM
+}PANE_VERTICLES;
+
 typedef void (*cd_pane_hit_cb)(wg_float x, wg_float y);
 
 typedef struct Cd_pane{
@@ -72,6 +80,15 @@ cd_add_position(Cd_instance *pane, const Wg_point2d *point);
 
 WG_PUBLIC wg_status
 cd_get_pane(Cd_instance *pane, Cd_pane *pane_dimention);
+
+WG_PUBLIC wg_status
+cd_set_pane(Cd_instance *pane, const Cd_pane *pane_dimention);
+
+WG_PUBLIC wg_status
+cd_set_pane_from_array(Cd_instance *pane, Wg_point2d array[PANE_VERTICLES_NUM]);
+
+wg_status
+cd_get_pane_as_array(Cd_instance *pane, Wg_point2d array[PANE_VERTICLES_NUM]);
 
 #endif
 
