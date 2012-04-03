@@ -44,7 +44,6 @@ typedef struct Game{
     Msgpipe msgpipe;      /*!< message pipe                    */
     WorkQ msg_queue;      /*!< message queue                   */
     Wg_slab  msg_slab;    /*!< message slab                    */
-    Wgp_plugin plugin;    /*!< game plugin                     */
 
     pid_t plugin_pid;
 }Game;
@@ -68,6 +67,8 @@ WG_PRIVATE void * msg_to_game(Msgpipe_param *queue);
 WG_PRIVATE wg_status add_default_hooks(void);
 WG_PRIVATE wg_status def_game(wg_uint argc, wg_char *args[], 
                               void *private_data);
+WG_PRIVATE wg_status
+start_process(wg_char *arg[], pid_t *pid);
 
 WG_PRIVATE Console_hook def_cmd_info[] = {
     {
@@ -105,13 +106,11 @@ gpm_game_init(void)
  * @retval WG_FAILURE
  */
 wg_status
-gpm_game_run(wg_char *argv[], const wg_char *address,
-        const wg_char *plugin_name)
+gpm_game_run(wg_char *argv[], wg_char *argv_plug[], const wg_char *address)
 {
     pid_t game_pid = 0;
     wg_status status = WG_FAILURE;
     Game *game = NULL;
-    const Wgp_info *plug_info = NULL;
 
     CHECK_FOR_NULL(argv);
 
@@ -171,27 +170,18 @@ gpm_game_run(wg_char *argv[], const wg_char *address,
                     break;
                 }
 
-                /* load plugin               */
-                memset(&game->plugin, '\0', sizeof (Wgp_plugin));
-                status = wgp_load(plugin_name, &game->plugin);
+                status = start_process(argv_plug, &game->plugin_pid);
                 if (WG_FAILURE == status){
-                    wg_slab_cleanup(&game->msg_slab);
                     wg_workq_cleanup(&game->msg_queue);
                     trans_unix_close(&game->transport);
                     WG_FREE(game);
                     break;
                 }
 
-                wgp_info(&game->plugin, &plug_info);
-
-                WG_LOG("Plugin loaded : %s\n", plug_info->name);
-
-
                 status = wg_msgpipe_create(
                         msg_from_sensor, msg_to_game, &game->msg_queue, 
                         &game->msgpipe, (void*)game);
                 if (WG_FAILURE == status){
-                    wgp_unload(&game->plugin);
                     wg_slab_cleanup(&game->msg_slab);
                     wg_workq_cleanup(&game->msg_queue);
                     trans_unix_close(&game->transport);
@@ -309,9 +299,6 @@ gpm_game_kill(void)
 
         wg_slab_print_stat(&running_game->msg_slab);
         wg_slab_cleanup(&running_game->msg_slab);
-
-        wgp_unload(&running_game->plugin);
-        WG_DEBUG("Plugin unloaded\n");
 
         /* @todo Clean a workq */
 
@@ -437,13 +424,6 @@ msg_handler(void *gh, Wg_message *msg)
 WG_PRIVATE void *
 msg_from_sensor(Msgpipe_param *param)
 {
-    Game *game = NULL;
-
-    game = (Game*)param->user_data;
-
-    /* call 'run' function of the loaded plugin */
-    WGP_CALL_RUN(&game->plugin, game, msg_handler);
-
     return param;
 }
 
@@ -528,7 +508,6 @@ def_game(wg_uint argc, wg_char *args[], void *private_data)
     if (gpm_game_is_running() == WG_FALSE){
         WG_PRINT("There is no game running\n");
     }else{
-        wgp_info(&running_game->plugin, &plugin_info);
         WG_PRINT("Game name        : %s\n", running_game->name);
         WG_PRINT("Transport address: %s\n", running_game->transport.address);
         WG_PRINT("Plugin name      : %s\n", plugin_info->name);
@@ -536,6 +515,34 @@ def_game(wg_uint argc, wg_char *args[], void *private_data)
     }
 
     return WG_SUCCESS;
+}
+
+WG_PRIVATE wg_status
+start_process(wg_char *argv[], pid_t *process_id)
+{
+    pid_t pid = 0;
+    wg_status status = WG_FAILURE;
+
+    CHECK_FOR_NULL_PARAM(process_id);
+    CHECK_FOR_NULL_PARAM(argv);
+
+    switch (pid = fork()){
+        case 0:
+            execvp(argv[0], argv);
+            WG_ERROR("BUG: Shoudn't be here\n");
+            /* @todo make this more readable */
+            status = WG_FAILURE;
+            break;
+        case -1:
+            WG_ERROR("forking plugin %s: %s\n", argv[0], strerror(errno));
+            status = WG_FAILURE;
+            break;
+        default:
+            status = WG_SUCCESS;
+            *process_id = pid;
+    }
+
+    return status;
 }
 
 /*! @} */

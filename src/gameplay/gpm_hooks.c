@@ -133,8 +133,10 @@ cb_start(wg_int argc, wg_char *args[], void *private_data)
     CHECK_FOR_FAILURE(status);
 
     /* start the application */
-    status = gpm_game_run(argv_app, pipe_name, plugin->value.string);
+    status = gpm_game_run(argv_app, argv_plugin, pipe_name);
     if (WG_FAILURE == status){
+        gpm_console_remove_args(argv_app);
+        gpm_console_remove_args(argv_plugin);
         return WG_FAILURE;
     }
 
