@@ -3,6 +3,7 @@
 
 #include <wgtypes.h>
 #include <wg.h>
+#include <wgmacros.h>
 #include <stdlib.h>
 
 #include <wg_cm.h>
@@ -20,7 +21,13 @@
 int
 main(int argc, char *argv[])
 {
-    return wg_start(argc, argv);
+    int exit_code = EXIT_FAILURE;
+
+    MEMLEAK_START;
+    exit_code = wg_start(argc, argv);
+    MEMLEAK_STOP;
+
+    return exit_code;
 }
 
 

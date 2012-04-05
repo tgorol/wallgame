@@ -11,7 +11,8 @@ LIBLIST+=$(OUT_NAME)
 
 include $(BUILD_PATH)/env.mk
 
-MODULE_NAMES=gameplay config common transport sensor tools image cam 
+MODULE_NAMES=gameplay config common transport sensor tools image cam         \
+             plugin_tools
 
 PLUG_INS=webcam plugins
 
@@ -48,8 +49,12 @@ image:
 cam:
 	make OUT_DIR=$(OUT_DIR) OUT_NAME=$(OUT_NAME) -C $@ lib
 
+plugin_tools:
+	make OUT_DIR=$(OUT_DIR) OUT_NAME=$(OUT_NAME) -C $@ lib
+
 plugins:
 	make OUT_DIR=$(OUT_DIR) -C $@
+
 
 
 #webcam:

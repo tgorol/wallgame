@@ -35,3 +35,6 @@ And webcam plugin
 > cd webcam
 > make
 
+
+*********** Java unix sockets
+copy native libraries into /opt/newsclub/lib-native/

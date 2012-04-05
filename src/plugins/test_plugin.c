@@ -9,21 +9,21 @@
 #include <wgmacros.h>
 #include <wg_trans.h>
 
-#include <wg_msg.h>
-#include <wgp.h>
+#include <wg_plugin_tools.h>
 
-#define LOOP_NUM 10000
 
-WG_PRIVATE void get_random_coordinate(float *coord);
+#define LOOP_NUM     100
+#define DELAY_IN_SEC 1
+
+WG_PRIVATE void get_random_coordinate(wg_double *coord);
 
 int
 main(int argc, char *argv[])
 {
     wg_status status = WG_FAILURE;
-    Transport trans;
-    char msg[129];
-    float x;
-    float y;
+    Wg_msg_transport msg_transport;
+    wg_double x;
+    wg_double y;
 
     int i = 0;
 
@@ -36,35 +36,39 @@ main(int argc, char *argv[])
 
     printf("Connecting to socket : %s\n", argv[1]);
 
-    status = trans_unix_new(&trans, argv[1]);
+    status = wg_msg_transport(argv[1], &msg_transport);
     if (WG_SUCCESS != status){
-        printf("Error - couldn't connect to socket\n");
         return EXIT_FAILURE;
     }
 
     srand(time(NULL));
 
     for (i = 0; i < LOOP_NUM; ++i){
-        trans_unix_connect(&trans);
         get_random_coordinate(&x);
         get_random_coordinate(&y);
+        wg_msg_transport_send_hit(&msg_transport, x, y);
 
-        sprintf(msg, "%d %d\n", (int)x, (int)y);
+        get_random_coordinate(&x);
+        get_random_coordinate(&y);
+        wg_msg_transport_send_hit(&msg_transport, x, y);
 
-        trans_unix_send(&trans, (wg_uchar*)msg, strlen(msg));
-        trans_unix_disconnect(&trans);
+        get_random_coordinate(&x);
+        get_random_coordinate(&y);
+        wg_msg_transport_send_hit(&msg_transport, x, y);
+
+        sleep(DELAY_IN_SEC);
     }
 
-    trans_unix_close(&trans);
+    wg_msg_transport_cleanup(&msg_transport);
 
     return 0;
 }
 
 
 WG_PRIVATE void
-get_random_coordinate(float *coord)
+get_random_coordinate(wg_double *coord)
 {
-    *coord = ((float)rand() / (float)RAND_MAX) * 100.0f;
+    *coord = ((wg_double)rand() / RAND_MAX) * 100.0;
 
     return;
 }

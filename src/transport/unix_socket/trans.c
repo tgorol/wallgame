@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <stdarg.h>
+#include <alloca.h>
 
 #include <sys/socket.h>
 #include <linux/un.h>
@@ -142,6 +144,37 @@ trans_unix_send(Transport *trans, wg_uchar *buffer, wg_size size)
     }
 
     return WG_SUCCESS;
+}
+
+wg_status
+trans_unix_print(Transport *trans, const char *format, ...)
+{
+    wg_status status = WG_FAILURE;
+    int len = 0;
+    char *text = NULL;
+    va_list arg_list;
+
+    CHECK_FOR_NULL_PARAM(trans);
+    CHECK_FOR_NULL_PARAM(format);
+
+    va_start(arg_list, format);
+
+    len = vsnprintf(NULL, 0, format,  arg_list);
+
+    text = WG_MALLOC(len);
+    if (NULL == text){
+        return WG_FAILURE;
+    }
+
+    vsprintf(text, format,  arg_list);
+
+    va_end(arg_list);
+
+    status = trans_unix_send(trans, text, len - 1);
+
+    WG_FREE(text);
+
+    return status;
 }
 
 /**

@@ -13,16 +13,19 @@ typedef struct Transport{
 WG_PUBLIC wg_status
 trans_unix_new(Transport *trans, const wg_char *address);
 
-wg_status
+WG_PUBLIC wg_status
 trans_unix_connect(Transport *trans);
 
-wg_status
+WG_PUBLIC wg_status
 trans_unix_send(Transport *trans, wg_uchar *buffer, wg_size size);
 
-wg_status
+WG_PUBLIC wg_status
+trans_unix_print(Transport *trans, const char *format, ...);
+
+WG_PUBLIC wg_status
 trans_unix_close(Transport *trans);
 
-wg_status
+WG_PUBLIC wg_status
 trans_unix_disconnect(Transport *trans);
 
 #endif

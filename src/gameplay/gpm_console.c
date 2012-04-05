@@ -236,7 +236,7 @@ gpm_console_start(void)
             break;
         }
 
-        WG_FREE(line);
+        free(line);
 
         status = gpm_console_tokens_to_array(&tok_list, &argv);
 
