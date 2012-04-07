@@ -13,20 +13,21 @@
 #include <wg_msg.h>
 #include <wgp.h>
 
-#include "include/sensor_plugin.h"
+#include "include/wg_sensor_plugin.h"
 
-/*! \defgroup Plugin Sensor Plugin Interface
+/*! \defgroup plugin Sensor Plugin Interface
+ * \ingroup plugin_tools
  */
 
 /*! @{ */
 
-static const wg_char * const func[] = {
+WG_PRIVATE const wg_char * const func[] = {
     [WGP_INIT] = "init"    ,
     [WGP_RUN]  = "run"
 }; 
 
 
-WG_STATIC wg_status
+WG_PRIVATE wg_status
 get_function_address(void *lib, const wg_char *func_name, void **address);
 
 WG_PRIVATE wg_status
