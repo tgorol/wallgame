@@ -4,6 +4,15 @@
 #include <time.h>
 #include <string.h>
 
+/* @todo create seperate user include file */
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <linux/un.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <linux/types.h>
+#include <unistd.h>
+
 #include <wg.h>
 #include <wgtypes.h>
 #include <wgmacros.h>
@@ -12,8 +21,8 @@
 #include <wg_plugin_tools.h>
 
 
-#define LOOP_NUM     100
-#define DELAY_IN_SEC 1
+#define LOOP_NUM     30
+#define DELAY_IN_SEC 5
 
 WG_PRIVATE void get_random_coordinate(wg_double *coord);
 
@@ -36,7 +45,7 @@ main(int argc, char *argv[])
 
     printf("Connecting to socket : %s\n", argv[1]);
 
-    status = wg_msg_transport(argv[1], &msg_transport);
+    status = wg_msg_transport_init(argv[1], &msg_transport);
     if (WG_SUCCESS != status){
         return EXIT_FAILURE;
     }
@@ -47,11 +56,9 @@ main(int argc, char *argv[])
         get_random_coordinate(&x);
         get_random_coordinate(&y);
         wg_msg_transport_send_hit(&msg_transport, x, y);
-
         get_random_coordinate(&x);
         get_random_coordinate(&y);
         wg_msg_transport_send_hit(&msg_transport, x, y);
-
         get_random_coordinate(&x);
         get_random_coordinate(&y);
         wg_msg_transport_send_hit(&msg_transport, x, y);

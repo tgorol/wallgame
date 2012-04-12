@@ -1,0 +1,78 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <stdarg.h>
+#include <alloca.h>
+#include <regex.h>
+
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <linux/un.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <linux/types.h>
+#include <unistd.h>
+
+#include <wgtypes.h>
+#include <wg.h>
+#include <wgmacros.h>
+#include <wg_string.h>
+#include <wg_trans.h>
+
+#include "include/transport_common.h"
+#include "include/transport_unix.h"
+#include "include/transport_inet.h"
+
+WG_PRIVATE Transport_init transports[] = {
+    {"unix", transport_unix_new}    ,
+    {"inet", transport_inet_new}
+};
+
+wg_status
+transport_server_init(Wg_transport *transport, const wg_char *address)
+{
+    wg_char *serv_address;
+    wg_char *type;
+    wg_status status = WG_FAILURE;
+    Transport *t = NULL;
+    int sock_status = 0;
+
+    CHECK_FOR_NULL_PARAM(transport);
+    CHECK_FOR_NULL_PARAM(address);
+
+    t = &transport->transport;
+
+    status = transport_match_address(address, &type, &serv_address);
+    if (WG_SUCCESS != status){
+        return WG_FAILURE;
+    }
+
+    status = transport_initialize(transports, ELEMNUM(transports),
+        type, serv_address, transport);
+    if (status != WG_SUCCESS){
+        WG_FREE(type);
+        WG_FREE(serv_address);
+        return WG_FAILURE;
+    }
+
+    WG_FREE(type);
+    WG_FREE(serv_address);
+
+    sock_status = socket(t->domain, t->type, t->protocol);
+    if (-1 == sock_status){
+        WG_LOG("%s\n", strerror(errno));
+        return WG_FAILURE;
+    }
+    t->out_fd = sock_status;
+
+    sock_status = bind(t->out_fd, (struct sockaddr*)&transport->sockaddr,
+            transport->sockaddr_size);
+    if (0 != sock_status){
+        close(t->out_fd);
+        WG_LOG("%s:%s\n", address, strerror(errno));
+        return WG_FAILURE;
+    }
+
+    return WG_SUCCESS;
+}
