@@ -17,7 +17,8 @@
 
 #include "include/ef_engine.h"
 
-/*! \defgroup sensor Object detector
+/*! \defgroup sensor Object Detector
+*  \ingroup plugin_webcam
 */
 
 /*! @{ */
@@ -547,8 +548,6 @@ call_user_xy_callback(const Sensor *const sensor, wg_uint x, wg_uint y)
     register Sensor_xy_cb user_callback = NULL;
     void *user_data = NULL;
 
-    CHECK_FOR_NULL_PARAM(sensor);
-
     user_data     = sensor->user_data[CB_XY];
     user_callback = (Sensor_xy_cb)sensor->cb[CB_XY];
     if (NULL != user_callback){
@@ -564,8 +563,6 @@ call_user_callback(const Sensor *const sensor, Sensor_cb_type type,
         const Wg_image *const image)
 {
     register Sensor_cb user_callback = NULL;
-
-    CHECK_FOR_NULL_PARAM(sensor);
 
     user_callback = (Sensor_cb)sensor->cb[type];
     if (NULL != user_callback){

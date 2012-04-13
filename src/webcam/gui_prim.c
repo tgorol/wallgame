@@ -7,8 +7,8 @@
 
 #include "include/gui_prim.h"
 
-/*! \defgroup gui_prim graphics primitives
-*    \ingroup gui
+/*! \defgroup gui_prim Graphics Primitives
+    \ingroup plugin_webcam
 */
 
 /*! @{ */
@@ -20,7 +20,7 @@
 * @param y      y coordinate
 * @param point  memory fo point instance
 */
-void
+wg_status
 wg_point2d_new(wg_int x, wg_int y, Wg_point2d *point)
 {
     CHECK_FOR_NULL_PARAM(point);
@@ -28,7 +28,7 @@ wg_point2d_new(wg_int x, wg_int y, Wg_point2d *point)
     point->x = x;
     point->y = y;
 
-    return;
+    return WG_SUCCESS;
 }
 
 /** 
@@ -108,7 +108,7 @@ wg_rect_new_from_points(wg_int x1, wg_int y1, wg_int x2,
 * @param dx  x offset
 * @param dy  y offset
 */
-void
+wg_status
 wg_rect_move(Wg_rect *rect, wg_int dx, wg_int dy)
 {
     CHECK_FOR_NULL_PARAM(rect);
@@ -116,7 +116,7 @@ wg_rect_move(Wg_rect *rect, wg_int dx, wg_int dy)
     rect->x += dx;
     rect->y += dy;
 
-    return;
+    return WG_SUCCESS;
 }
 
 /*! @{ */

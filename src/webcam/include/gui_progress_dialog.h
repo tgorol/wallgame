@@ -33,14 +33,14 @@ gui_progress_dialog_new();
 WG_PUBLIC void
 gui_progress_dialog_cleanup(Gui_progress_dialog *pd);
 
-WG_PUBLIC void
+WG_PUBLIC wg_status
 gui_progress_dialog_add_screen(Gui_progress_dialog *pd,
         Gui_progress_dialog_screen *pds);
 
-WG_PUBLIC void
+WG_PUBLIC wg_status
 gui_progress_dialog_show(Gui_progress_dialog *pd);
 
-WG_PUBLIC void
+WG_PUBLIC wg_status
 gui_progress_dialog_set_exit_action(Gui_progress_dialog *pd,
         exit_action_cb action);
 

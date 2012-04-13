@@ -182,11 +182,15 @@ wg_msgpipe_producer(void *data)
     Msgpipe_param param = {0};
     void *ret_value = NULL;
 
+#if 0
     CHECK_FOR_NULL_PARAM(data);
+#endif
 
     msgpipe = (Msgpipe *)data;
 
+#if 0
     CHECK_FOR_NULL_PARAM(msgpipe->producer);
+#endif
 
     /* enable thread cancelation    */
     pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_state);
@@ -234,11 +238,15 @@ wg_msgpipe_consumer(void *data)
     void *ret_value = NULL;
     Msgpipe_param param = {0};
 
+#if 0
     CHECK_FOR_NULL_PARAM(data);
+#endif
 
     msgpipe = (Msgpipe *)data;
 
+#if 0
     CHECK_FOR_NULL_PARAM(msgpipe->consumer);
+#endif
 
     /* enable thread cancelation    */
     pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_state);

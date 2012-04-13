@@ -8,7 +8,8 @@
 #include <wg_linked_list.h>
 #include <wg_iterator.h>
 
-/*! \defgroup List Linked List Implementation.
+/*! @defgroup List Linked List Implementation.
+ *  @ingroup misc
  */
 
 /*! @{ */

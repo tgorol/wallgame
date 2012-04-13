@@ -78,9 +78,9 @@ transport_inet_new(Wg_transport *trans, const wg_char *address)
     trans->transport.type     = SOCK_DGRAM;
     trans->transport.protocol = IPPROTO_UDP;
 
-    trans->sockaddr.in.sin_family = AF_INET;
-    trans->sockaddr.in.sin_port   = htons(atoi(port_string));
-    inet_aton(ip_string, &trans->sockaddr.in.sin_addr);
+    trans->sockaddr.in.sin_family      = AF_INET;
+    trans->sockaddr.in.sin_port        = htons(atoi(port_string));
+    trans->sockaddr.in.sin_addr.s_addr = inet_addr(ip_string);
     trans->sockaddr_size = sizeof (trans->sockaddr.in);
 
     WG_FREE(port_string);

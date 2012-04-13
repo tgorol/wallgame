@@ -17,7 +17,7 @@
 /*! @defgroup misc Miscelaous modules
  */
 
-/*! @defgroup dir files manupulations
+/*! @defgroup dir Files manupulations
  *  @ingroup misc
  */
 
@@ -46,7 +46,7 @@ wg_lsdir(const wg_char *path, const wg_char *prefix, List_head *head)
 
     CHECK_FOR_NULL_PARAM(path);
     CHECK_FOR_NULL_PARAM(head);
-    CHECK_FOR_NULL_PARAM(list);
+    CHECK_FOR_NULL_PARAM(prefix);
 
     list_init(head);
 

@@ -12,6 +12,7 @@
 #include <wg_sync_linked_list.h>
 
 /*! \defgroup squeue Synchronized Queue Implementation.
+ * @ingroup misc
  */
 
 /*! @{ */

@@ -10,6 +10,7 @@
 #include <wg_iterator.h>
 
 /** @defgroup Iterator Linked List Iterator
+ *  @ingroup misc
  */
 
 /*! @{ */

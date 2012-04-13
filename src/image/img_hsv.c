@@ -373,8 +373,7 @@ img_hsv_filter(const Wg_image *img, Wg_image *filtered_img, va_list args)
     const Hsv *top = NULL;
 
     CHECK_FOR_NULL_PARAM(img);
-    CHECK_FOR_NULL_PARAM(bottom);
-    CHECK_FOR_NULL_PARAM(top);
+    CHECK_FOR_NULL_PARAM(filtered_img);
 
     if (img->type != IMG_HSV){
         WG_ERROR("Invalig image format! Passed %d expect %d\n", 

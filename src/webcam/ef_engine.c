@@ -15,8 +15,6 @@
 #include <cam.h>
 
 #include "include/ef_engine.h"
-
- 
  
 #define INBUF_SIZE 4096
 #define AUDIO_INBUF_SIZE 20480
@@ -268,8 +266,7 @@ ef_acc_2_gs(Wg_image *acc, Wg_image *acc_gs)
     wg_uint max_val = 0;
 
     CHECK_FOR_NULL_PARAM(acc);
-    CHECK_FOR_NULL_PARAM(filename);
-    CHECK_FOR_NULL_PARAM(type);
+    CHECK_FOR_NULL_PARAM(acc_gs);
 
     if (acc->type != IMG_CIRCLE_ACC){
         WG_ERROR("Invalig image format! Passed %d expect %d\n", 

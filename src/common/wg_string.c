@@ -7,7 +7,7 @@
 
 #include <wg_string.h>
 
-/*! @defgroup string string manupulations
+/*! @defgroup string String manupulations
  *  @ingroup misc
  */
 
@@ -71,6 +71,38 @@ wg_strdup(const wg_char *string, wg_char **copied)
     wg_strcpy(copy, string);    
 
     *copied = copy;
+
+    return WG_SUCCESS;
+}
+
+/** 
+* @brief Like wg_strdup but copies max num characters
+* 
+* @param dest memory to store pointer to duplicate
+* @param src  source string
+* @param num  number of characters to copy
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
+wg_status
+wg_strndup(wg_char **dest, const wg_char *src, wg_size num)
+{
+    wg_char *copy = NULL;
+
+    CHECK_FOR_NULL_PARAM(dest);
+    CHECK_FOR_NULL_PARAM(src);
+
+    copy = WG_MALLOC(num + 1);
+    if (NULL == copy){
+        return WG_FAILURE;
+    }
+
+    strncpy(copy, src, num);
+
+    copy[num] = '\0';
+
+    *dest = copy;
 
     return WG_SUCCESS;
 }

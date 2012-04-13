@@ -50,9 +50,9 @@
 /** @brief Check for null parameters.  
  */
 #ifdef RELEASE
-#define CHECK_FOR_NULL_PARAM(param) CHECK_FOR_NULL(param)
+#define CHECK_FOR_NULL_PARAM(param) 
 #else
-#define CHECK_FOR_NULL_PARAM(param)                    
+#define CHECK_FOR_NULL_PARAM(param) CHECK_FOR_NULL(param)
 #endif
 
 /** @todo addRANGE_LT_PARAM */

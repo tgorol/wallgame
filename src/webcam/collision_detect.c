@@ -10,8 +10,9 @@
 #include "include/gui_prim.h"
 #include "include/collision_detect.h"
 
-/*! \defgroup collision Collision detector
-*/
+/*! \defgroup collision Collision Detector
+ *  \ingroup plugin_webcam
+ */
 
 /*! @{ */
 
@@ -97,7 +98,7 @@ cd_cleanup(Cd_instance *pane)
 * 
 * @param pane cd instance
 */
-void
+wg_status
 cd_reset_pane(Cd_instance *pane)
 {
     CHECK_FOR_NULL_PARAM(pane);
@@ -107,7 +108,7 @@ cd_reset_pane(Cd_instance *pane)
 
     memset(pane->position, '\0', sizeof (pane->position));
 
-    return;
+    return WG_SUCCESS;
 }
 
 /** 
@@ -122,7 +123,9 @@ cd_reset_pane(Cd_instance *pane)
 cd_pane_hit_cb
 cd_get_hit_callback(Cd_instance *pane, cd_pane_hit_cb hit_cb)
 {
+#if 0
     CHECK_FOR_NULL_PARAM(pane);
+#endif
 
     return pane->hit_cb;
 }
@@ -135,14 +138,15 @@ cd_get_hit_callback(Cd_instance *pane, cd_pane_hit_cb hit_cb)
 * @param pane   cd instance
 * @param hit_cb hit callback
 */
-void
-cd_set_hit_callback(Cd_instance *pane, cd_pane_hit_cb hit_cb)
+wg_status
+cd_set_hit_callback(Cd_instance *pane, cd_pane_hit_cb hit_cb, void *user_data)
 {
     CHECK_FOR_NULL_PARAM(pane);
 
     pane->hit_cb = hit_cb;
+    pane->hit_cb_user_data = user_data;
 
-    return;
+    return WG_SUCCESS;
 }
 
 /** 
@@ -294,7 +298,7 @@ cd_add_position(Cd_instance *pane, const Wg_point2d *point)
             if (is_hit_detected(pane, &hit_index)){
                 if (is_hit_on_pane(pane, &pane->position[hit_index],
                     &hit_x, &hit_y)){
-                        pane->hit_cb(hit_x, hit_y);
+                        pane->hit_cb(hit_x, hit_y, pane->hit_cb_user_data);
                         pane->state = CD_STATE_HIT_RECORDED;
                 }
             }

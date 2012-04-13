@@ -89,7 +89,6 @@ img_jpeg_decompress(wg_uchar *in_buffer, wg_ssize in_size,
     JDIMENSION readed_lines = 0;
 
     CHECK_FOR_NULL_PARAM(in_buffer);
-    CHECK_FOR_NULL_PARAM(in_size);
     CHECK_FOR_NULL_PARAM(img);
 
     jdecomp.err = jpeg_std_error(&jerror.parent_err);

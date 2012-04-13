@@ -20,7 +20,7 @@
 #include "include/cam_cap.h"
 #include "include/cam_output.h"
 
-/*! @defgroup webcam_format capture Output Format
+/*! @defgroup webcam_format Capture Output Format
  *  @ingroup webcam 
  */
 
@@ -173,8 +173,7 @@ cam_output_format_description_list(Wg_camera *cam, CAM_OUT_TYPE type, List_head 
 cam_status
 cam_output_format_description_print(Wg_cam_format_description *fmt)
 {
-    CHECK_FOR_NULL_PARAM(desc);
-
+    CHECK_FOR_NULL_PARAM(fmt);
 
     WG_PRINT("index        : %u\n"
              "description  : %s\n"

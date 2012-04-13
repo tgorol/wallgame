@@ -37,6 +37,9 @@ typedef struct Camera{
     GtkWidget *fps_display;
     GtkWidget *device_name;
 
+    /* Message Transport */
+    Wg_msg_transport msg_transport;
+
     /* Displays isplay */
     Gui_display left_display;
     Gui_display right_display;

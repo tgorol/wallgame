@@ -14,6 +14,7 @@
 #include "include/gpm_ini.h"
 
 /*! \defgroup  Gameplay_ini Gameplay Config
+ * @ingroup gameplay
  */
 
 /*! @{ */

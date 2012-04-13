@@ -20,7 +20,7 @@ typedef enum PANE_VERTICLES{
     PANE_VERTICLES_NUM
 }PANE_VERTICLES;
 
-typedef void (*cd_pane_hit_cb)(wg_float x, wg_float y);
+typedef void (*cd_pane_hit_cb)(wg_float x, wg_float y, void *user_data);
 
 typedef struct Cd_pane{
     Wg_point2d v1;
@@ -50,6 +50,7 @@ typedef struct Cd_bar{
 typedef struct Cd_instance{
     Cd_pane         pane_dimention;
     cd_pane_hit_cb  hit_cb;
+    void           *hit_cb_user_data;
     int             state;
     Wg_point2d      position[CD_POSITION_NUM];
     wg_uint         position_index;
@@ -66,14 +67,14 @@ cd_init(const Cd_pane *pane_dimention, Cd_instance *pane);
 WG_PUBLIC void
 cd_cleanup(Cd_instance *pane);
 
-WG_PUBLIC void
+WG_PUBLIC wg_status
 cd_reset_pane(Cd_instance *pane);
 
 WG_PUBLIC cd_pane_hit_cb
 cd_get_hit_callback(Cd_instance *pane, cd_pane_hit_cb hit_cb);
 
-WG_PUBLIC void
-cd_set_hit_callback(Cd_instance *pane, cd_pane_hit_cb hit_cb);
+WG_PUBLIC wg_status
+cd_set_hit_callback(Cd_instance *pane, cd_pane_hit_cb hit_cb, void *user_data);
 
 WG_PUBLIC wg_status
 cd_add_position(Cd_instance *pane, const Wg_point2d *point);

@@ -103,7 +103,6 @@ wg_config_add_value(Wg_config *config, const wg_char *key, wg_char *value)
 {
     Config_line *line = NULL;
     char line_text[CONFIG_MAX_LINE_SIZE + 1];
-    size_t len = 0;
 
     CHECK_FOR_NULL_PARAM(config);
     CHECK_FOR_NULL_PARAM(key);
@@ -156,7 +155,7 @@ get_value(Wg_config *config, const wg_char *key, Config_line **config_line)
     wg_boolean found_flag = WG_FALSE;
 
     CHECK_FOR_NULL_PARAM(config);
-    CHECK_FOR_NULL_PARAM(value);
+    CHECK_FOR_NULL_PARAM(config_line);
     CHECK_FOR_NULL_PARAM(key);
 
     len = strlen(key);
@@ -179,8 +178,6 @@ create_line(const char *text)
 {
     Config_line *line = NULL;
     size_t len = 0;
-
-    CHECK_FOR_NULL_PARAM(text);
 
     line = WG_MALLOC(sizeof (Config_line));
     if (NULL == line){

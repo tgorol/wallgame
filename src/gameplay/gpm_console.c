@@ -18,7 +18,8 @@
 #include "include/gpm_console.h"
 #include "include/gpm_console_parser.h"
 
-/*! \defgroup  Gameplay_console Gameplay Console
+/*! \defgroup  gameplay_console Gameplay Console
+ * @ingroup gameplay
  */
 
 /*! @{ */

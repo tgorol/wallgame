@@ -27,8 +27,6 @@ LIBLIST+= ini      \
 		  jpeg     \
           m
 
-
-
 ifneq "$(strip $(INCLUDE))" ""
 	INC_PATH=$(foreach inc, $(INCLUDE), -I$(inc))
 else
@@ -47,6 +45,8 @@ else
 	LIB_LIST=""
 endif
 
+LIB_PATH+=-L$(OUT_DIR)
+
 # Create object names
 OBJ=$(foreach file, $(SOURCE), $(basename $(file)).o)
 
@@ -54,9 +54,9 @@ OBJ=$(foreach file, $(SOURCE), $(basename $(file)).o)
 CFLAGS+=-march=$(CPU_ARCH) -std=$(C_STD) -D_REENTRANT 
 
 ifeq ($(BUILD_TYPE),  RELEASE)
-	CFLAGS+=-g -Wall -O3 -pedantic
+	CFLAGS+=-g -Wall -O3 -DRELEASE
 else
-	CFLAGS+=-g -Wall -pedantic -DWGDEBUG -DMEMLEAK_CHECK
+	CFLAGS+=-g -Wall -Werror -DWGDEBUG -DMEMLEAK_CHECK
 endif
 
 ifdef PROF

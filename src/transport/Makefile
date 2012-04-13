@@ -1,5 +1,10 @@
 
-SOURCE=trans.c
+SOURCE= transport_client.c     \
+        transport_unix.c       \
+        transport_inet.c       \
+        transport_common.c     \
+        transport_server.c  
+
 
 INCLUDE=./include/
 

@@ -1,11 +1,22 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+/* @todo create user space include */
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <linux/un.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <linux/types.h>
+#include <unistd.h>
+
 #include <wg.h>
 #include <wgtypes.h>
 #include <wgmacros.h>
 #include <wg_linked_list.h>
 #include <wg_sync_linked_list.h>
+#include <wg_trans.h>
+#include <wg_plugin_tools.h>
 #include <wg_wq.h>
 #include <img.h>
 #include <cam.h>

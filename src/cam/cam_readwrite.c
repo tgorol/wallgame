@@ -24,7 +24,7 @@
 #include "include/cam_cap.h"
 #include "include/cam_readwrite.h"
 
-/*! @defgroup webcam_readwrite read/write mode
+/*! @defgroup webcam_readwrite Read/Write Mode
  * @ingroup webcam 
  */
 
@@ -292,7 +292,7 @@ WG_PRIVATE cam_status
 get_frame_size(Wg_camera *cam, wg_ssize *frame_size)
 {
     CHECK_FOR_NULL_PARAM(cam);
-    CHECK_FOR_NULL_PARAM(size);
+    CHECK_FOR_NULL_PARAM(frame_size);
 
     *frame_size = cam->fmt[CAM_FMT_CAPTURE].fmt.pix.sizeimage;
 

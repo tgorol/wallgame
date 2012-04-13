@@ -13,6 +13,10 @@
 #include "include/cam_format_selector.h"
 #include "include/cam_output.h"
 
+/*! @defgroup webcam_decompressor Image Decoder
+ * @ingroup webcam 
+ */
+/*! @{ */
 
 /**
  * @brief Format decompressor
@@ -22,6 +26,9 @@ typedef struct Fmt_decomp{
     Wg_cam_decompressor decompressor; /*!< Decompressor function*/
 }Fmt_decomp;
 
+/** 
+* @brief Type big enough to store __u32 as string
+*/
 typedef wg_char u32str[sizeof (__u32) + 1]; 
 
 WG_STATIC Fmt_decomp supported_formats[] = {
@@ -33,6 +40,17 @@ WG_STATIC Fmt_decomp supported_formats[] = {
 WG_PRIVATE void
 cam_print_u32_as_string(__u32 value, u32str cstr);
 
+/** 
+* @brief Select decompressor
+*
+* Supported formats YUYV, MJPEG, JPEG
+* 
+* @param cam         webcam instance
+* @param pixelformat pixel format
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
 cam_select_user_decompressor(Wg_camera *cam, __u32 pixelformat)
 {
@@ -62,6 +80,16 @@ cam_select_user_decompressor(Wg_camera *cam, __u32 pixelformat)
     return status;
 }
 
+/** 
+* @brief Auto select decompressor
+* 
+* Supported formats YUYV, MJPEG, JPEG
+
+* @param cam webcam instance
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
 cam_select_decompressor(Wg_camera *cam)
 {
@@ -107,6 +135,15 @@ cam_select_decompressor(Wg_camera *cam)
 }
 
 
+/** 
+* @brief Get decompressor for a format
+* 
+* @param pixelformat pixel format
+* @param decomp  decompressor for pixel format
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 cam_status
 cam_get_decompressor(__u32 pixelformat, Wg_cam_decompressor *decomp)
 {
@@ -126,6 +163,13 @@ cam_get_decompressor(__u32 pixelformat, Wg_cam_decompressor *decomp)
     return status;
 }
 
+/** 
+* @brief Check if format decompressor is supported
+* 
+* @param pixelformat pixel format
+* 
+* @return TRUE or FALSE
+*/
 wg_boolean
 cam_is_format_supported(__u32 pixelformat)
 {
@@ -149,3 +193,4 @@ cam_print_u32_as_string(__u32 value, u32str cstr)
 
     return;
 }
+/*! @} */

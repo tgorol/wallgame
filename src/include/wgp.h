@@ -6,10 +6,13 @@
 
 typedef wg_status (*Msg_handler)(void *gh, Wg_message *msg);
 
+/** 
+* @brief Plugin function identificator
+*/
 typedef enum WGP_FUNC_ID {
-     WGP_INIT = 0     ,
-     WGP_RUN          ,
-     WGP_FUNC_ID_NUM
+     WGP_INIT = 0     ,        /*!< init function       */
+     WGP_RUN          ,        /*!< run plugin function */
+     WGP_FUNC_ID_NUM           /*!< number of functions */
 } WGP_FUNC_ID;
 
 
@@ -28,7 +31,7 @@ typedef struct Wgp_info{
 typedef struct Wgp_plugin{
     Wgp_info info;                             /*!< plugin information */
     void *lib;                                 /*!< plugin file handle */
-    fvoid f[WGP_FUNC_ID_NUM];
+    fvoid f[WGP_FUNC_ID_NUM];                  /*!< function pointers  */
 }Wgp_plugin;
 
 #define WGP_CALL_INIT(p, ...)                          \

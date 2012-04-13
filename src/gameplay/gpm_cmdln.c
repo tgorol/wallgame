@@ -13,11 +13,11 @@
 #include "include/gpm.h"
 
 
-/*! \defgroup Gameplay Gameplay Manager
+/*! \defgroup gameplay_cmd Gameplay Command
+ *  @ingroup gameplay
  */
 
 /*! @{ */
-
 
 WG_PRIVATE void
 print_help(void);

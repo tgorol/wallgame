@@ -93,9 +93,53 @@ transport_initialize(const Transport_init *transports, wg_size num,
             if (WG_SUCCESS != status){
                 WG_LOG("Could not initialize \"%s\" transport\n", info->name);
             }
+            wg_strdup(address, &trans->transport.address);
             break;
         }
     }
 
     return status;
+}
+
+/**
+ * @brief Close transport
+ *
+ * @param trans transport to close
+ *
+ * @retval WG_SUCCESS
+ * @retval WG_FAILURE
+ */
+wg_status
+transport_close(Wg_transport *transport)
+{
+    CHECK_FOR_NULL(transport);
+
+    transport_disconnect(transport);
+
+    WG_FREE(transport->transport.address);
+
+    memset(transport, '\0', sizeof (Wg_transport));
+
+    return WG_SUCCESS;
+}
+
+/**
+ * @brief Get transport address
+ *
+ * @param trans   transport
+ * @param address memory to store a pointer to the address
+ *
+ * @retval WG_SUCCESS
+ * @retval WG_FAILURE
+ */
+wg_status
+transport_get_address(Wg_transport *trans, const wg_char** address)
+{
+    CHECK_FOR_NULL(trans);
+    CHECK_FOR_NULL(address);
+
+    *address = trans->transport.address;
+
+    return WG_SUCCESS;
+
 }

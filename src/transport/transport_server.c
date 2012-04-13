@@ -76,3 +76,49 @@ transport_server_init(Wg_transport *transport, const wg_char *address)
 
     return WG_SUCCESS;
 }
+
+wg_status
+transport_server_listen(Wg_transport *server, wg_size num)
+{
+    int sock_status = -1;
+    CHECK_FOR_NULL_PARAM(server);
+
+    sock_status = listen(server->transport.out_fd, num);
+    if (-1 == sock_status){
+        WG_LOG("%s\n", strerror(errno));
+        return WG_FAILURE;
+    }
+
+    return WG_SUCCESS;
+}
+
+wg_status
+transport_server_accept(Wg_transport *server,
+        Wg_transport *transport)
+{
+    int sock_status = -1;
+
+    CHECK_FOR_NULL_PARAM(server);
+    CHECK_FOR_NULL_PARAM(transport);
+
+    sock_status = accept(server->transport.out_fd, 
+            (struct sockaddr*)&transport->sockaddr, &server->sockaddr_size);
+    if (-1 == sock_status){
+        WG_LOG("%s\n", strerror(errno));
+        return WG_FAILURE;
+    }
+
+    memset(transport, '\0', sizeof (Wg_transport));
+
+    transport->sockaddr_size      = server->sockaddr_size;
+
+    transport->transport.out_fd   = sock_status;
+    transport->transport.domain   = server->transport.domain;
+    transport->transport.type     = server->transport.type;
+    transport->transport.protocol = server->transport.protocol;
+    transport->transport.is_connected = WG_TRUE;
+
+    wg_strdup(server->transport.address, &transport->transport.address);
+
+    return WG_SUCCESS;
+}

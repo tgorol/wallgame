@@ -5,6 +5,13 @@
 #include <string.h>
 #include <sys/wait.h>
 #include <sys/types.h>
+#include <sys/socket.h>
+#include <linux/un.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <linux/types.h>
+#include <unistd.h>
+#include <pthread.h>
 
 #include <wgtypes.h>
 #include <wg.h>
@@ -22,6 +29,7 @@
 #include "include/gpm_console.h"
 
 /*! \defgroup gpm_game Gameplay Game Control 
+ * @ingroup gameplay
  */
 
 /*! @{ */
@@ -33,21 +41,16 @@
 /** @brief Maximum number of characters in game name */
 #define GAME_NAME_MAX   256
 
+
 /**
  * @brief Game Instance Structure
  */
 typedef struct Game{
-    wg_char name[GAME_NAME_MAX]; /*!< game name */
-    Transport transport;  /*!< transport connected to the game */
-    pid_t process_id;     /*!< process id of the game          */
-    wg_uint game_id;      /*!< user defined id                 */
-    Msgpipe msgpipe;      /*!< message pipe                    */
-    WorkQ msg_queue;      /*!< message queue                   */
-    Wg_slab  msg_slab;    /*!< message slab                    */
-
-    pid_t plugin_pid;
+    Wg_transport *transport;  /*!< transport connected to the game */
+    Wg_transport *server;     /*!< transport server                */
+    pthread_mutex_t mutex;
+    pthread_t thread;
 }Game;
-
 
 /**
  * @brief Message wrapper
@@ -60,21 +63,39 @@ typedef struct Wg_message_wrap{
 /**
  * @brief Running game instance;
  */
-WG_PRIVATE Game *running_game = NULL;
+WG_PRIVATE Game running_game = {
+    .mutex = PTHREAD_MUTEX_INITIALIZER
+};
 
-WG_PRIVATE void * msg_from_sensor(Msgpipe_param *queue);
-WG_PRIVATE void * msg_to_game(Msgpipe_param *queue);
+WG_PRIVATE pthread_spinlock_t sp;
+
 WG_PRIVATE wg_status add_default_hooks(void);
-WG_PRIVATE wg_status def_game(wg_uint argc, wg_char *args[], 
+
+WG_PRIVATE wg_status def_cinfo(wg_uint argc, wg_char *args[], 
                               void *private_data);
+
+WG_PRIVATE wg_status gpm_game_clear_server(void);
+
+WG_PRIVATE void
+gpm_game_enter_critical(Game *game);
+
+WG_PRIVATE void
+gpm_game_exit_critical(Game *game);
+
+WG_PRIVATE
+void *pipe_thread(void *data);
+
 WG_PRIVATE wg_status
-start_process(wg_char *arg[], pid_t *pid);
+start_server(pthread_t *thread, void *user_data);
+
+WG_PRIVATE wg_status
+stop_server(pthread_t *thread);
 
 WG_PRIVATE Console_hook def_cmd_info[] = {
     {
-        .name         = "game"                       ,
+        .name         = "cinfo"                      ,
         .description  = "Print running game stats"   ,
-        .cb_hook      = def_game                     ,
+        .cb_hook      = def_cinfo                    ,
         .flags        = HOOK_SYNC                    ,
         .private_data = NULL             
     }
@@ -90,10 +111,35 @@ WG_PRIVATE Console_hook def_cmd_info[] = {
 wg_status
 gpm_game_init(void)
 {
+    wg_status status = WG_FAILURE;
+
     add_default_hooks();
+
+    running_game.server    = NULL;
+    running_game.transport = NULL;
+
+    pthread_spin_init(&sp, PTHREAD_PROCESS_SHARED);
+
+    /* Create server                  */
+    status = gpm_game_set_server("inet:127.0.0.1:7777");
+    if (WG_SUCCESS != status){
+        return WG_FAILURE;
+    }
+
+    return status;
+}
+
+wg_status
+gpm_game_cleanup(void)
+{
+    stop_server(&running_game.thread);
+    pthread_spin_destroy(&sp);
+    gpm_game_clear_transport();
+    gpm_game_clear_server();
 
     return WG_SUCCESS;
 }
+
 
 /**
  * @brief Start a game
@@ -108,356 +154,155 @@ gpm_game_init(void)
 wg_status
 gpm_game_run(wg_char *argv[], wg_char *argv_plug[], const wg_char *address)
 {
-    pid_t game_pid = 0;
+    return WG_FAILURE;
+}
+
+wg_status
+gpm_game_set_server(const wg_char *address)
+{
     wg_status status = WG_FAILURE;
-    Game *game = NULL;
 
-    CHECK_FOR_NULL(argv);
+    gpm_game_enter_critical(&running_game);
 
-    if (gpm_game_is_running() == WG_TRUE){
-        WG_LOG("Game is running\n");
-        return WG_FAILURE;
-    }
-    status = start_process(argv, &game_pid);
-    if (WG_SUCCESS == status){
-        do {
-            /* create game instance */
-            game = WG_CALLOC(1, sizeof (Game));
-            if (NULL == game){
-                break;
-            }
-
-            strncpy(game->name, argv[0], GAME_NAME_MAX);
-            WG_LOG("Command %s\n", game->name);
-
-            /* save process id               */
-            game->process_id = game_pid;
-            WG_DEBUG("Process started with $$=%ld\n", (long)game_pid);
-
-            /* Create a connection to a game */
-            status = trans_unix_new(&game->transport, address);
-            if (WG_FAILURE == status){
-                break;
-            }
-
-            WG_DEBUG("Transaction created at %s\n", address);
-
-            /* @todo Add error checking */
-
-            status = wg_workq_init(&game->msg_queue, 
-                    GET_OFFSET(Wg_message_wrap, list));
-            if (WG_FAILURE == status){
-                trans_unix_close(&game->transport);
-                WG_FREE(game);
-                break;
-            }
-
-            status = wg_slab_init(sizeof (Wg_message_wrap), 
-                    MSG_QUEUE_MAX, &game->msg_slab);
-            if (WG_FAILURE == status){
-                wg_workq_cleanup(&game->msg_queue);
-                trans_unix_close(&game->transport);
-                WG_FREE(game);
-                break;
-            }
-
-            sleep(4);
-
-            status = start_process(argv_plug, &game->plugin_pid);
-            if (WG_FAILURE == status){
-                wg_workq_cleanup(&game->msg_queue);
-                trans_unix_close(&game->transport);
-                WG_FREE(game);
-                break;
-            }
-
-            running_game = game;
-
-        } while (0);
-        if (WG_FAILURE == status){
-            kill(game->process_id, SIGTERM);
-            waitpid(game->process_id, NULL, WNOHANG);
+    if (running_game.server != NULL){
+        stop_server(&running_game.thread);
+        transport_close(running_game.server);
+    }else{
+        running_game.server = WG_MALLOC(sizeof (Wg_transport));
+        if (NULL == running_game.server){
+            WG_LOG("WG_MALLOC:%s\n", strerror(errno));
             return WG_FAILURE;
         }
     }
 
-    return WG_SUCCESS;
-}
-
-/**
- * @brief 
- *
- * @param type type of the message
- * @param ...  variable argument list
- *
- * @return WG_SUCCESS
- * @return WG_FAILURE
- *
- * @todo finish this function
- */
-    wg_status
-gpm_game_add_message(Msg_type type, ...)
-{
-    wg_status status = WG_FAILURE;
-    Wg_message_wrap *message = NULL;
-
-    /* allocate memory for a message */
-    status = wg_slab_alloc(&running_game->msg_slab, (void**)&message);
-    CHECK_FOR_FAILURE(status);
-
-    message->body.type = type;
-
-    /* add message to the queue */
-    status = wg_workq_add(&running_game->msg_queue, &message->list);
-    if (WG_FAILURE == status){
-        wg_slab_free(&running_game->msg_slab, message);
+    /* Create server                  */
+    status = transport_server_init(running_game.server, address);
+    if (WG_SUCCESS != status){
         return WG_FAILURE;
     }
+    WG_DEBUG("Server created at %s\n", address);
+
+    start_server(&running_game.thread, &running_game);
+
+    gpm_game_exit_critical(&running_game);
 
     return WG_SUCCESS;
 }
 
-
-/**
- * @brief Send data to running game
- *
- * @param data buffer
- * @param size number of bytes to send 
- *
- * @retval WG_SUCCESS
- * @retval WG_FAILURE
- *
- * @todo Make it static
- */
-    wg_status
-gpm_game_send(wg_uchar *data, wg_size size)
+WG_PRIVATE wg_status
+stop_server(pthread_t *thread)
 {
-    wg_status status = WG_FAILURE;
+    pthread_kill(*thread, SIGUSR1); 
 
-    CHECK_FOR_NULL(data);
+    pthread_join(*thread, NULL);
+    
+    return WG_SUCCESS;
+}
 
-    if (gpm_game_is_running() == WG_FALSE){
+WG_PRIVATE wg_status
+start_server(pthread_t *thread, void *user_data)
+{
+    pthread_attr_t attr;
+    int status = -1;
+
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+    status = pthread_create(thread, &attr, 
+            pipe_thread, user_data);
+    if (0 != status){
+        pthread_attr_destroy(&attr);
         return WG_FAILURE;
     }
-
-    status = trans_unix_connect(&running_game->transport);
-    CHECK_FOR_FAILURE(status);
-
-    status = trans_unix_send(&running_game->transport, data, size);
-    CHECK_FOR_FAILURE(status);
-
-    status = trans_unix_disconnect(&running_game->transport);
-    CHECK_FOR_FAILURE(status);
+    pthread_attr_destroy(&attr);
 
     return WG_SUCCESS;
 }
 
-/**
- * @brief Kill running game
- *
- * @retval WG_SUCCESS
- * @retval WG_FAILURE
- */
-    wg_status
-gpm_game_kill(void)
+wg_status
+gpm_game_set_transport(const wg_char *address)
 {
     wg_status status = WG_FAILURE;
 
-    if (gpm_game_is_running() == WG_TRUE){
-        status = wg_msgpipe_kill(&running_game->msgpipe);
-        if (WG_FAILURE == status){
-            WG_LOG("Msgpipe exit error\n");
-        }
+    CHECK_FOR_NULL_PARAM(address);
 
-        trans_unix_close(&running_game->transport);
+    gpm_game_enter_critical(&running_game);
 
-        kill(running_game->process_id, SIGTERM);
-        waitpid(running_game->process_id, NULL, 0);
-
-        WG_DEBUG("Game closed. $$=%ld\n", (long)running_game->process_id);
-
-        wg_slab_print_stat(&running_game->msg_slab);
-        wg_slab_cleanup(&running_game->msg_slab);
-
-        /* @todo Clean a workq */
-
-        WG_FREE(running_game);
-
-        running_game = NULL;
-    }
-
-    return WG_SUCCESS;
-}
-
-/**
- * @brief Check if a game is running
- *
- * @retval WG_TRUE 
- * @retval WG_FALSE
- */
-    wg_boolean
-gpm_game_is_running(void)
-{
-    wg_boolean is_running = WG_FALSE;
-
-    if ((running_game != NULL) && (running_game->process_id != 0)){
-        if (0 == waitpid(running_game->process_id, NULL, WNOHANG)){
-            /* game still running */
-            is_running = WG_TRUE;
-        }else{
-            /* game closed by a user */
-            is_running = WG_FALSE;
-            trans_unix_close(&running_game->transport);
-            WG_ZERO_STRUCT(&running_game);
+    if (NULL != running_game.transport){
+        transport_close(running_game.transport);
+    }else{
+        running_game.transport = WG_MALLOC( sizeof (Wg_transport));
+        if (NULL == running_game.transport){
+            return WG_FAILURE;
         }
     }
 
-    return is_running;
-}
+    status = transport_init(running_game.transport, address);
 
-/**
- * @brief Set game id
- *
- * It is user define id. The game module has nothing to do with it.
- *
- * @param id user defined game id
- *
- * @retval WG_SUCCESS
- * @retval WG_FAILURE
- */
-    wg_status
-gpm_game_set_id(wg_uint id)
-{
-    wg_status status = WG_FAILURE;
-
-    if (gpm_game_is_running() == WG_TRUE){
-        running_game->game_id = id;
-        status = WG_SUCCESS;
-    }
+    gpm_game_exit_critical(&running_game);
 
     return status;
 }
 
-/**
- * @brief Get game id
- *
- * @param id memory to store id
- *
- * @retval WG_SUCCESS
- * @retval WG_FAILURE
- */
-    wg_status
-gpm_game_get_id(wg_uint *id)
+WG_PRIVATE wg_status
+gpm_game_clear_server(void)
 {
     wg_status status = WG_FAILURE;
+    Wg_transport *server = NULL;
 
-    CHECK_FOR_NULL(id);
+    gpm_game_enter_critical(&running_game);
 
-    if (gpm_game_is_running() == WG_TRUE){
-        *id = running_game->game_id;
-        status = WG_SUCCESS;
+    server = running_game.server;
+
+    if (NULL != server){
+        status = transport_close(server);
+        WG_FREE(server);
+        running_game.server = NULL;
     }
+
+    gpm_game_exit_critical(&running_game);
 
     return status;
 }
 
-/** @brief Send message to the game.
- * Each time a plugin wants to send a message this function
- * is called. Pointer to this function is passed as an argument
- * of 'run' function of the plugin.
- *
- * @param gh global handler (pointer to a game instance)
- * @param msg message to send
- *
- * @retval WG_SUCCESS
- * @retval WG_FAILURE
- */
-    WG_PRIVATE wg_status
-msg_handler(void *gh, Wg_message *msg)
+wg_status
+gpm_game_clear_transport(void)
 {
-    Game *game = NULL;
-    Wg_message_wrap *msg_wrap = NULL;
+    wg_status status = WG_FAILURE;
+    Wg_transport *transport = NULL;
 
-    game = (Game*)gh;
+    gpm_game_enter_critical(&running_game);
 
-    /* allocate memory for a message */
-    wg_slab_alloc(&game->msg_slab, (void**)&msg_wrap);
+    transport = running_game.transport;
 
-    msg_wrap->body = *msg;
-
-    /* add message to the queue */
-    wg_workq_add(&game->msg_queue, &msg_wrap->list);
-
-    return WG_SUCCESS;
-}
-
-/**
- * @brief Read data from sensor and write to message queue
- *
- * This function is called in a thread context.
- *
- * @param param paramaters
- *
- * @return param argument
- */
-    WG_PRIVATE void *
-msg_from_sensor(Msgpipe_param *param)
-{
-    return param;
-}
-
-/**
- * @brief Read message from queue and pass to a game
- *
- * This function is called in a thread context.
- *
- * @param param paramaters
- *
- * @return param argument
- */
-    WG_PRIVATE void *
-msg_to_game(Msgpipe_param *param)
-{
-    Wg_message_wrap *msg = NULL;
-    Game *game = NULL;
-    char buffer[1024];
-
-    game = (Game*)param->user_data;
-
-    /** @todo remove workaraound */
-
-    /* wait for app to open a pipe */
-    sleep(3);
-
-    for (;;){
-        WG_DEBUG("\n%s: Waiting for a message\n", __PRETTY_FUNCTION__);
-        wg_workq_get(param->queue, (void**)&msg);
-        WG_DEBUG("Received msg type = %d\n", msg->body.type);
-        switch (msg->body.type){
-            case MSG_XY:
-                WG_DEBUG("X = %f Y = %f\n", 
-                        msg->body.value.point.x,
-                        msg->body.value.point.y);
-
-                sprintf(buffer, "%d %d\n", 
-                        (int)msg->body.value.point.x,
-                        (int)msg->body.value.point.y);
-
-                trans_unix_connect(&game->transport);
-                trans_unix_send(&game->transport, (wg_uchar*)buffer, 
-                        strlen(buffer));
-                trans_unix_disconnect(&game->transport);
-                break;
-            default:
-                printf(" ");
-        }
-        wg_slab_free(&game->msg_slab, msg);
+    if (NULL != transport){
+        status = transport_close(transport);
+        WG_FREE(transport);
+        running_game.transport = NULL;
     }
 
-    return param;
+    gpm_game_exit_critical(&running_game);
+
+    return status;
 }
 
-    WG_PRIVATE wg_status
+WG_PRIVATE void
+gpm_game_enter_critical(Game *game)
+{
+    pthread_mutex_lock(&game->mutex);
+
+    return;
+}
+
+WG_PRIVATE void
+gpm_game_exit_critical(Game *game)
+{
+    pthread_mutex_unlock(&game->mutex);
+
+    return;
+}
+
+
+WG_PRIVATE wg_status
 add_default_hooks(void)
 {
     wg_uint index = 0;
@@ -479,49 +324,76 @@ add_default_hooks(void)
     return WG_SUCCESS;
 }
 
-    WG_PRIVATE wg_status 
-def_game(wg_uint argc, wg_char *args[], void *private_data)
+WG_PRIVATE wg_status 
+def_cinfo(wg_uint argc, wg_char *args[], void *private_data)
 {
-    const Wgp_info *plugin_info;
+    gpm_game_enter_critical(&running_game);
 
-    if (gpm_game_is_running() == WG_FALSE){
-        WG_PRINT("There is no game running\n");
-    }else{
-        WG_PRINT("Game name        : %s\n", running_game->name);
-        WG_PRINT("Transport address: %s\n", running_game->transport.address);
-        WG_PRINT("Plugin name      : %s\n", plugin_info->name);
-        WG_PRINT("Game pid         : %ld\n", (long)running_game->process_id);
-    }
+    WG_PRINT("TODO\n");
+
+    gpm_game_exit_critical(&running_game);
 
     return WG_SUCCESS;
 }
 
-    WG_PRIVATE wg_status
-start_process(wg_char *argv[], pid_t *process_id)
+WG_PRIVATE wg_boolean exit_pipe_thread = WG_FALSE;
+
+WG_PRIVATE wg_boolean
+is_finished(void)
 {
-    pid_t pid = 0;
-    wg_status status = WG_FAILURE;
+    wg_boolean flag = WG_FALSE;
+    pthread_spin_lock(&sp);
+    flag = exit_pipe_thread;
+    pthread_spin_unlock(&sp);
 
-    CHECK_FOR_NULL_PARAM(process_id);
-    CHECK_FOR_NULL_PARAM(argv);
+    return flag;
+}
 
-    switch (pid = fork()){
-        case 0:
-            execvp(argv[0], argv);
-            WG_ERROR("BUG: Shoudn't be here\n");
-            /* @todo make this more readable */
-            status = WG_FAILURE;
-            break;
-        case -1:
-            WG_ERROR("forking plugin %s: %s\n", argv[0], strerror(errno));
-            status = WG_FAILURE;
-            break;
-        default:
-            status = WG_SUCCESS;
-            *process_id = pid;
+
+WG_PRIVATE void
+handler(int sig)
+{
+    pthread_spin_lock(&sp);
+    exit_pipe_thread = WG_TRUE;
+    pthread_spin_unlock(&sp);
+    return;
+}
+
+WG_PRIVATE
+void *pipe_thread(void *data)
+{
+    Game *game = (Game*)data;
+    wg_char buffer[1024];
+    wg_size size = 0;
+    sigset_t sig;
+    static struct sigaction sigact;
+
+    exit_pipe_thread = WG_FALSE;
+   
+    memset(&sigact, '\0', sizeof (sigact));
+    sigemptyset(&sigact.sa_mask);
+    sigact.sa_flags = 0;
+    sigact.sa_handler = handler;
+    sigaction(SIGUSR1, &sigact, NULL);
+
+    sigemptyset(&sig);
+    sigaddset(&sig, SIGUSR1);
+    pthread_sigmask(SIG_UNBLOCK, &sig, NULL);
+
+    while (!is_finished() && (size = transport_receive(
+                    running_game.server, buffer, sizeof (buffer))) != -1){
+        if (game->transport != NULL){
+            gpm_game_enter_critical(&running_game);
+            transport_connect(game->transport);
+            transport_send(game->transport, buffer, size);
+            transport_disconnect(game->transport);
+            gpm_game_exit_critical(&running_game);
+        }
     }
 
-    return status;
+    WG_DEBUG("Pipe thread process exiting\n");
+
+    return NULL;
 }
 
 /*! @} */

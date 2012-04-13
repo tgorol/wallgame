@@ -15,11 +15,11 @@
 
 #include "include/gui_progress_dialog.h"
 
-/*! \defgroup gui User interface
+/*! \defgroup plugin_webcam Plug-in Webcam
  */
 
-/*! \defgroup gui_wizard_progress wizard screen list
-    \ingroup gui
+/*! \defgroup gui_wizard_progress Wizard Screen List
+    \ingroup plugin_webcam
 */
 
 /*! @{ */
@@ -206,7 +206,7 @@ gui_progress_dialog_screen_cleanup(Gui_progress_dialog_screen *pds)
 * @param pd   progress dialogs instance
 * @param pds  dialog instance to add
 */
-void
+wg_status
 gui_progress_dialog_add_screen(Gui_progress_dialog *pd,
         Gui_progress_dialog_screen *pds)
 {
@@ -215,7 +215,7 @@ gui_progress_dialog_add_screen(Gui_progress_dialog *pd,
 
     list_add(&pd->screens, &pds->list);
 
-    return;
+    return WG_SUCCESS;
 }
 
 /** 
@@ -226,7 +226,7 @@ gui_progress_dialog_add_screen(Gui_progress_dialog *pd,
 * @param pd      progress screen instance
 * @param action  exit action
 */
-void
+wg_status
 gui_progress_dialog_set_exit_action(Gui_progress_dialog *pd,
         exit_action_cb action)
 {
@@ -234,7 +234,7 @@ gui_progress_dialog_set_exit_action(Gui_progress_dialog *pd,
 
     pd->exit_action = action;
 
-    return;
+    return WG_SUCCESS;
 }
 
 /** 
@@ -242,7 +242,7 @@ gui_progress_dialog_set_exit_action(Gui_progress_dialog *pd,
 * 
 * @param pd progress dialogs instance
 */
-void
+wg_status
 gui_progress_dialog_show(Gui_progress_dialog *pd)
 {
     GtkBuilder *builder = NULL;
@@ -253,6 +253,8 @@ gui_progress_dialog_show(Gui_progress_dialog *pd)
     Gui_progress_dialog_screen **pds_array = NULL;
     Gui_progress_dialog_screen *pds       = NULL;
     Iterator itr;
+
+    CHECK_FOR_NULL_PARAM(pd);
 
     builder = gtk_builder_new ();
     gtk_builder_add_from_file (
@@ -279,7 +281,7 @@ gui_progress_dialog_show(Gui_progress_dialog *pd)
     size = list_size(&pd->screens);
     pds_array = WG_CALLOC(size, sizeof (Gui_progress_dialog_screen*));
     if (NULL == pds_array){
-        return;
+        return WG_FAILURE;
     }
 
     pd->size = size;
@@ -298,7 +300,7 @@ gui_progress_dialog_show(Gui_progress_dialog *pd)
 
     gtk_widget_show_all(dialog);
 
-    return;
+    return WG_SUCCESS;
 }
 
 WG_PRIVATE wg_boolean
@@ -394,7 +396,6 @@ WG_PRIVATE void
 show_extra_widget(Gui_progress_dialog *pd)
 {
     Gui_progress_dialog_screen *pds = NULL;
-    CHECK_FOR_NULL_PARAM(pd);
 
     pds = pd->screens_array[pd->active_index];
     if (!is_last_screen(pd)){
@@ -411,7 +412,6 @@ WG_PRIVATE void
 hide_extra_widget(Gui_progress_dialog *pd)
 {
     Gui_progress_dialog_screen *pds = NULL;
-    CHECK_FOR_NULL_PARAM(pd);
 
     pds = pd->screens_array[pd->active_index];
 

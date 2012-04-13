@@ -1,6 +1,5 @@
 
 SOURCE= ef_engine.c            \
-        vid.c                  \
         sensor.c               \
         gui_work.c             \
         gui_prim.c             \
@@ -14,9 +13,11 @@ SOURCE= ef_engine.c            \
 
 APP_NAME=webcam
 
-MAIN_C=wg_cam_main.c
+L_LIB_NAME=webcam
 
-OUT_NAME=libwebcam
+OUT_NAME=lib${L_LIB_NAME}
+
+MAIN_C=wg_cam_main.c
 
 INCLUDE=./include/
 
@@ -24,14 +25,15 @@ EXTRA_CFLAGS+=-D_GNU_SOURCE `pkg-config --cflags gtk+-3.0` \
 			  -DGTK_DISABLE_DEPRECATED=1                   \
               -Wl,--export-dynamic
 
+LIB_LIST=-l${L_LIB_NAME} -lwg -ljpeg -lm -lgthread-2.0 \
+         `pkg-config --libs gtk+-3.0`
+
 ifdef WG_DEBUG
 EXTRA_CFLAGS+=-DWGDEBUG
 endif
 
 include $(BUILD_PATH)/env.mk
 
-LIB_LIST+=./build/lib/$(OUT_NAME).a ../build/libwg.a -ljpeg -lm -lgthread-2.0 `pkg-config --libs gtk+-3.0` -lavcodec -lavutil -lswscale
-
-all: clean lib app
+all: lib app
 
 include $(BUILD_PATH)/build.mk

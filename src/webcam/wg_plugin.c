@@ -6,6 +6,15 @@
 #include <pthread.h>
 #include <stdarg.h>
 
+/* @todo create user space include */
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <linux/un.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <linux/types.h>
+#include <unistd.h>
+
 #include <cairo.h>
 #include <gtk/gtk.h>
 #include <gdk/gdk.h>
@@ -17,6 +26,8 @@
 #include <wgmacros.h>
 #include <wg_linked_list.h>
 #include <wg_iterator.h>
+#include <wg_trans.h>
+#include <wg_plugin_tools.h>
 #include <wg_lsdir.h>
 #include <wg_sync_linked_list.h>
 #include <wg_wq.h>
@@ -52,6 +63,7 @@
 /** @brief maximum devixe path size */
 #define DEVICE_PATH_MAX  128
 
+#define LAYOUT_PATH "/home/tgorol/gmit/final_project/src/webcam/layout.xml"
 
 typedef struct Resolution{
     wg_char text[16];        /*!< text of the resolution */
@@ -142,10 +154,20 @@ xy_cb(const Sensor *sensor, Sensor_cb_type type, wg_uint x, wg_uint y,
 }
 
 WG_PRIVATE void 
-hit_cb(wg_float x, wg_float y)
+hit_cb(wg_float x, wg_float y, void *user_data)
 {
     static wg_uint count = 0;
-    WG_LOG("Hit at x=%3.2f y=%3.2f %s\n", x, y, (count & 0x1) ? "--" : " ");
+    wg_double nx = 0.0;
+    wg_double ny = 0.0;
+
+    /* convert to procentage */
+    nx = x * 100.0;
+    ny = y * 100.0;
+
+    Camera *cam = (Camera*)user_data;
+    WG_LOG("Hit at x=%3.2f y=%3.2f %s\n", nx, ny, (count & 0x1) ? "--" : " ");
+
+    wg_msg_transport_send_hit(&cam->msg_transport, nx, ny);
 
     ++count;
 
@@ -199,7 +221,7 @@ void button_clicked_start
             sensor_add_color(cam->sensor, &cam->top);
             sensor_add_color(cam->sensor, &cam->bottom);
 
-            cd_set_hit_callback(&cam->cd, hit_cb);
+            cd_set_hit_callback(&cam->cd, hit_cb, cam);
 
             pthread_attr_init(&attr);
             pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
@@ -220,6 +242,8 @@ void button_clicked_start
 
     return;
 }
+
+#if 0
 
 typedef struct Add_color{
     Hsv color;
@@ -286,6 +310,8 @@ button_clicked_color(GtkWidget *widget, gpointer data){
     gtk_dialog_run(GTK_DIALOG(color_sel));
 }
 
+#endif
+
 
 static void 
 button_clicked_callibrate(GtkWidget *widget, gpointer data)
@@ -299,6 +325,7 @@ button_clicked_callibrate(GtkWidget *widget, gpointer data)
     return;
 }
 
+#if 0
 static void 
 button_clicked_capture(GtkWidget *widget, gpointer data)
 {
@@ -322,6 +349,7 @@ button_clicked_capture(GtkWidget *widget, gpointer data)
         gtk_widget_destroy(error_msg);
     }
 }
+#endif
 
 WG_PRIVATE void
 noise_reduction(GtkToggleButton *togglebutton,  gpointer user_data)
@@ -493,7 +521,7 @@ wg_plugin_update_fps(Camera *cam, wg_int val)
     return;
 }
 
-
+#if 0
 WG_PRIVATE void
 encode_frame(void *data)
 {
@@ -510,6 +538,8 @@ encode_frame(void *data)
 
     return;
 }
+
+#endif
 
 wg_boolean
 go_to_state(Camera *camera, WEBCAM_STATE new_state)
@@ -594,13 +624,13 @@ default_cb(Sensor *sensor, Sensor_cb_type type, Wg_image *img, void *user_data)
     cam = (Camera*)user_data;
     switch (type){
     case CB_ENTER:
-        video_open_output_stream("text.mpg", &cam->vid, sensor->width, 
-                sensor->height);
+        //video_open_output_stream("text.mpg", &cam->vid, sensor->width, 
+        //        sensor->height);
         wg_plugin_start_fps(cam);
         break;
     case CB_EXIT:
-        wg_plugin_stop_fps(cam);
-        video_close_output_stream(&cam->vid);
+        //wg_plugin_stop_fps(cam);
+        //video_close_output_stream(&cam->vid);
         break;
     case CB_SETUP_START:
         break;
@@ -715,6 +745,7 @@ wg_plugin_init(int argc, char *argv[], Camera *camera)
     GtkWidget *widget = NULL;
     wg_uint width = 0;
     wg_uint height = 0;
+    wg_status status = WG_FAILURE;
 
     CHECK_FOR_NULL_PARAM(camera);
 
@@ -722,13 +753,17 @@ wg_plugin_init(int argc, char *argv[], Camera *camera)
 
     enable_threads();
 
+    status = wg_msg_transport_init(argv[1], &camera->msg_transport);
+    if (WG_SUCCESS != status){
+        return status;
+    }
+
     camera->state = WEBCAM_STATE_UNINITIALIZED;
 
     gtk_init (&argc, &argv);
 
-    builder = gtk_builder_new ();
-    gtk_builder_add_from_file (
-            builder, "layout.xml", NULL);
+    builder = gtk_builder_new();
+    gtk_builder_add_from_file(builder, LAYOUT_PATH, NULL);
     window = GTK_WIDGET (gtk_builder_get_object (builder, "window"));
     gtk_builder_connect_signals (builder, NULL);
 
@@ -864,6 +899,8 @@ wg_plugin_cleanup(Camera *camera)
 
     gui_display_cleanup(&camera->left_display);
     gui_display_cleanup(&camera->right_display);
+
+    wg_msg_transport_cleanup(&camera->msg_transport);
 
     gdk_threads_leave();
 

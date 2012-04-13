@@ -28,4 +28,16 @@ gpm_game_add_message(Msg_type type, ...);
 WG_PUBLIC wg_status
 gpm_game_init(void);
 
+WG_PUBLIC wg_status
+gpm_game_cleanup(void);
+
+WG_PUBLIC wg_status
+gpm_game_set_transport(const wg_char *address);
+
+WG_PUBLIC wg_status
+gpm_game_set_server(const wg_char *address);
+
+WG_PUBLIC wg_status
+gpm_game_clear_transport(void);
+
 #endif

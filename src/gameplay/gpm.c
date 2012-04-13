@@ -15,6 +15,14 @@
 #include "include/gpm_hooks.h"
 #include "include/gpm_game.h"
 
+/** @defgroup gameplay Game Play
+ */
+
+/** @defgroup gameplay_main Game Play Main
+*   @ingroup gameplay
+*/
+
+/*! @{ */
 /**
  * @brief Console command information
  */
@@ -27,7 +35,7 @@ typedef struct Cmd_info {
     wg_char **detail_lines;     /*!< detailed description */
 }Cmd_info;
 
-wg_char *details_lsg[] = {
+WG_PRIVATE wg_char *details_lsg[] = {
     "    lsg            -   print all available games in the system with id",
     "    lsg <id list>  -   print details about a game",
     "    example:",
@@ -35,7 +43,7 @@ wg_char *details_lsg[] = {
     NULL
 };
 
-Cmd_info cmd_info[] = {
+WG_PRIVATE Cmd_info cmd_info[] = {
     {
         .name         = "quit"           ,
         .description  = "Quit program"   ,
@@ -58,7 +66,7 @@ Cmd_info cmd_info[] = {
         .name         = "connect"           ,
         .description  = "Connect to the game"   ,
         .cb_hook      = cb_connect       ,
-        .flags        = HOOK_SYNC | HOOK_EXIT   ,
+        .flags        = HOOK_SYNC        ,
         .private_data = NULL             ,
         .detail_lines = NULL
     }
@@ -163,6 +171,8 @@ wg_start(int argc, char *argv[])
     /* clean console */
     gpm_console_cleanup();
 
+    gpm_game_cleanup();
+
     return WG_EXIT_SUCCESS;
 }
 
@@ -236,3 +246,4 @@ setup_console()
     return WG_SUCCESS;
 }
 
+/*! @} */

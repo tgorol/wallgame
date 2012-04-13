@@ -13,27 +13,45 @@
 
 #include <wg_wq.h>
 
+/*! @defgroup workq Work queue
+ *  @ingroup misc
+ */
+/*! @{ */
+
+/** 
+* @brief Work type
+*/
 typedef enum Work_type {
-    EVENT_INVALID = 0,
-    EVENT_WORK       ,
-    EVENT_SETUP      ,
-    EVENT_EXIT     
+    EVENT_INVALID = 0,     /*!< invalid type   */
+    EVENT_WORK       ,     /*!< regural task   */
+    EVENT_SETUP      ,     /*!< setup task     */
+    EVENT_EXIT             /*!< exit task      */
 }Work_type;
 
+/** 
+* @brief Work task
+*/
 typedef struct Wg_work{
-    Work_type type;
-    List_head leaf;
-    Wg_wq_cb work_cb;
+    Work_type type;        /*!< type of the task */
+    List_head leaf;        /*!< list of tasks    */
+    Wg_wq_cb work_cb;      /*!< task function    */
 }Wg_work;
 
 
+/** 
+* @brief Work queue process
+* 
+* @param workq_instance work queue instance
+* 
+* @retval NULL
+*/
 WG_PRIVATE void*
-process_event(void *data)
+process_event(void *workq_instance)
 {
     WorkQ *workq = NULL;
     Wg_work *work = NULL;
 
-    workq = (WorkQ*)data;
+    workq = (WorkQ*)workq_instance;
 
     for (;;){
         wg_workq_get(workq, (void**)&work);
@@ -60,6 +78,14 @@ process_event(void *data)
     pthread_exit(NULL);
 }
 
+/** 
+* @brief Initialize work queue
+* 
+* @param wq   instance of work queue to initialize
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
 wg_wq_init(Wg_wq *wq)
 {
@@ -77,7 +103,15 @@ wg_wq_init(Wg_wq *wq)
     return WG_SUCCESS;
 }
 
-void
+/** 
+* @brief Release resources allocated by wg_wq_init()
+* 
+* @param wq work queue instance
+
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
+wg_status
 wg_wq_cleanup(Wg_wq *wq)
 {
     Wg_work *work = NULL;
@@ -94,10 +128,21 @@ wg_wq_cleanup(Wg_wq *wq)
 
     memset(wq, '\0', sizeof (Wg_wq));
 
-    return;
+    return WG_SUCCESS;
 }
 
 
+/** 
+* @brief Create a task
+*
+* Create a task instance. User can specify size of memory allocated for
+* task data.
+* 
+* @param size      size of user data
+* @param work_cb   task function
+* 
+* @return pointer to user defined data or NULL for failure
+*/
 void *
 wg_wq_work_create(wg_size size, Wg_wq_cb work_cb)
 {
@@ -115,7 +160,19 @@ wg_wq_work_create(wg_size size, Wg_wq_cb work_cb)
     return (void*)(work + 1);
 }
 
-void
+/** 
+* @brief Destroy task
+*
+* In most cases user wont have to call this function explicitly cause
+* tasks are destroyed after compleation. Only need to call it by user will be
+* when task wont be place on the qork queue.
+* 
+* @param user defined data returned by wg_wq_work_create()
+*
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
+wg_status
 wg_wq_work_destroy(void *data)
 {
     Wg_work *work = NULL;
@@ -126,19 +183,30 @@ wg_wq_work_destroy(void *data)
 
     WG_FREE(work - 1);
 
-    return;
+    return WG_SUCCESS;
 }
 
-void
+/** 
+* @brief Place task on the queue
+* 
+* @param wq    destination queue
+* @param data  user task data returned by wg_wq_work_create()
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
+wg_status
 wg_wq_add(Wg_wq *wq, void *data)
 {
     Wg_work *work = NULL;
+    wg_status status = WG_FAILURE;
 
     CHECK_FOR_NULL_PARAM(data);
 
     work = (Wg_work*)data;
 
-    wg_workq_add(&wq->workq, &(work[-1].leaf));
+    status = wg_workq_add(&wq->workq, &(work[-1].leaf));
 
-    return;
+    return status;
 }
+/*! @} */

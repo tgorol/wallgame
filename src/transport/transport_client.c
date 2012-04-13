@@ -168,6 +168,33 @@ transport_send(Wg_transport *transport, void *buf, wg_size size)
     return WG_SUCCESS;
 }
 
+wg_size
+transport_receive(Wg_transport *transport, void *buf, wg_size size)
+{
+    int readed = 0;
+    Transport *trans = NULL;
+    wg_uchar *buffer = NULL;
+
+    CHECK_FOR_NULL(transport);
+    CHECK_FOR_NULL(buf);
+
+    buffer = buf;
+    trans = &transport->transport;
+
+    /* TODO Add input parameter to store an error code */
+    if (trans->out_fd == TRANS_UNIX_DISCONNECTED){
+        return WG_FAILURE;
+    }
+
+    errno = 0;
+    readed = recv(trans->out_fd, buffer, size, 0);
+    if (readed != -1){
+        WG_DEBUG("Unix socket read %d bytes\n", readed);
+    }
+
+    return readed;
+}
+
 wg_status
 transport_print(Wg_transport *transport, const char *format, ...)
 {
@@ -222,48 +249,6 @@ transport_disconnect(Wg_transport *transport)
     }
 
     return WG_SUCCESS;
-}
-
-
-/**
- * @brief Close transport
- *
- * @param trans transport to close
- *
- * @retval WG_SUCCESS
- * @retval WG_FAILURE
- */
-wg_status
-transport_close(Wg_transport *transport)
-{
-    CHECK_FOR_NULL(transport);
-
-    transport_disconnect(transport);
-
-    memset(transport, '\0', sizeof (Wg_transport));
-
-    return WG_SUCCESS;
-}
-
-/**
- * @brief Get transport address
- *
- * @param trans   transport
- * @param address memory to store a pointer to the address
- *
- * @retval WG_SUCCESS
- * @retval WG_FAILURE
- */
-wg_status
-transport_get_address(Wg_transport *trans, const wg_char** address)
-{
-    CHECK_FOR_NULL(trans);
-    CHECK_FOR_NULL(address);
-
-    *address = (wg_char*)&trans->sockaddr.un.sun_path;
-
-    return WG_SUCCESS;
-
 }
 
 /*! @} */

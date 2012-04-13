@@ -1,5 +1,6 @@
 
-SOURCE= wg_plugin_tools.c
+SOURCE= wg_plugin_tools.c \
+        wg_sensor_plugin.c
 
 INCLUDE=./include 
 

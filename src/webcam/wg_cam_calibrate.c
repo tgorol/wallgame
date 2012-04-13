@@ -2,12 +2,23 @@
 #include <stdio.h>
 #include <pthread.h>
 
+/* @todo create user space include */
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <linux/un.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <linux/types.h>
+#include <unistd.h>
+
 #include <gtk/gtk.h>
 #include <gdk/gdk.h>
 
 #include <wg.h>
 #include <wgtypes.h>
 #include <wgmacros.h>
+#include <wg_trans.h>
+#include <wg_plugin_tools.h>
 #include <wg_linked_list.h>
 #include <wg_sync_linked_list.h>
 #include <wg_wq.h>
@@ -533,7 +544,7 @@ callibration_exit(wg_uint screen_id, void *user_data)
     return;
 }
 
-void
+wg_status
 gui_callibration_screen(Camera *cam)
 {
     Gui_progress_dialog *pd = NULL;
@@ -577,6 +588,8 @@ gui_callibration_screen(Camera *cam)
             );
 
     gui_progress_dialog_show(pd);
+
+    return WG_SUCCESS;
 }
 
 WG_PRIVATE wg_status
@@ -652,7 +665,6 @@ get_point(char *value, Wg_point2d *point)
     wg_uint y = 0;
     char *tok = NULL;
 
-    CHECK_FOR_NULL_PARAM(value);
     CHECK_FOR_NULL_PARAM(point);
 
     tok = strtok(value, " ");
@@ -677,7 +689,6 @@ get_orientation(char *value, Cd_orientation *orientation)
 {
     char *tok = NULL;
 
-    CHECK_FOR_NULL_PARAM(value);
     CHECK_FOR_NULL_PARAM(orientation);
 
     tok = strtok(value, " ");
@@ -722,7 +733,6 @@ get_color_component(char *value, wg_double *component)
 {
     char *tok = NULL;
 
-    CHECK_FOR_NULL_PARAM(value);
     CHECK_FOR_NULL_PARAM(component);
 
     tok = strtok(value, " ");

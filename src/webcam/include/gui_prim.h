@@ -19,7 +19,7 @@ typedef struct Wg_point2d{
     wg_int y;       /*!< y coordinate */
 }Wg_point2d;
 
-WG_PUBLIC void
+WG_PUBLIC wg_status
 wg_point2d_new(wg_int x, wg_int y, Wg_point2d *point);
 
 WG_PUBLIC wg_float
@@ -32,7 +32,7 @@ WG_PUBLIC void
 wg_rect_new_from_points(wg_int x1, wg_int y1, wg_int x2,
         wg_int y2, Wg_rect *rect);
 
-WG_PUBLIC void
+WG_PUBLIC wg_status
 wg_rect_move(Wg_rect *rect, wg_int dx, wg_int dy);
 
 #endif

@@ -1,12 +1,23 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+/* @todo create user space include */
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <linux/un.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <linux/types.h>
+#include <unistd.h>
+
 #include <wg.h>
 #include <wgtypes.h>
 #include <wgmacros.h>
 #include <wg_linked_list.h>
 #include <wg_iterator.h>
 #include <wg_sync_linked_list.h>
+#include <wg_trans.h>
+#include <wg_plugin_tools.h>
 #include <wg_wq.h>
 #include <img.h>
 #include <cam.h>
@@ -24,9 +35,9 @@
 
 #include "include/gui_display.h"
 
-/*! \defgroup gui_display widget to display custom images
-    \ingroup gui
-*/
+/*! \defgroup gui_display Widget to Display Custom Images
+ *  \ingroup plugin_webcam
+ */
 
 /*! @{ */
 
@@ -322,8 +333,6 @@ refresh(Gui_display *display)
 {
     Update_image *work = NULL;
 
-    CHECK_FOR_NULL_PARAM(display);
-
     work = gui_work_create(sizeof (Update_image), 
             refresh_image_cb);
 
@@ -339,9 +348,6 @@ WG_PRIVATE wg_status
 set_pixbuf(Gui_display *display, wg_uint x, wg_uint y, 
         GdkPixbuf *pixbuf)
 {
-    CHECK_FOR_NULL_PARAM(display);
-    CHECK_FOR_NULL_PARAM(pixbuf);
-
     gdk_threads_enter();
 
     g_object_ref(pixbuf);
@@ -364,8 +370,6 @@ set_pixbuf(Gui_display *display, wg_uint x, wg_uint y,
 WG_PRIVATE void
 paint_line(cairo_t *cr, const Gui_display_line *line)
 {
-    CHECK_FOR_NULL_PARAM(cr);
-    CHECK_FOR_NULL_PARAM(line);
     cairo_set_source_rgb(cr, line->r, line->g, line->b);
     cairo_move_to(cr, (double)line->p1.x, (double)line->p1.y);
     cairo_line_to(cr, (double)line->p2.x, (double)line->p2.y);

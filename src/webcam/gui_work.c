@@ -14,10 +14,11 @@
 
 #include "include/gui_work.h"
 
-/*! \defgroup gui_work User interface work queue.
+/*! \defgroup gui_work User Interface Work Queue.
 *
 *    Mostly used to update UI
-*    \ingroup gui
+*
+*  \ingroup plugin_webcam
 */
 
 /*! @{ */

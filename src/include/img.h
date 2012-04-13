@@ -176,7 +176,7 @@ img_get_components_per_pixel(Wg_image *img, wg_uint *comp_per_pixel)
 * @param img image to get iterator for
 * @param itr memory to store iterator
 */
-WG_INLINE void 
+WG_INLINE wg_status
 img_get_iterator(Wg_image *img, Img_iterator *itr)
 {
     CHECK_FOR_NULL_PARAM(img);
@@ -192,8 +192,7 @@ img_get_iterator(Wg_image *img, Img_iterator *itr)
     img_get_row_distance(img, &itr->row_distance);
     img_get_components_per_pixel(img, &itr->comp_per_pixel);
 
-    return;
-
+    return WG_SUCCESS;
 }
 
 /** 
