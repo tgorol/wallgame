@@ -13,6 +13,7 @@
 
 /*! @{ */
 
+/** @brief Maximum component value */
 #define MAX_COLOR_VALUE     255
 
 /**
@@ -150,6 +151,15 @@ img_get_subimage(Wg_image *img_src, wg_uint x, wg_uint y,
     return WG_SUCCESS;
 }
 
+/** 
+* @brief Copy image
+* 
+* @param[in]  src   source image
+* @param[out] dest  destination image
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
 img_copy(Wg_image *src, Wg_image *dest)
 {

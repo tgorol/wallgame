@@ -18,6 +18,7 @@
 #include <wgmacros.h>
 
 #include <wg_trans.h>
+#include <wg_string.h>
 #include <wg_linked_list.h>
 #include <wg_sync_linked_list.h>
 #include <wg_slab.h>
@@ -34,47 +35,24 @@
 
 /*! @{ */
 
-
-/** @brief Maximum number of messages in the queue */
-#define MSG_QUEUE_MAX   1024
-
-/** @brief Maximum number of characters in game name */
-#define GAME_NAME_MAX   256
-
-
 /**
  * @brief Game Instance Structure
  */
 typedef struct Game{
     Wg_transport *transport;  /*!< transport connected to the game */
     Wg_transport *server;     /*!< transport server                */
-    pthread_mutex_t mutex;
-    pthread_t thread;
+    pthread_mutex_t mutex;    /*!< mutex critical section          */
+    pthread_t thread;         /*!< pipe thread                     */
+    pthread_spinlock_t lock;  /*!< pipe thread lock                */
+    wg_uint is_blocked:1;     /*!< is passing blocked              */
+    wg_char *log_file;        /*!< log file                        */
 }Game;
 
-/**
- * @brief Message wrapper
- */
-typedef struct Wg_message_wrap{
-    Wg_message body;        /*!< body of the message */
-    List_head list;         /*!< list leaf           */
-}Wg_message_wrap;
-
-/**
- * @brief Running game instance;
- */
-WG_PRIVATE Game running_game = {
-    .mutex = PTHREAD_MUTEX_INITIALIZER
-};
-
-WG_PRIVATE pthread_spinlock_t sp;
-
+/** Function prototypes                 */
 WG_PRIVATE wg_status add_default_hooks(void);
 
 WG_PRIVATE wg_status def_cinfo(wg_uint argc, wg_char *args[], 
                               void *private_data);
-
-WG_PRIVATE wg_status gpm_game_clear_server(void);
 
 WG_PRIVATE void
 gpm_game_enter_critical(Game *game);
@@ -91,6 +69,17 @@ start_server(pthread_t *thread, void *user_data);
 WG_PRIVATE wg_status
 stop_server(pthread_t *thread);
 
+WG_PRIVATE void
+set_server_state(Game *game, wg_boolean state);
+
+WG_PRIVATE wg_boolean
+get_server_state(Game *game);
+
+/** Static symbols                              */
+
+/** 
+* @brief Hooks created by game module
+*/
 WG_PRIVATE Console_hook def_cmd_info[] = {
     {
         .name         = "cinfo"                      ,
@@ -101,6 +90,22 @@ WG_PRIVATE Console_hook def_cmd_info[] = {
     }
 };
 
+/**
+ * @brief Running game instance;
+ */
+WG_PRIVATE Game running_game = {
+    .mutex = PTHREAD_MUTEX_INITIALIZER
+};
+
+/**
+ * @brief lock for exit_pipe_thread
+ */
+WG_PRIVATE pthread_spinlock_t sp;
+
+/** 
+* @brief exit thread pipe flag
+*/
+WG_PRIVATE wg_boolean exit_pipe_thread = WG_FALSE;
 
 /**
  * @brief Initialize game control module
@@ -115,10 +120,20 @@ gpm_game_init(void)
 
     add_default_hooks();
 
+    memset(&running_game, '\0', sizeof (Game));
+
     running_game.server    = NULL;
     running_game.transport = NULL;
 
     pthread_spin_init(&sp, PTHREAD_PROCESS_SHARED);
+
+    pthread_spin_init(&running_game.lock, PTHREAD_PROCESS_SHARED);
+
+    gpm_game_block();
+
+    wg_strdup("wglog.txt", &running_game.log_file);
+
+    unlink(running_game.log_file);
 
     /* Create server                  */
     status = gpm_game_set_server("inet:127.0.0.1:7777");
@@ -129,34 +144,32 @@ gpm_game_init(void)
     return status;
 }
 
+/** 
+* @brief Release resources allocated by gpm_game_init()
+* 
+* @retval WG_SUCCESS
+*/
 wg_status
 gpm_game_cleanup(void)
 {
     stop_server(&running_game.thread);
     pthread_spin_destroy(&sp);
+    pthread_spin_destroy(&running_game.lock);
     gpm_game_clear_transport();
     gpm_game_clear_server();
+    WG_FREE(running_game.log_file);
 
     return WG_SUCCESS;
 }
 
-
-/**
- * @brief Start a game
- *
- * @param argv[]    arguments
- * @param address  address to use to communicate with a game
- * @param plugin_name  name of the plugin to use with the game
- *
- * @retval WG_SUCCESS
- * @retval WG_FAILURE
- */
-wg_status
-gpm_game_run(wg_char *argv[], wg_char *argv_plug[], const wg_char *address)
-{
-    return WG_FAILURE;
-}
-
+/** 
+* @brief Create new server and start listening
+* 
+* @param address listening address
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
 gpm_game_set_server(const wg_char *address)
 {
@@ -164,6 +177,8 @@ gpm_game_set_server(const wg_char *address)
 
     gpm_game_enter_critical(&running_game);
 
+    /* Close old server if exists or allocate memory for new
+    */
     if (running_game.server != NULL){
         stop_server(&running_game.thread);
         transport_close(running_game.server);
@@ -189,35 +204,15 @@ gpm_game_set_server(const wg_char *address)
     return WG_SUCCESS;
 }
 
-WG_PRIVATE wg_status
-stop_server(pthread_t *thread)
-{
-    pthread_kill(*thread, SIGUSR1); 
 
-    pthread_join(*thread, NULL);
-    
-    return WG_SUCCESS;
-}
-
-WG_PRIVATE wg_status
-start_server(pthread_t *thread, void *user_data)
-{
-    pthread_attr_t attr;
-    int status = -1;
-
-    pthread_attr_init(&attr);
-    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-    status = pthread_create(thread, &attr, 
-            pipe_thread, user_data);
-    if (0 != status){
-        pthread_attr_destroy(&attr);
-        return WG_FAILURE;
-    }
-    pthread_attr_destroy(&attr);
-
-    return WG_SUCCESS;
-}
-
+/** 
+* @brief Create new transport
+* 
+* @param address trasport address
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
 gpm_game_set_transport(const wg_char *address)
 {
@@ -227,6 +222,7 @@ gpm_game_set_transport(const wg_char *address)
 
     gpm_game_enter_critical(&running_game);
 
+    /* Release old transport or allocate memory for new one */
     if (NULL != running_game.transport){
         transport_close(running_game.transport);
     }else{
@@ -236,6 +232,7 @@ gpm_game_set_transport(const wg_char *address)
         }
     }
 
+    /* Initialize new transport                             */
     status = transport_init(running_game.transport, address);
 
     gpm_game_exit_critical(&running_game);
@@ -243,7 +240,13 @@ gpm_game_set_transport(const wg_char *address)
     return status;
 }
 
-WG_PRIVATE wg_status
+/** 
+* @brief Stop server and release resources
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
+wg_status
 gpm_game_clear_server(void)
 {
     wg_status status = WG_FAILURE;
@@ -264,6 +267,12 @@ gpm_game_clear_server(void)
     return status;
 }
 
+/** 
+* @brief Clear transport and release resources
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
 gpm_game_clear_transport(void)
 {
@@ -285,6 +294,54 @@ gpm_game_clear_transport(void)
     return status;
 }
 
+/** 
+* @brief Stop passing data to the game
+* 
+* @retval WG_SUCCESS
+*/
+wg_status
+gpm_game_block(void)
+{
+    set_server_state(&running_game, WG_TRUE);
+
+    return WG_SUCCESS;
+}
+
+/** 
+* @brief Start passing data to the game
+* 
+* @retval WG_SUCCESS
+*/
+wg_status
+gpm_game_unblock(void)
+{
+    set_server_state(&running_game, WG_FALSE);
+
+    return WG_SUCCESS;
+}
+
+/** 
+* @brief Get pipe state
+* 
+* @param state memory for state. WG_TRUE blocked, WG_FALSE unblocked
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
+wg_status
+gpm_get_blocking_state(wg_boolean *state)
+{
+    CHECK_FOR_NULL_PARAM(state);
+
+    *state =  get_server_state(&running_game);
+
+    return WG_SUCCESS;
+}
+
+/*
+ * Static functions 
+ */
+
 WG_PRIVATE void
 gpm_game_enter_critical(Game *game)
 {
@@ -300,7 +357,6 @@ gpm_game_exit_critical(Game *game)
 
     return;
 }
-
 
 WG_PRIVATE wg_status
 add_default_hooks(void)
@@ -336,8 +392,6 @@ def_cinfo(wg_uint argc, wg_char *args[], void *private_data)
     return WG_SUCCESS;
 }
 
-WG_PRIVATE wg_boolean exit_pipe_thread = WG_FALSE;
-
 WG_PRIVATE wg_boolean
 is_finished(void)
 {
@@ -349,6 +403,31 @@ is_finished(void)
     return flag;
 }
 
+WG_PRIVATE void
+set_server_state(Game *game, wg_boolean state)
+{
+    pthread_spin_lock(&game->lock);
+
+    game->is_blocked = state;
+
+    pthread_spin_unlock(&game->lock);
+
+    return;
+}
+
+WG_PRIVATE wg_boolean
+get_server_state(Game *game)
+{
+    wg_boolean state = WG_FALSE;
+
+    pthread_spin_lock(&game->lock);
+
+    state = game->is_blocked;
+
+    pthread_spin_unlock(&game->lock);
+
+    return state;
+}
 
 WG_PRIVATE void
 handler(int sig)
@@ -359,41 +438,92 @@ handler(int sig)
     return;
 }
 
+/** 
+* @brief Pipe thread.
+* 
+* Read data from server and send to client
+* 
+* @param data pointer to Game
+* 
+* @retval NULL
+*/
 WG_PRIVATE
 void *pipe_thread(void *data)
 {
     Game *game = (Game*)data;
+    FILE *log_file = NULL;
     wg_char buffer[1024];
     wg_size size = 0;
     sigset_t sig;
+    wg_boolean block_state = WG_FALSE;
     static struct sigaction sigact;
 
     exit_pipe_thread = WG_FALSE;
-   
+  
+    /* Set handler for SIGUSR1 signal */
     memset(&sigact, '\0', sizeof (sigact));
     sigemptyset(&sigact.sa_mask);
     sigact.sa_flags = 0;
     sigact.sa_handler = handler;
     sigaction(SIGUSR1, &sigact, NULL);
 
+    /* Unmask SIGUSR1 for this thread */
     sigemptyset(&sig);
     sigaddset(&sig, SIGUSR1);
     pthread_sigmask(SIG_UNBLOCK, &sig, NULL);
 
     while (!is_finished() && (size = transport_receive(
-                    running_game.server, buffer, sizeof (buffer))) != -1){
-        if (game->transport != NULL){
-            gpm_game_enter_critical(&running_game);
+                    running_game.server, buffer, sizeof (buffer) - 1)) != -1){
+        gpm_get_blocking_state(&block_state);
+        gpm_game_enter_critical(&running_game);
+        block_state = ((block_state == WG_FALSE) && (game->transport != NULL));
+        if (block_state == WG_TRUE){
+            buffer[size] = '\0';
+            log_file = fopen(game->log_file, "a");
+            if (NULL != log_file){
+                fprintf(log_file, "%s", buffer);
+                fclose(log_file);
+                log_file = NULL;
+            }
             transport_connect(game->transport);
             transport_send(game->transport, buffer, size);
             transport_disconnect(game->transport);
-            gpm_game_exit_critical(&running_game);
         }
+        gpm_game_exit_critical(&running_game);
     }
 
-    WG_DEBUG("Pipe thread process exiting\n");
+    WG_DEBUG("Pipe thread process exiting....\n");
 
     return NULL;
+}
+
+WG_PRIVATE wg_status
+stop_server(pthread_t *thread)
+{
+    pthread_kill(*thread, SIGUSR1); 
+
+    pthread_join(*thread, NULL);
+    
+    return WG_SUCCESS;
+}
+
+WG_PRIVATE wg_status
+start_server(pthread_t *thread, void *user_data)
+{
+    pthread_attr_t attr;
+    int status = -1;
+
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+    status = pthread_create(thread, &attr, 
+            pipe_thread, user_data);
+    if (0 != status){
+        pthread_attr_destroy(&attr);
+        return WG_FAILURE;
+    }
+    pthread_attr_destroy(&attr);
+
+    return WG_SUCCESS;
 }
 
 /*! @} */

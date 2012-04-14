@@ -7,57 +7,77 @@
 
 #define CD_INVALID_COORD ((wg_uint)-1)
 
+/** 
+* @brief Screen orientation
+*/
 typedef enum Cd_orientation {
-    CD_PANE_LEFT    = 0    , 
-    CD_PANE_RIGHT          ,
+    CD_PANE_LEFT    = 0    ,     /*!< left orientation                     */
+    CD_PANE_RIGHT          ,     /*!< right orientation                    */   
 }Cd_orientation;
 
+/** 
+* @brief Pane corners
+*/
 typedef enum PANE_VERTICLES{
-    V0 = 0,
-    V1    ,
-    V2    ,
-    V3    ,
-    PANE_VERTICLES_NUM
+    V0 = 0,             /*!< v1 */
+    V1    ,             /*!< v2 */
+    V2    ,             /*!< v3 */
+    V3    ,             /*!< v4 */
+    PANE_VERTICLES_NUM  /*!< number of corners */
 }PANE_VERTICLES;
 
 typedef void (*cd_pane_hit_cb)(wg_float x, wg_float y, void *user_data);
 
+/** 
+* @brief Collision region
+*/
 typedef struct Cd_pane{
-    Wg_point2d v1;
-    Wg_point2d v2;
-    Wg_point2d v3;
-    Wg_point2d v4;
-    Cd_orientation orientation;
+    Wg_point2d v1;               /*!< vetrex      */
+    Wg_point2d v2;               /*!< vertex      */
+    Wg_point2d v3;               /*!< vertex      */
+    Wg_point2d v4;               /*!< vetrex      */
+    Cd_orientation orientation;  /*!< orientation */
 }Cd_pane;
 
+/** 
+* @brief Screen bar type
+*/
 typedef enum Cd_bar_type{
-    CD_BAR_HORIZONTAL = 0,
-    CD_BAR_VERTICAL      ,
+    CD_BAR_HORIZONTAL = 0,  /*!< Horizontal bar */
+    CD_BAR_VERTICAL      ,  /*!< Vertical bar   */
 }Cd_bar_type;
 
-/* This structure stores a bar in a y = m*x+b format */
+
+/** 
+* @brief Bar instance
+*
+* This structure stores a bar in a y = m*x+b format
+*/
 typedef struct Cd_bar{
-    Cd_bar_type type;
-    wg_float    a;
-    wg_float    b;
-    wg_float    limit_top;
-    wg_float    limit_bottom;
-    wg_float    length;
-    Wg_point2d  point_top;
-    Wg_point2d  point_bottom;
+    Cd_bar_type type;          /*!< typeof the bar       */
+    wg_float    a;             /*!< a component          */
+    wg_float    b;             /*!< b component          */
+    wg_float    limit_top;     /*!< top limit            */
+    wg_float    limit_bottom;  /*!< bottom limit         */
+    wg_float    length;        /*!< length               */
+    Wg_point2d  point_top;     /*!< first end point      */
+    Wg_point2d  point_bottom;  /*!< second end point     */
 }Cd_bar;
 
+/** 
+* @brief Collision detector instance
+*/
 typedef struct Cd_instance{
-    Cd_pane         pane_dimention;
-    cd_pane_hit_cb  hit_cb;
-    void           *hit_cb_user_data;
-    int             state;
-    Wg_point2d      position[CD_POSITION_NUM];
-    wg_uint         position_index;
-    Cd_bar          top_bar;
-    Cd_bar          bottom_bar;
-    Cd_bar          left_bar;
-    Cd_bar          right_bar;
+    Cd_pane         pane_dimention;            /*!< collision region        */
+    cd_pane_hit_cb  hit_cb;                    /*!< hit callback            */
+    void           *hit_cb_user_data;          /*!< hit callback data       */
+    int             state;                     /*!< detector state          */
+    Wg_point2d      position[CD_POSITION_NUM]; /*!< position buffer         */
+    wg_uint         position_index;            /*!< position buffer head    */
+    Cd_bar          top_bar;                   /*!< top bar region          */
+    Cd_bar          bottom_bar;                /*!< bottom bar region       */
+    Cd_bar          left_bar;                  /*!< left bar region         */
+    Cd_bar          right_bar;                 /*!< right bar region        */
 } Cd_instance;
 
 

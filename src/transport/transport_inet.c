@@ -20,36 +20,46 @@
 #include <wg_string.h>
 #include <wg_trans.h>
 
-/*! \defgroup  un_transport Unix Socket Transport
+/*! \defgroup  in_transport Inet Transport
  *  \ingroup transport
  */
 
 /*! @{ */
 
+/** @brief IP octal validation regexp expression           */
 #define IP_DIGIT  "\\(25[0-5]\\|2[0-4][0-9]\\|[01]\\?[0-9][0-9]\\?\\)"
 
+/** @brief Port validation regexp expression 
+*
+* @todo Fix: This is not fully correct
+*/
 #define PORT_DIGIT "[0-9]\\{1,5\\}"
 
+/** @brief IP:PORT validation regexp expression
+ */
 #define INET_ADDR_EXPR \
     ( "\\(" IP_DIGIT "\\." IP_DIGIT "\\." IP_DIGIT "\\." IP_DIGIT "\\)"       \
     ":\\(" PORT_DIGIT "\\)" ) 
          
+/** 
+* @brief Groups in INET_ADDR_EXPR
+*/
 enum {
-    GROUP_ALL    = 0 ,
-    GROUP_IP_ALL     ,
-    GROUP_IP_0       ,
-    GROUP_IP_1       ,
-    GROUP_IP_2       ,
-    GROUP_IP_3       ,
-    GROUP_PORT       ,
-    GROUP_NUM
+    GROUP_ALL    = 0 ,    /*!< entire string                             */
+    GROUP_IP_ALL     ,    /*!< entire IP                                 */
+    GROUP_IP_0       ,    /*!< IP fist octet                             */
+    GROUP_IP_1       ,    /*!< IP second octet                           */
+    GROUP_IP_2       ,    /*!< IP third octet                            */
+    GROUP_IP_3       ,    /*!< IP fourth octet                           */
+    GROUP_PORT       ,    /*!< entire port                               */
+    GROUP_NUM             /*!< number of groups                          */
 };
 
 WG_PRIVATE wg_status
 parse_address(const wg_char *address, wg_char **ip, wg_char **port);
 
 /**
- * @brief Create a un transport
+ * @brief Create a inet transport
  *
  * @param trans    memory to store a transport
  * @param address  address of the un socket

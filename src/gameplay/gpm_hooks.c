@@ -129,7 +129,11 @@ cb_connect(wg_uint argc, wg_char *args[], void *private_data)
 wg_status
 cb_start(wg_int argc, wg_char *args[], void *private_data)
 {
-    return WG_FAILURE;
+    if (argc == 1){
+        gpm_game_unblock();
+    }
+
+    return WG_SUCCESS;
 }
 
 /** 
@@ -145,11 +149,15 @@ cb_start(wg_int argc, wg_char *args[], void *private_data)
 wg_status
 cb_stop(wg_int argc, wg_char *args[], void *private_data)
 {
-    return WG_FAILURE;
+    if (argc == 1){
+        gpm_game_block();
+    }
+
+    return WG_SUCCESS;
 }
 
 /** 
-* @brief lsg(list games) callback
+* @brief list games callback
 * 
 * @param argc          number of elements on args
 * @param args[]        NULL terinated list of arguments
@@ -159,7 +167,7 @@ cb_stop(wg_int argc, wg_char *args[], void *private_data)
 * @retval WG_FAILURE
 */
 wg_status
-cb_lsg(wg_int argc, wg_char *argv[], void *private_data)
+cb_lsg(wg_int argc, wg_char *args[], void *private_data)
 {
     return WG_FAILURE;
 }

@@ -137,6 +137,7 @@ gui_progress_dialog_cleanup(Gui_progress_dialog *pd)
 * @param action       action associated with screen
 * @param user_data    user data
 * @param text         text to display
+* @param extra_widget widget instance to diaplay below text area
 * 
 * @return dialog instance
 */

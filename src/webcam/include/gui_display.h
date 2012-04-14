@@ -1,14 +1,17 @@
 #ifndef _GUI_DISPLAY_H
 #define _GUI_DISPLAY_H
 
+/** 
+* @brief Display instance structure
+*/
 typedef struct Gui_display{
-    GtkWidget *widget;
-    GdkPixbuf *pixbuf;
-    wg_uint widget_width;
-    wg_uint widget_height;
-    wg_uint x;
-    wg_uint y;
-    List_head lines;
+    GtkWidget *widget;      /*!< display widget                            */
+    GdkPixbuf *pixbuf;      /*!< background display                        */
+    wg_uint widget_width;   /*!< display width                             */
+    wg_uint widget_height;  /*!< display height                            */
+    wg_uint x;              /*!< display x position                        */
+    wg_uint y;              /*!< display y position                        */
+    List_head lines;        /*!< list of lines to draw                     */
 }Gui_display;
 
 WG_PUBLIC wg_status

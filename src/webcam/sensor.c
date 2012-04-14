@@ -204,6 +204,15 @@ sensor_get_color_range(const Sensor *sensor, Hsv *top, Hsv *bottom)
     return WG_SUCCESS;
 }
 
+/** 
+* @brief Set sensor top color
+* 
+* @param sensor sensor instance
+* @param color  top color
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
 sensor_set_color_top(Sensor *sensor, const Hsv *color)
 {
@@ -219,6 +228,15 @@ sensor_set_color_top(Sensor *sensor, const Hsv *color)
     return WG_SUCCESS;
 }
 
+/** 
+* @brief Set sensor bottom color
+* 
+* @param sensor sensor instance
+* @param color  bottom color
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
 sensor_set_color_bottom(Sensor *sensor, const Hsv *color)
 {

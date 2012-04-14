@@ -36,6 +36,8 @@ main(int argc, char *argv[])
 
     int i = 0;
 
+    MEMLEAK_START;
+
     printf("Dummy plugin\n");
 
     if (argc == 1){
@@ -67,6 +69,8 @@ main(int argc, char *argv[])
     }
 
     wg_msg_transport_cleanup(&msg_transport);
+
+    MEMLEAK_STOP;
 
     return 0;
 }

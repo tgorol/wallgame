@@ -2,7 +2,7 @@
 #define _TRANS_H
 
 /**
- * @brief Unit socket transport structure
+ * @brief Common transport structure
  */
 typedef struct Transport{
     int out_fd;                 /*!< socket file descriptor */
@@ -10,17 +10,20 @@ typedef struct Transport{
     int domain;                 /*!< transport domain       */
     int type;                   /*!< type of socket         */
     int protocol;               /*!< protocol to use        */
-    wg_char *address;
+    wg_char *address;           /*!< transport address      */
 }Transport;
 
 
+/** 
+* @brief Transport structure
+*/
 typedef struct  Wg_transport{
-    Transport transport;
-    size_t sockaddr_size;
+    Transport transport;        /*!< common data             */
+    size_t sockaddr_size;       /*!< size of the sockaddr    */
     union{
-        struct sockaddr_un un;
-        struct sockaddr_in in;
-    }sockaddr;
+        struct sockaddr_un un;  /*!< unix sockaddr           */
+        struct sockaddr_in in;  /*!< inet sockaddr           */
+    }sockaddr;                  /*!< sockaddr                */
 }Wg_transport;
 
 WG_PUBLIC wg_status

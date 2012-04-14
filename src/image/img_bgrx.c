@@ -69,6 +69,15 @@ img_rgb_2_bgrx(Wg_image *rgb_img, Wg_image *bgrx_img)
     return WG_SUCCESS;
 }
 
+/** 
+* @brief USe median filter on the image.
+* 
+* @param[in]  img       source image instance
+* @param[out] new_img   memory for filtered image instance
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
 img_bgrx_median_filter(Wg_image *img, Wg_image *new_img)
 {

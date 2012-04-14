@@ -119,6 +119,17 @@ img_gs_2_rgb(Wg_image *grayscale_img, Wg_image *rgb_img)
     return WG_SUCCESS;
 }
 
+/** 
+* @brief Draw pixel on RGB24 image
+* 
+* @param img    image instance
+* @param y      y position
+* @param x      x position
+* @param args   color (rgb_pixel*)
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
 img_rgb_draw_pixel(Wg_image *img, wg_int y, wg_int x, va_list args)
 {
@@ -148,6 +159,17 @@ img_rgb_draw_pixel(Wg_image *img, wg_int y, wg_int x, va_list args)
     return WG_SUCCESS;
 }
 
+/** 
+* @brief Create RGB24 image from buffer
+* 
+* @param buffer   buffer 
+* @param width    width of image
+* @param height   height of image
+* @param img      memory to store image
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
 img_rgb_from_buffer(wg_uchar *buffer, wg_uint width, wg_uint height, 
         Wg_image *img)
@@ -171,6 +193,8 @@ img_rgb_from_buffer(wg_uchar *buffer, wg_uint width, wg_uint height,
     return WG_SUCCESS;
 }
 
+
+/** @brief Average pixel */
 #define avg(gs_pixel, c)                                       \
                  ((gs_pixel[0][c] + gs_pixel[1][c] +           \
                  gs_pixel[2][c] +                              \
@@ -179,6 +203,15 @@ img_rgb_from_buffer(wg_uchar *buffer, wg_uint width, wg_uint height,
                  gs_pixel[rd2 + 0][c] + gs_pixel[rd2 + 1][c] + \
                  gs_pixel[rd2 + 2][c]) / 9)
 
+/** 
+* @brief Use median filter on the image.
+*  
+* @param img      source image instance
+* @param new_img  memory for filtered image instance
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
 img_rgb_median_filter(Wg_image *img, Wg_image *new_img)
 {

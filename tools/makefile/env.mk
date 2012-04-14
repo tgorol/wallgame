@@ -56,7 +56,8 @@ CFLAGS+=-march=$(CPU_ARCH) -std=$(C_STD) -D_REENTRANT
 ifeq ($(BUILD_TYPE),  RELEASE)
 	CFLAGS+=-g -Wall -O3 -DRELEASE
 else
-	CFLAGS+=-g -Wall -Werror -DWGDEBUG -DMEMLEAK_CHECK
+#	CFLAGS+=-g -Wall -Werror -DWGDEBUG -DMEMLEAK_CHECK
+	CFLAGS+=-g -Wall -Werror -DWGDEBUG
 endif
 
 ifdef PROF

@@ -15,9 +15,12 @@
 #define CONFIG_MAX_LINE_SIZE 80
 #define CONFIG_DELIM "="
 
+/** 
+* @brief Config line instance structure
+*/
 typedef struct Config_line{
-    wg_char text[CONFIG_MAX_LINE_SIZE + 1];
-    List_head list;
+    wg_char text[CONFIG_MAX_LINE_SIZE + 1];   /*!< config line text         */
+    List_head list;                           /*!< list node                */
 }Config_line;
 
 WG_PRIVATE wg_status get_value(Wg_config *config, const wg_char *key,

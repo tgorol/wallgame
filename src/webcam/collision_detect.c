@@ -28,6 +28,11 @@ typedef enum CD_STATE{
     CD_STATE_HIT_RECORDED         /*!< hit on surface detected    */
 }CD_STATE;
 
+/** @brief Vertical margin
+*   
+*   Maximum number of pixels on x axis between two ends
+*   of vertical bar
+*/
 #define PANE_VERT_MARGIN_IN_PIX 30
 
 
@@ -137,6 +142,10 @@ cd_get_hit_callback(Cd_instance *pane, cd_pane_hit_cb hit_cb)
 * 
 * @param pane   cd instance
 * @param hit_cb hit callback
+* @param user_data user data
+*
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
 */
 wg_status
 cd_set_hit_callback(Cd_instance *pane, cd_pane_hit_cb hit_cb, void *user_data)
@@ -199,7 +208,7 @@ cd_set_pane(Cd_instance *pane, const Cd_pane *pane_dimention)
 * @brief Set pane dimetion from array
 * 
 * @param pane    cd instance
-* @param array[PANE_VERTICLES_NUM] new pane vertexes
+* @param array new pane vertexes
 * 
 * @retval WG_SUCCESS
 * @retval WG_FAILURE
@@ -226,7 +235,7 @@ cd_set_pane_from_array(Cd_instance *pane, Wg_point2d array[PANE_VERTICLES_NUM])
 * @brief Get pane as array
 * 
 * @param pane        cd instance
-* @param array[PANE_VERTICLES_NUM] array to store pane vertexes
+* @param array array to store pane vertexes
 * 
 * @retval WG_SUCCESS
 * @retval WG_FAILURE

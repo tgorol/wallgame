@@ -1,9 +1,12 @@
 #ifndef _WG_CONFIG_H
 #define _WG_CONFIG_H
 
+/** 
+* @brief Config file structure
+*/
 typedef struct Wg_config{
-    List_head lines;
-    wg_char *filename;
+    List_head lines;         /*!< list of lines    */
+    wg_char *filename;       /*!< config file name */
 }Wg_config;
 
 WG_PUBLIC wg_status

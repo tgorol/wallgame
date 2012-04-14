@@ -57,24 +57,33 @@
 #define PREV_COLOR_TOP          "color_top"
 #define PREV_COLOR_BOTTOM       "color_bottom"
 
+/** 
+* @brief Previous configuration
+*/
 typedef struct Previous_setup{
-    Hsv bottom;
-    Hsv top;
-    Cd_pane pane;
+    Hsv bottom;           /*!< bottom color range      */
+    Hsv top;              /*!< top color range         */
+    Cd_pane pane;         /*!< screen                  */
 }Previous_setup;
 
+/** 
+* @brief Callibration data
+*/
 typedef struct Callibration_data{
-    Camera *camera;
-    wg_boolean is_camera_initialized;
-    wg_uint corner_count;
-    Wg_point2d corners[SCREEN_CORNER_NUM];
-    Previous_setup setup;
-    wg_uint load_config:1;
+    Camera *camera;                         /*!< camera to calibrate for    */
+    wg_boolean is_camera_initialized;       /*!< is initialized             */
+    wg_uint corner_count;                   /*!< screen corner counter      */
+    Wg_point2d corners[SCREEN_CORNER_NUM];  /*!< screen corners             */
+    Previous_setup setup;                   /*!< previous setup             */
+    wg_uint load_config:1;                  /*!< load config file           */
 }Callibration_data;
 
+/** 
+* @brief Setup histogram
+*/
 typedef struct Setup_hist{
-    Wg_rect rect;
-    Camera *cam;
+    Wg_rect rect;           /*!< rectangle to get histogram                 */
+    Camera *cam;            /*!< camera instance to read histogram from     */
 }Setup_hist;
 
 WG_PRIVATE wg_status

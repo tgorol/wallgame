@@ -24,11 +24,28 @@
 #include "include/transport_unix.h"
 #include "include/transport_inet.h"
 
+/*! \defgroup  transport_server Transport server
+ *  \ingroup transport
+ */
+
+/** @{ */
+
+/** 
+* @brief Supported transport servers
+*/
 WG_PRIVATE Transport_init transports[] = {
-    {"unix", transport_unix_new}    ,
     {"inet", transport_inet_new}
 };
 
+/** 
+* @brief Initialize server
+* 
+* @param transport memory to store transport instance
+* @param address   address
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
 transport_server_init(Wg_transport *transport, const wg_char *address)
 {
@@ -77,6 +94,15 @@ transport_server_init(Wg_transport *transport, const wg_char *address)
     return WG_SUCCESS;
 }
 
+/** 
+* @brief Mark transport as server
+* 
+* @param server  server instance
+* @param num     size of queue
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
 transport_server_listen(Wg_transport *server, wg_size num)
 {
@@ -92,6 +118,15 @@ transport_server_listen(Wg_transport *server, wg_size num)
     return WG_SUCCESS;
 }
 
+/** 
+* @brief Accept packets
+* 
+* @param server      server connection
+* @param transport   new connected transport
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
 transport_server_accept(Wg_transport *server,
         Wg_transport *transport)
@@ -122,3 +157,5 @@ transport_server_accept(Wg_transport *server,
 
     return WG_SUCCESS;
 }
+
+/** @} */

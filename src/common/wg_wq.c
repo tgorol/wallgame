@@ -163,11 +163,11 @@ wg_wq_work_create(wg_size size, Wg_wq_cb work_cb)
 /** 
 * @brief Destroy task
 *
-* In most cases user wont have to call this function explicitly cause
+* In most cases user won't have to call this function explicitly cause
 * tasks are destroyed after compleation. Only need to call it by user will be
-* when task wont be place on the qork queue.
+* when task won't be placed on the work queue.
 * 
-* @param user defined data returned by wg_wq_work_create()
+* @param data user defined data returned by wg_wq_work_create()
 *
 * @retval WG_SUCCESS
 * @retval WG_FAILURE

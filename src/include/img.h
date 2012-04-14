@@ -3,19 +3,17 @@
 
 #include <gdk/gdk.h>
 
-
-/*! @addtogroup image
- * @{
- */
-
+/** 
+* @brief Supported image formats
+*/
 typedef enum img_type {
-    IMG_INVALI  ,
-    IMG_RGB     ,
-    IMG_BGRX    ,
-    IMG_YUYV    ,
-    IMG_HSV     ,
-    IMG_GS      ,
-    IMG_USER
+    IMG_INVALI  ,    /*!< Invalid format                             */
+    IMG_RGB     ,    /*!< RGB                                        */
+    IMG_BGRX    ,    /*!< BGRX                                       */
+    IMG_YUYV    ,    /*!< YUYV                                       */
+    IMG_HSV     ,    /*!< HSV                                        */
+    IMG_GS      ,    /*!< Grayscale                                  */
+    IMG_USER         /*!< User defined                               */
 } img_type;
 
 /**
@@ -303,8 +301,6 @@ img_copy(Wg_image *src, Wg_image *dest);
 WG_PUBLIC void
 fast_memcpy(wg_uchar *restrict dest, wg_uchar *restrict src, 
         const wg_size size);
-
-/*! @} */
 
 #include "../image/include/img_bgrx.h"
 #include "../image/include/img_draw.h"

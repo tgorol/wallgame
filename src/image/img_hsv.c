@@ -120,6 +120,15 @@ img_hsv_hist(Wg_image *img, wg_uint **h, wg_uint **s, wg_uint **v,
     return WG_SUCCESS;
 }
 
+/** 
+* @brief Use median filter on the image
+* 
+* @param img      source image
+* @param new_img  memory for filtered image instance
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
 img_hsv_median_filter(Wg_image *img, Wg_image *new_img)
 {

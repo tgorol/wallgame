@@ -17,17 +17,24 @@
 #include <wgmacros.h>
 
 #include <wg_trans.h>
+#include <wg_string.h>
 
 #include <wg_plugin_tools.h>
 
 /*! \defgroup plugin_tools Plugin Tools
  */
 
-/*! \defgroup msg_transport Message Wg_transport
+/*! \defgroup msg_transport Event message transport
  * \ingroup plugin_tools
  */
 
 /*! @{ */
+
+/* see: manual ctime_r() about magic 26 */
+#define TIME_BUFFER_SIZE 26
+
+WG_PRIVATE wg_status
+get_event_time(wg_char **time);
 
 WG_PRIVATE wg_char hit_format[] =  
     "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
@@ -80,6 +87,7 @@ wg_msg_transport_send_hit(Wg_msg_transport *msg, wg_double x, wg_double y)
 {
     Wg_transport *trans = NULL;
     wg_status status = WG_FAILURE;
+    wg_char *time_str = NULL;
 
     CHECK_FOR_NULL_PARAM(msg);
 
@@ -91,8 +99,13 @@ wg_msg_transport_send_hit(Wg_msg_transport *msg, wg_double x, wg_double y)
         return status;
     }
 
+    status = get_event_time(&time_str);
+    if (WG_SUCCESS != status){
+        return status;
+    }
+
     /* send message */
-    status = transport_print(trans, hit_format, x, y);
+    status = transport_print(trans, hit_format, time_str, x, y);
     if (WG_SUCCESS != status){
         transport_disconnect(trans);
         return status;
@@ -100,6 +113,8 @@ wg_msg_transport_send_hit(Wg_msg_transport *msg, wg_double x, wg_double y)
 
     /* disconnect transport */
     status = transport_disconnect(trans);
+
+//    WG_FREE(time_str);
 
     return status;
 }
@@ -118,6 +133,28 @@ wg_msg_transport_cleanup(Wg_msg_transport *msg)
     CHECK_FOR_NULL_PARAM(msg);
 
     transport_close(&msg->transport);
+
+    return WG_SUCCESS;
+}
+
+WG_PRIVATE wg_status
+get_event_time(wg_char **time_str)
+{
+    return WG_SUCCESS;
+    time_t t;
+    int sys_status = -1;
+    wg_char l_time[TIME_BUFFER_SIZE];
+
+    sys_status = time(&t);
+    if (-1 == sys_status){
+        return WG_FAILURE;
+    }
+
+    if (ctime_r(&t, l_time) == NULL){
+        return WG_FAILURE;
+    }
+   
+    wg_strdup(l_time, time_str);
 
     return WG_SUCCESS;
 }

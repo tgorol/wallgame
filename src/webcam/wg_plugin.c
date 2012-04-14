@@ -65,21 +65,22 @@
 
 #define LAYOUT_PATH "/home/tgorol/gmit/final_project/src/webcam/layout.xml"
 
+/** 
+* @brief Resolution structure
+*/
 typedef struct Resolution{
     wg_char text[16];        /*!< text of the resolution */
     wg_uint  width;          /*!< width in pixels        */
     wg_uint  height;         /*!< height in pixels       */
 }Resolution;
 
+/** 
+* @brief Frame Per Second task structure
+*/
 typedef struct Update_fps{
-    wg_uint frame_inc;
-    Camera *camera;
+    wg_uint frame_inc;      /*!< frame increment         */
+    Camera *camera;         /*!< camera instance         */
 }Update_fps;
-
-typedef struct Encode_frame{
-    Wg_image img;    
-    Wg_video_out *out;
-}Encode_frame;
 
 /** 
 * @brief List of supported resolutions
@@ -98,7 +99,6 @@ xbuf_free(guchar *pixels, gpointer data)
 
     WG_FREE(data);
 }
-
 
 gint 
 delete_event( GtkWidget *widget, GdkEvent  *event, gpointer   data )

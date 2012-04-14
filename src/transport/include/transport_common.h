@@ -1,9 +1,12 @@
 #ifndef TRANSPORT_COMMON_H
 #define TRANSPORT_COMMON_H
 
+/** 
+* @brief Transport initialization structure
+*/
 typedef struct Transport_init{
-    wg_char *name;
-    wg_status (*init)(Wg_transport *, const wg_char *);
+    wg_char *name;                  /*!< name of transport                 */
+    wg_status (*init)(Wg_transport *, const wg_char *); /*!< init function */
 }Transport_init;
 
 WG_PUBLIC wg_status
