@@ -30,8 +30,7 @@
 
 /*! @{ */
 
-/* see: manual ctime_r() about magic 26 */
-#define TIME_BUFFER_SIZE 26
+#define TIME_STR_SIZE  26
 
 WG_PRIVATE wg_status
 get_event_time(wg_char **time);
@@ -39,6 +38,7 @@ get_event_time(wg_char **time);
 WG_PRIVATE wg_char hit_format[] =  
     "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
     "<event>\n"
+        "<time>%s<\time>\n"
         "<hit>\n"
             "<x>%.2lf</x>\n"
             "<y>%.2lf</y>\n"
@@ -114,7 +114,7 @@ wg_msg_transport_send_hit(Wg_msg_transport *msg, wg_double x, wg_double y)
     /* disconnect transport */
     status = transport_disconnect(trans);
 
-//    WG_FREE(time_str);
+    WG_FREE(time_str);
 
     return status;
 }
@@ -137,24 +137,49 @@ wg_msg_transport_cleanup(Wg_msg_transport *msg)
     return WG_SUCCESS;
 }
 
+WG_PRIVATE void
+chomp(wg_char *text)
+{
+    size_t len = 0;
+    char c = '\0';
+
+    len = strlen(text);
+
+    c = text[--len];
+
+    if ((c == '\n') || (c == '\r')){
+        text[len] = '\0';
+    }
+
+    c = text[--len];
+
+    if ((c == '\n') || (c == '\r')){
+        text[len] = '\0';
+    }
+
+    return;
+}
+
 WG_PRIVATE wg_status
 get_event_time(wg_char **time_str)
 {
-    return WG_SUCCESS;
     time_t t;
-    int sys_status = -1;
-    wg_char l_time[TIME_BUFFER_SIZE];
+    wg_char *l_time = NULL;
 
-    sys_status = time(&t);
-    if (-1 == sys_status){
+    time(&t);
+
+    l_time = WG_MALLOC(TIME_STR_SIZE);
+    if (NULL == l_time){
         return WG_FAILURE;
     }
 
     if (ctime_r(&t, l_time) == NULL){
         return WG_FAILURE;
     }
-   
-    wg_strdup(l_time, time_str);
+
+    chomp(l_time);
+
+    *time_str = l_time;
 
     return WG_SUCCESS;
 }

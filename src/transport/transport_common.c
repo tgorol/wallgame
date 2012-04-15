@@ -338,7 +338,7 @@ transport_print(Wg_transport *transport, const char *format, ...)
 
     len = vsnprintf(NULL, 0, format, arg_list);
 
-    text = WG_MALLOC(len);
+    text = WG_MALLOC(len + 1);
     if (NULL == text){
         return WG_FAILURE;
     }
