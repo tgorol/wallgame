@@ -401,6 +401,7 @@ show_extra_widget(Gui_progress_dialog *pd)
     pds = pd->screens_array[pd->active_index];
     if (!is_last_screen(pd)){
         if (NULL != pds->extra_widget){
+            gtk_widget_show_all(pds->extra_widget);
             gtk_box_pack_end(GTK_BOX(pd->box), 
                     pds->extra_widget, FALSE, TRUE, 0);
         }
@@ -418,6 +419,7 @@ hide_extra_widget(Gui_progress_dialog *pd)
 
     if (!is_last_screen(pd)){
         if (NULL != pds->extra_widget){
+            gtk_widget_hide(pds->extra_widget);
             gtk_container_remove(GTK_CONTAINER(pd->box), pds->extra_widget);
         }
     }

@@ -163,6 +163,23 @@ released_mouse(GtkWidget *widget, GdkEvent  *event, gpointer user_data)
 }
 
 WG_PRIVATE gboolean
+color_slider_changed(GtkRange *range, GtkScrollType scroll, 
+        gdouble value, gpointer user_data)
+{
+    Hsv bottom_color;
+    Hsv top_color;
+    Camera *cam = (Camera*) user_data;
+
+    sensor_get_color_range(cam->sensor, &top_color, &bottom_color);
+
+    bottom_color.sat = value * top_color.sat;
+
+    sensor_set_color_bottom(cam->sensor, &bottom_color);
+
+    return FALSE;
+}
+
+WG_PRIVATE gboolean
 screen_corner_release_mouse(GtkWidget *widget, GdkEvent  *event,
         gpointer user_data)
 {
@@ -466,6 +483,10 @@ callibration_color(Gui_progress_dialog_screen *pds,
     Camera    *cam = NULL;
     Callibration_data *data = NULL;
     GtkWidget *widget = NULL;
+    GtkWidget *scale_widget = NULL;
+    GtkWidget *box = NULL;
+    GList *list = NULL;
+    GList *elem = NULL;
 
     data = (Callibration_data*)user_data;
 
@@ -475,6 +496,18 @@ callibration_color(Gui_progress_dialog_screen *pds,
             cam->dragging = WG_FALSE;
 
             widget = cam->left_display.widget;
+            box = gui_progress_dialog_screen_get_widget(pds);
+
+            list = gtk_container_get_children(GTK_CONTAINER(box));
+            
+            elem = g_list_nth(list, 0);
+
+            scale_widget = (GtkWidget*)elem->data;
+
+            g_list_free(list);
+
+            g_signal_connect(GTK_RANGE(scale_widget), "change-value",
+                    G_CALLBACK(color_slider_changed), cam);
 
             g_signal_connect(widget, "button-press-event", 
                     G_CALLBACK(pressed_mouse), cam);
@@ -489,6 +522,10 @@ callibration_color(Gui_progress_dialog_screen *pds,
             break;
         case GUI_PROGRESS_LEAVE:
             widget = cam->left_display.widget;
+//            scale_widget = gui_progress_dialog_screen_get_widget(pds);
+
+//            g_signal_handlers_disconnect_by_func(scale_widget,
+//                    G_CALLBACK(color_slider_changed), cam);
 
             g_signal_handlers_disconnect_by_func(widget,
                     G_CALLBACK(pressed_mouse), cam);
@@ -586,9 +623,15 @@ gui_callibration_screen(Camera *cam)
                 "corner of the screen", NULL)
             );
 
+    widget = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
+    gtk_box_pack_start(GTK_BOX(widget), 
+            gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 
+            0.0, 1.0, 0.01), TRUE, TRUE, 0);
+        
+
     gui_progress_dialog_add_screen(pd, 
             gui_progress_dialog_screen_new(callibration_color, data, 
-                "Select color range on the object you are using", NULL)
+                "Select color range on the object you are using", widget)
             );
 
     gui_progress_dialog_add_screen(pd, 

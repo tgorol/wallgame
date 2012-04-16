@@ -65,6 +65,8 @@
 
 #define LAYOUT_PATH "/home/tgorol/gmit/final_project/src/webcam/layout.xml"
 
+#define DEFAULT_TRANSPORT "unix:/tmp/test.sock"
+
 /** 
 * @brief Resolution structure
 */
@@ -746,6 +748,7 @@ wg_plugin_init(int argc, char *argv[], Camera *camera)
     wg_uint width = 0;
     wg_uint height = 0;
     wg_status status = WG_FAILURE;
+    wg_char *transport_name = NULL;
 
     CHECK_FOR_NULL_PARAM(camera);
 
@@ -753,12 +756,14 @@ wg_plugin_init(int argc, char *argv[], Camera *camera)
 
     enable_threads();
 
+    transport_name = argv[1];
+
     if (argc != 2){
-        WG_LOG("Wrong parameters\n");
-        return WG_FAILURE;
+        WG_LOG("Used default transport\n");
+        transport_name = DEFAULT_TRANSPORT;
     }
 
-    status = wg_msg_transport_init(argv[1], &camera->msg_transport);
+    status = wg_msg_transport_init(transport_name, &camera->msg_transport);
     if (WG_SUCCESS != status){
         return status;
     }
