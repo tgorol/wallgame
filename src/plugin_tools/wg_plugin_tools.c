@@ -38,7 +38,7 @@ get_event_time(wg_char **time);
 WG_PRIVATE wg_char hit_format[] =  
     "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
     "<event>\n"
-        "<time>%s<\time>\n"
+        "<time>%s</time>\n"
         "<hit>\n"
             "<x>%.2lf</x>\n"
             "<y>%.2lf</y>\n"

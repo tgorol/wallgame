@@ -41,12 +41,10 @@ main(int argc, char *argv[])
     MEMLEAK_START;
 
     status = wg_plugin_init(argc, argv, &camera);
-
     if (WG_SUCCESS == status){
         wg_plugin_start(&camera);
+        wg_plugin_cleanup(&camera);
     }
-
-    wg_plugin_cleanup(&camera);
 
     MEMLEAK_STOP;
 

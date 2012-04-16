@@ -753,6 +753,11 @@ wg_plugin_init(int argc, char *argv[], Camera *camera)
 
     enable_threads();
 
+    if (argc != 2){
+        WG_LOG("Wrong parameters\n");
+        return WG_FAILURE;
+    }
+
     status = wg_msg_transport_init(argv[1], &camera->msg_transport);
     if (WG_SUCCESS != status){
         return status;
