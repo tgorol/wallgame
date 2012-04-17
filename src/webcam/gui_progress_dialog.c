@@ -36,6 +36,9 @@
 /*! \brief Prievious dialog id */
 #define PREVIUOS_SCREEN -1
 
+#define LAYOUT_XML                   \
+    "/home/tgorol/gmit/final_project/src/webcam/progress_dialog.xml"
+
 /** 
 * @brief Dialogs
 */
@@ -259,7 +262,7 @@ gui_progress_dialog_show(Gui_progress_dialog *pd)
 
     builder = gtk_builder_new ();
     gtk_builder_add_from_file (
-            builder, "progress_dialog.xml", NULL);
+            builder, LAYOUT_XML, NULL);
     dialog = GTK_WIDGET (gtk_builder_get_object (builder, "progress_dialog"));
     gtk_builder_connect_signals (builder, NULL);
 

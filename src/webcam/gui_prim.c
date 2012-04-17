@@ -71,8 +71,25 @@ wg_rect_new(wg_int x, wg_int y, wg_uint width, wg_uint height, Wg_rect *rect)
     return;
 }
 
+
 /** 
-* @brief Define ne rectangle from four points
+* @brief Define a rectangle from four points
+* 
+* @param pt1   point 
+* @param pt2   point
+* @param rect  memory for rectangle instance
+*/
+void
+wg_rect_new_from_point2d(const Wg_point2d *pt1, const Wg_point2d *pt2,
+        Wg_rect *rect)
+{
+    wg_rect_new_from_points(pt1->x, pt1->y, pt2->x, pt2->y, rect);
+
+    return;
+}
+
+/** 
+* @brief Define a rectangle from four points
 * 
 * @param x1  x left top point coordinate
 * @param y1  y left top point coordinate

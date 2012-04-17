@@ -2,6 +2,8 @@
 #include <sys/types.h>
 #include <string.h>
 
+#include <gtk/gtk.h>
+
 #include <wgtypes.h>
 #include <wg.h>
 #include <wgmacros.h>
@@ -287,6 +289,63 @@ img_rgb_median_filter(Wg_image *img, Wg_image *new_img)
     }
 
     return WG_SUCCESS;
+}
+
+/** 
+* @brief Convert HSV to RGB
+* 
+* @param hsv_img   hsv image
+* @param rgb_img   returned rgb image
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
+wg_status
+img_hsv_2_rgb(Wg_image *hsv_img, Wg_image *rgb_img)
+{
+    wg_status status = WG_FAILURE;
+    Hsv *hsv_pixel = NULL;
+    rgb24_pixel *rgb_pixel = NULL;
+    wg_uint width = 0;
+    wg_uint height = 0;
+    wg_uint row = 0;
+    wg_uint col = 0;
+    gdouble r = 0.0;
+    gdouble g = 0.0;
+    gdouble b = 0.0;
+
+    CHECK_FOR_NULL_PARAM(rgb_img);
+    CHECK_FOR_NULL_PARAM(hsv_img);
+
+    if (hsv_img->type != IMG_HSV){
+        WG_ERROR("Invalig image format! Passed %d expect %d\n", 
+                hsv_img->type, IMG_HSV);
+        return WG_FAILURE;
+    }
+
+    img_get_width(hsv_img, &width);
+    img_get_height(hsv_img, &height);
+
+    status = img_fill(width, height, RGB24_COMPONENT_NUM, IMG_RGB,
+            rgb_img);
+    if (WG_SUCCESS != status){
+        return WG_FAILURE;
+    }
+    for (row = 0; row < height; ++row){
+        img_get_row(rgb_img, row, (wg_uchar**)&rgb_pixel);
+        img_get_row(hsv_img, row, (wg_uchar**)&hsv_pixel);
+        for (col = 0; col < width; ++col, ++rgb_pixel, ++hsv_pixel){
+            gtk_hsv_to_rgb(hsv_pixel->hue, hsv_pixel->sat, hsv_pixel->val,
+                    &r, &g, &b);
+
+            (*rgb_pixel)[RGB24_R] = (int)(r * 255.0);
+            (*rgb_pixel)[RGB24_G] = (int)(g * 255.0);
+            (*rgb_pixel)[RGB24_B] = (int)(b * 255.0);
+        }
+    }
+
+    return WG_SUCCESS;
+
 }
 
 /*! @} */

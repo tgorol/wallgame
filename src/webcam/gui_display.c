@@ -63,6 +63,12 @@ refresh(Gui_display *display);
 WG_PRIVATE void
 update_image_cb(void *data);
 
+WG_PRIVATE gboolean
+pressed_mouse(GtkWidget *widget, GdkEvent  *event, gpointer user_data);
+
+WG_PRIVATE gboolean
+released_mouse(GtkWidget *widget, GdkEvent  *event, gpointer user_data);
+
 /** 
 * @brief Init display
 * 
@@ -92,6 +98,9 @@ gui_display_init(GtkWidget *widget, Gui_display *display)
     g_signal_connect(display->widget, "draw",
             G_CALLBACK(on_expose), display);
 
+    display->enable_dragging = 0;
+    display->is_dragging     = 0;
+
     return WG_SUCCESS;
 }
 
@@ -106,6 +115,50 @@ gui_display_cleanup(Gui_display *display)
     gui_display_clean_lines(display);
 
     return;
+}
+
+wg_status
+gui_display_set_drag_callback(Gui_display *display, drag_cb cb, 
+        void *user_data)
+{
+    CHECK_FOR_NULL_PARAM(display);
+
+    display->drag_callback = cb;
+    display->user_data     = user_data;
+
+    return WG_SUCCESS;
+}
+
+wg_status
+gui_display_enable_dragging(Gui_display *display)
+{
+    CHECK_FOR_NULL_PARAM(display);
+
+    display->enable_dragging = 1;
+
+    g_signal_connect(display->widget, "button-press-event", 
+            G_CALLBACK(pressed_mouse), display);
+
+    g_signal_connect(display->widget, "button-release-event", 
+            G_CALLBACK(released_mouse), display);
+
+    return WG_SUCCESS;
+}
+
+wg_status
+gui_display_disable_dragging(Gui_display *display)
+{
+    CHECK_FOR_NULL_PARAM(display);
+
+    g_signal_handlers_disconnect_by_func(display->widget,
+            G_CALLBACK(pressed_mouse), display);
+
+    g_signal_handlers_disconnect_by_func(display->widget,
+            G_CALLBACK(released_mouse), display);
+
+    display->enable_dragging = 0;
+
+    return WG_SUCCESS;
 }
 
 /** 
@@ -424,6 +477,50 @@ update_image_cb(void *data)
     g_object_unref(work->pixbuf);
 
     return;
+}
+
+WG_PRIVATE gboolean
+pressed_mouse(GtkWidget *widget, GdkEvent  *event, gpointer user_data) 
+{
+    Gui_display *display = NULL;
+    GdkEventButton *e = NULL;
+
+    display = user_data;
+    e = &event->button;
+
+    if (display->is_dragging == 0){
+        display->is_dragging = 1;
+        
+        wg_point2d_new((int)e->x, (int)e->y, &display->drag_pt_1);
+    }
+
+    return FALSE;
+}
+
+WG_PRIVATE gboolean
+released_mouse(GtkWidget *widget, GdkEvent  *event, gpointer user_data) 
+{
+    Gui_display *display = NULL;
+    GdkEventButton *e = NULL;
+    Wg_rect rect;
+
+    display = user_data;
+    e = &event->button;
+
+    if (display->is_dragging == 1){
+        display->is_dragging = 0;
+
+        wg_point2d_new((int)e->x, (int)e->y, &display->drag_pt_2);
+
+        wg_rect_new_from_point2d(&display->drag_pt_1, &display->drag_pt_2,
+                &rect);
+
+        if (display->drag_callback != NULL){
+            display->drag_callback(display, &rect, display->user_data);
+        }
+    }
+
+    return FALSE;
 }
 
 /*! @} */

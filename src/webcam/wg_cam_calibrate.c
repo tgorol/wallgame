@@ -99,6 +99,90 @@ WG_PRIVATE wg_status
 save_config(const wg_char *filename, const Previous_setup *setup);
 
 WG_PRIVATE void
+hist_color_cb(Gui_display *display, const Wg_rect *rect, void *user_data);
+
+WG_PRIVATE wg_boolean
+callibration_color(Gui_progress_dialog_screen *pds, 
+        Gui_progress_action action, void *user_data);
+
+WG_PRIVATE wg_boolean
+callibration_finish(Gui_progress_dialog_screen *pds,
+        Gui_progress_action action, void *user_data);
+
+WG_PRIVATE wg_boolean
+callibration_screen(Gui_progress_dialog_screen *pds,
+        Gui_progress_action action, void *user_data);
+
+WG_PRIVATE wg_boolean
+callibration_start(Gui_progress_dialog_screen *pds,
+        Gui_progress_action action, void *user_data);
+
+WG_PRIVATE void
+callibration_exit(wg_uint screen_id, void *user_data);
+
+/** 
+* @brief Show callibration screen
+* 
+* @param cam Camera instance
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
+wg_status
+gui_callibration_screen(Camera *cam)
+{
+    Gui_progress_dialog *pd = NULL;
+    Callibration_data *data = NULL;
+    GtkWidget *widget       = NULL;
+
+    CHECK_FOR_NULL_PARAM(cam);
+
+    pd = gui_progress_dialog_new();
+    data = WG_MALLOC(sizeof (Callibration_data));
+
+    data->camera = cam;
+    data->is_camera_initialized = WG_FALSE;
+
+
+    widget = gtk_check_button_new_with_label("Load previous configuration");
+
+    gui_progress_dialog_set_exit_action(pd, callibration_exit);
+
+    gui_progress_dialog_add_screen(pd, 
+            gui_progress_dialog_screen_new(callibration_start, data, 
+                "Welcome to calibration wizard. This process is very simple and "
+                "will take only few seconds.\n\n\n"
+                "Click Next to start calibration", widget)
+            );
+
+    gui_progress_dialog_add_screen(pd, 
+            gui_progress_dialog_screen_new(callibration_screen, data, 
+                "Show me where is the screen by clicking in each "
+                "corner of the screen", NULL)
+            );
+
+    widget = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
+    gtk_box_pack_start(GTK_BOX(widget), 
+            gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 
+            0.0, 1.0, 0.01), TRUE, TRUE, 0);
+        
+
+    gui_progress_dialog_add_screen(pd, 
+            gui_progress_dialog_screen_new(callibration_color, data, 
+                "Select color range on the object you are using", widget)
+            );
+
+    gui_progress_dialog_add_screen(pd, 
+            gui_progress_dialog_screen_new(callibration_finish, data, 
+                "Thank you\n\n\nHave fun", NULL)
+            );
+
+    gui_progress_dialog_show(pd);
+
+    return WG_SUCCESS;
+}
+
+WG_PRIVATE void
 setup_hist(void *data)
 {
     Setup_hist *work = NULL;
@@ -124,42 +208,20 @@ setup_hist(void *data)
     return;
 }
 
-WG_PRIVATE gboolean
-pressed_mouse(GtkWidget *widget, GdkEvent  *event, gpointer user_data) 
+WG_PRIVATE void
+hist_color_cb(Gui_display *display, const Wg_rect *rect, void *user_data)
 {
-    GdkEventButton *event_button = NULL;
-    Camera *cam = NULL;
-
-    cam = (Camera*)user_data;
-    event_button = (GdkEventButton*)event;
-    cam->dragging = WG_TRUE;
-    cam->x1 = event_button->x;
-    cam->y1 = event_button->y;
-
-    return FALSE;
-}
-
-WG_PRIVATE gboolean
-released_mouse(GtkWidget *widget, GdkEvent  *event, gpointer user_data) 
-{
-    GdkEventButton *event_button = NULL;
     Camera *cam = NULL;
     Setup_hist *work = NULL;
 
     cam = (Camera*)user_data;
-    event_button = (GdkEventButton*)event;
-    cam->x2 = event_button->x;
-    cam->y2 = event_button->y;
-    cam->dragging = WG_FALSE;
 
     work = gui_work_create(sizeof (Setup_hist), setup_hist);
 
-    wg_rect_new_from_points(cam->x1, cam->y1, cam->x2, cam->y2, &work->rect);
     work->cam = cam;
+    work->rect = *rect;
 
     gui_work_add(work);
-
-    return FALSE;
 }
 
 WG_PRIVATE gboolean
@@ -293,7 +355,7 @@ callibration_start(Gui_progress_dialog_screen *pds,
                 gui_display_clean_lines(&cam->left_display);
 
                 cam->sensor = sensor;
-
+                 
                 device = gtk_combo_box_text_get_active_text(
                         GTK_COMBO_BOX_TEXT(cam->device_combo));
 
@@ -476,13 +538,12 @@ callibration_screen(Gui_progress_dialog_screen *pds,
     return exit_perm;
 }
 
-    WG_PRIVATE wg_boolean
+WG_PRIVATE wg_boolean
 callibration_color(Gui_progress_dialog_screen *pds, 
         Gui_progress_action action, void *user_data)
 {
     Camera    *cam = NULL;
     Callibration_data *data = NULL;
-    GtkWidget *widget = NULL;
     GtkWidget *scale_widget = NULL;
     GtkWidget *box = NULL;
     GList *list = NULL;
@@ -495,8 +556,11 @@ callibration_color(Gui_progress_dialog_screen *pds,
         case GUI_PROGRESS_ENTER:
             cam->dragging = WG_FALSE;
 
-            widget = cam->left_display.widget;
             box = gui_progress_dialog_screen_get_widget(pds);
+
+            gui_display_set_drag_callback(&cam->left_display, 
+                    hist_color_cb, cam);
+            gui_display_enable_dragging(&cam->left_display);
 
             list = gtk_container_get_children(GTK_CONTAINER(box));
             
@@ -509,29 +573,18 @@ callibration_color(Gui_progress_dialog_screen *pds,
             g_signal_connect(GTK_RANGE(scale_widget), "change-value",
                     G_CALLBACK(color_slider_changed), cam);
 
-            g_signal_connect(widget, "button-press-event", 
-                    G_CALLBACK(pressed_mouse), cam);
-
-            g_signal_connect(widget, "button-release-event", 
-                    G_CALLBACK(released_mouse), cam);
-
             if (data->load_config == 1){
                 sensor_set_color_top(cam->sensor, &data->setup.top);
                 sensor_set_color_bottom(cam->sensor, &data->setup.bottom);
             }
             break;
         case GUI_PROGRESS_LEAVE:
-            widget = cam->left_display.widget;
-//            scale_widget = gui_progress_dialog_screen_get_widget(pds);
+            scale_widget = gui_progress_dialog_screen_get_widget(pds);
 
-//            g_signal_handlers_disconnect_by_func(scale_widget,
-//                    G_CALLBACK(color_slider_changed), cam);
+            gui_display_disable_dragging(&cam->left_display);
 
-            g_signal_handlers_disconnect_by_func(widget,
-                    G_CALLBACK(pressed_mouse), cam);
-
-            g_signal_handlers_disconnect_by_func(widget,
-                    G_CALLBACK(released_mouse), cam);
+            g_signal_handlers_disconnect_by_func(scale_widget,
+                    G_CALLBACK(color_slider_changed), cam);
             break;
         case GUI_PROGRESS_NEXT:
             sensor_get_color_range(cam->sensor,
@@ -544,7 +597,7 @@ callibration_color(Gui_progress_dialog_screen *pds,
     return WG_TRUE;
 }
 
-    WG_PRIVATE wg_boolean
+WG_PRIVATE wg_boolean
 callibration_finish(Gui_progress_dialog_screen *pds, Gui_progress_action
         action, void *user_data)
 {
@@ -569,7 +622,7 @@ callibration_finish(Gui_progress_dialog_screen *pds, Gui_progress_action
     return WG_TRUE;
 }
 
-    WG_PRIVATE void
+WG_PRIVATE void
 callibration_exit(wg_uint screen_id, void *user_data)
 {
     Camera    *cam = NULL;
@@ -590,59 +643,6 @@ callibration_exit(wg_uint screen_id, void *user_data)
     return;
 }
 
-wg_status
-gui_callibration_screen(Camera *cam)
-{
-    Gui_progress_dialog *pd = NULL;
-    Callibration_data *data = NULL;
-    GtkWidget *widget       = NULL;
-
-    CHECK_FOR_NULL_PARAM(cam);
-
-    pd = gui_progress_dialog_new();
-    data = WG_MALLOC(sizeof (Callibration_data));
-
-    data->camera = cam;
-    data->is_camera_initialized = WG_FALSE;
-
-
-    widget = gtk_check_button_new_with_label("Load previous configuration");
-
-    gui_progress_dialog_set_exit_action(pd, callibration_exit);
-
-    gui_progress_dialog_add_screen(pd, 
-            gui_progress_dialog_screen_new(callibration_start, data, 
-                "Welcome to calibration wizard. This process is very simple and "
-                "will take only few seconds.\n\n\n"
-                "Click Next to start calibration", widget)
-            );
-
-    gui_progress_dialog_add_screen(pd, 
-            gui_progress_dialog_screen_new(callibration_screen, data, 
-                "Show me where is the screen by clicking in each "
-                "corner of the screen", NULL)
-            );
-
-    widget = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
-    gtk_box_pack_start(GTK_BOX(widget), 
-            gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 
-            0.0, 1.0, 0.01), TRUE, TRUE, 0);
-        
-
-    gui_progress_dialog_add_screen(pd, 
-            gui_progress_dialog_screen_new(callibration_color, data, 
-                "Select color range on the object you are using", widget)
-            );
-
-    gui_progress_dialog_add_screen(pd, 
-            gui_progress_dialog_screen_new(callibration_finish, data, 
-                "Thank you\n\n\nHave fun", NULL)
-            );
-
-    gui_progress_dialog_show(pd);
-
-    return WG_SUCCESS;
-}
 
 WG_PRIVATE wg_status
 load_previous_config(const wg_char *filename, Previous_setup *setup)

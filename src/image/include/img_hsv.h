@@ -22,4 +22,7 @@ img_hsv_hist(Wg_image *img, wg_uint **h, wg_uint **s, wg_uint **v,
 WG_PUBLIC wg_status
 img_hsv_median_filter(Wg_image *img, Wg_image *new_img);
 
+WG_PUBLIC wg_status
+img_hsv_normalize(Wg_image *img);
+
 #endif /* _CAM_HSV_H */

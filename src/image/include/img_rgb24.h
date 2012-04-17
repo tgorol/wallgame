@@ -68,5 +68,8 @@ img_rgb_median_filter(Wg_image *img, Wg_image *new_img);
 WG_PUBLIC wg_status
 img_bgrx_2_rgb(Wg_image *bgrx_img, Wg_image *rgb_img);
 
+WG_PUBLIC wg_status
+img_hsv_2_rgb(Wg_image *hsv_img, Wg_image *rgb_img);
+
 #endif
 

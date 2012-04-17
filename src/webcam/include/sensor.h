@@ -108,10 +108,13 @@ sensor_noise_reduction_set_state(Sensor *sensor, wg_boolean state);
 WG_PUBLIC wg_status
 sensor_get_color_range(const Sensor *sensor, Hsv *top, Hsv *bottom);
 
-wg_status
+WG_PUBLIC wg_status
 sensor_set_color_top(Sensor *sensor, const Hsv *color);
 
-wg_status
+WG_PUBLIC wg_status
 sensor_set_color_bottom(Sensor *sensor, const Hsv *color);
+
+WG_PUBLIC wg_status
+sensor_set_color_range(Sensor *sensor, const Hsv *top, const Hsv *bottom);
 
 #endif

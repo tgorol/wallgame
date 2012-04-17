@@ -121,6 +121,62 @@ img_hsv_hist(Wg_image *img, wg_uint **h, wg_uint **s, wg_uint **v,
 }
 
 /** 
+* @brief Normalize value
+* 
+* @param img image to normalize
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
+wg_status
+img_hsv_normalize(Wg_image *img)
+{
+    Hsv *hsv_pixel = NULL;
+    wg_uint width = 0;
+    wg_uint height = 0;
+    wg_uint row = 0;
+    wg_uint col = 0;
+    wg_double val_max = 0.0;
+    wg_double val_min = 1.0;
+    wg_double val = 0.0;
+
+    CHECK_FOR_NULL_PARAM(img);
+
+    if (img->type != IMG_HSV){
+        WG_ERROR("Invalig image format! Passed %d expect %d\n", 
+                img->type, IMG_HSV);
+        return WG_FAILURE;
+    }
+
+    img_get_width(img, &width);
+    img_get_height(img, &height);
+
+    for (row = 0; row < height; ++row){
+        img_get_row(img, row, (wg_uchar**)&hsv_pixel);
+        for (col = 0; col < width; ++col, ++hsv_pixel){
+            val = hsv_pixel->val;
+            if (val > val_max){
+                val_max = val;
+            }
+            if (val < val_min){
+                val_min = val;
+            }
+        }
+    }
+    
+    val = val_max - val_min; 
+    for (row = 0; row < height; ++row){
+        img_get_row(img, row, (wg_uchar**)&hsv_pixel);
+        for (col = 0; col < width; ++col, ++hsv_pixel){
+            hsv_pixel->val =
+                (hsv_pixel->val - val_min) / val;
+        }
+    }
+
+    return WG_SUCCESS;
+}
+
+/** 
 * @brief Use median filter on the image
 * 
 * @param img      source image

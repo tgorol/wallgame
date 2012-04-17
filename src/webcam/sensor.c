@@ -252,6 +252,19 @@ sensor_set_color_bottom(Sensor *sensor, const Hsv *color)
     return WG_SUCCESS;
 }
 
+wg_status
+sensor_set_color_range(Sensor *sensor, const Hsv *top, const Hsv *bottom)
+{
+    CHECK_FOR_NULL_PARAM(sensor);
+    CHECK_FOR_NULL_PARAM(top);
+    CHECK_FOR_NULL_PARAM(bottom);
+
+    sensor_set_color_top(sensor, top);
+    sensor_set_color_bottom(sensor, bottom);
+
+    return WG_SUCCESS;
+}
+
 /** 
 * @brief Add color for object detection
 * 
@@ -271,9 +284,9 @@ sensor_add_color(Sensor *sensor, const Hsv *color)
     CHECK_FOR_NULL_PARAM(sensor);
     CHECK_FOR_NULL_PARAM(color);
 
-    h = color->hue * 0.02;
-    s = color->sat * 0.05;
-    v = color->val * 0.02;
+    h = 0.0;
+    s = 0.0;
+    v = 0.0;
 
     pthread_mutex_lock(&sensor->lock);
 
@@ -399,6 +412,12 @@ sensor_start(Sensor *sensor)
 
             img_rgb_2_hsv_gtk(&image, &hsv_image);
 
+            img_hsv_normalize(&hsv_image);
+
+            img_cleanup(&image);
+
+            img_hsv_2_rgb(&hsv_image, &image);
+             
             pthread_mutex_lock(&sensor->lock);
             top    = sensor->top;
             bottom = sensor->bottom;

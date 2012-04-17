@@ -29,6 +29,10 @@ WG_PUBLIC void
 wg_rect_new(wg_int x, wg_int y, wg_uint width, wg_uint height, Wg_rect *rect);
 
 WG_PUBLIC void
+wg_rect_new_from_point2d(const Wg_point2d *pt1, const Wg_point2d *pt2,
+        Wg_rect *rect);
+
+WG_PUBLIC void
 wg_rect_new_from_points(wg_int x1, wg_int y1, wg_int x2,
         wg_int y2, Wg_rect *rect);
 
