@@ -117,4 +117,7 @@ sensor_set_color_bottom(Sensor *sensor, const Hsv *color);
 WG_PUBLIC wg_status
 sensor_set_color_range(Sensor *sensor, const Hsv *top, const Hsv *bottom);
 
+WG_PUBLIC wg_status
+sensor_reset_color_range(Sensor *sensor);
+
 #endif

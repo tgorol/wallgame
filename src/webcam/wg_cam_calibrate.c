@@ -76,6 +76,10 @@ typedef struct Callibration_data{
     Wg_point2d corners[SCREEN_CORNER_NUM];  /*!< screen corners             */
     Previous_setup setup;                   /*!< previous setup             */
     wg_uint load_config:1;                  /*!< load config file           */
+
+    /* for color callibration */
+    GtkWidget *load_check_box;
+    GtkWidget *sat_scale;
 }Callibration_data;
 
 /** 
@@ -85,6 +89,9 @@ typedef struct Setup_hist{
     Wg_rect rect;           /*!< rectangle to get histogram                 */
     Camera *cam;            /*!< camera instance to read histogram from     */
 }Setup_hist;
+
+WG_PRIVATE void
+clear_pane(Gui_display *display);
 
 WG_PRIVATE wg_status
 parse_color(char *value, Hsv *color);
@@ -134,6 +141,7 @@ gui_callibration_screen(Camera *cam)
     Gui_progress_dialog *pd = NULL;
     Callibration_data *data = NULL;
     GtkWidget *widget       = NULL;
+    GtkWidget *box          = NULL;
 
     CHECK_FOR_NULL_PARAM(cam);
 
@@ -143,33 +151,40 @@ gui_callibration_screen(Camera *cam)
     data->camera = cam;
     data->is_camera_initialized = WG_FALSE;
 
-
-    widget = gtk_check_button_new_with_label("Load previous configuration");
-
     gui_progress_dialog_set_exit_action(pd, callibration_exit);
 
     gui_progress_dialog_add_screen(pd, 
             gui_progress_dialog_screen_new(callibration_start, data, 
                 "Welcome to calibration wizard. This process is very simple and "
                 "will take only few seconds.\n\n\n"
-                "Click Next to start calibration", widget)
+                "Click Next to start calibration", NULL)
             );
+
+    widget = gtk_check_button_new_with_label("Load previous configuration");
 
     gui_progress_dialog_add_screen(pd, 
             gui_progress_dialog_screen_new(callibration_screen, data, 
                 "Show me where is the screen by clicking in each "
-                "corner of the screen", NULL)
+                "corner of the screen", widget)
             );
 
-    widget = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
-    gtk_box_pack_start(GTK_BOX(widget), 
-            gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 
-            0.0, 1.0, 0.01), TRUE, TRUE, 0);
+    box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
+    
+
+    widget = gtk_check_button_new_with_label("Load previous configuration");
+    data->load_check_box = widget;
+    gtk_box_pack_start(GTK_BOX(box), widget, TRUE, TRUE, 0);
+
+    widget = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 
+            0.0, 1.0, 0.01);
+    data->sat_scale = widget;
+    gtk_box_pack_start(GTK_BOX(box), widget, TRUE, TRUE, 0);
+
         
 
     gui_progress_dialog_add_screen(pd, 
             gui_progress_dialog_screen_new(callibration_color, data, 
-                "Select color range on the object you are using", widget)
+                "Select color range on the object you are using", box)
             );
 
     gui_progress_dialog_add_screen(pd, 
@@ -332,7 +347,6 @@ callibration_start(Gui_progress_dialog_screen *pds,
     wg_status status = WG_FAILURE;
     pthread_attr_t attr;
     Callibration_data *data = NULL;
-    GtkWidget *widget;
 
     data = (Callibration_data*)user_data;
 
@@ -384,6 +398,13 @@ callibration_start(Gui_progress_dialog_screen *pds,
                     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
                     pthread_create(&cam->thread, &attr, capture, cam);
                     pthread_attr_destroy(&attr);
+
+                    status = load_previous_config(PREVIOUS_SETUP_FILENAME, 
+                            &data->setup);
+                    if (WG_FAILURE == status){
+                        WG_LOG("No previous configuration file\n");
+                        data->load_config = 0;
+                    }
                 }else{
                     WG_FREE(cam->sensor);
                     cam->sensor = NULL;
@@ -399,23 +420,20 @@ callibration_start(Gui_progress_dialog_screen *pds,
     case GUI_PROGRESS_NEXT:
         break;
     case GUI_PROGRESS_LEAVE:
-        widget = gui_progress_dialog_screen_get_widget(pds);
-        data->load_config = 
-            gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)) == TRUE ?
-            1 : 0;
-
-        status = load_previous_config(PREVIOUS_SETUP_FILENAME, 
-                &data->setup);
-        if (WG_FAILURE == status){
-            WG_LOG("No previous configuration file\n");
-            data->load_config = 0;
-        }
         break;
     default:
         break;
     }
 
     return WG_TRUE;
+}
+
+WG_PRIVATE void
+clear_pane(Gui_display *display)
+{
+    gui_display_clean_lines(display);
+
+    return;
 }
 
 WG_PRIVATE void
@@ -473,6 +491,26 @@ pane_dimention_from_array(Cd_pane *pane_dimention,
     return;
 }
 
+void
+load_previous_screen(GtkToggleButton *togglebutton, gpointer user_data)
+{
+    Callibration_data *data = NULL;
+    Cd_pane pane_dimention;
+
+    data = (Callibration_data*)user_data;
+    if (gtk_toggle_button_get_active(togglebutton) == TRUE){
+        pane_dimention = data->setup.pane;
+        pane_dimention_to_array(&pane_dimention, data->corners);
+        paint_pane(&data->camera->left_display, &pane_dimention);
+        data->corner_count = 4;
+    }else{
+        data->corner_count = 0;
+        clear_pane(&data->camera->left_display);
+    }
+
+    return;
+}
+
 WG_PRIVATE wg_boolean
 callibration_screen(Gui_progress_dialog_screen *pds, 
         Gui_progress_action action, void *user_data)
@@ -483,8 +521,11 @@ callibration_screen(Gui_progress_dialog_screen *pds,
     Cd_pane pane_dimention;
     wg_status status = WG_FAILURE;
     GtkWidget *widget = NULL;
+    GtkWidget *check_box = NULL;
 
     data = (Callibration_data*)user_data;
+
+    check_box = gui_progress_dialog_screen_get_widget(pds);
 
     cam = data->camera;
     switch (action){
@@ -495,18 +536,20 @@ callibration_screen(Gui_progress_dialog_screen *pds,
                     G_CALLBACK(screen_corner_release_mouse), data);
             data->corner_count = 0;
 
-            if (data->load_config == 1){
-                pane_dimention = data->setup.pane;
-                pane_dimention_to_array(&pane_dimention, data->corners);
-                paint_pane(&cam->left_display, &pane_dimention);
-                data->corner_count = 4;
-            }
+            g_signal_connect(GTK_TOGGLE_BUTTON(check_box), "toggled", 
+                    G_CALLBACK(load_previous_screen), data);
+
+            gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(check_box), TRUE);
+
             break;
         case GUI_PROGRESS_LEAVE:
             widget = cam->left_display.widget;
 
             g_signal_handlers_disconnect_by_func(widget,
                     G_CALLBACK(screen_corner_release_mouse), data);
+
+            g_signal_handlers_disconnect_by_func(check_box,
+                    G_CALLBACK(load_previous_screen), data);
             break;
         case GUI_PROGRESS_NEXT:
             exit_perm = (data->corner_count == SCREEN_CORNER_NUM);
@@ -538,16 +581,31 @@ callibration_screen(Gui_progress_dialog_screen *pds,
     return exit_perm;
 }
 
+void
+load_previous_color(GtkToggleButton *togglebutton, gpointer user_data)
+{
+    Callibration_data *data = NULL;
+    Camera *cam             = NULL;
+
+    data = (Callibration_data*)user_data;
+    cam = data->camera;
+
+    if (gtk_toggle_button_get_active(togglebutton) == TRUE){
+        sensor_set_color_range(cam->sensor,
+                &data->setup.top,  &data->setup.bottom);
+    }else{
+        sensor_reset_color_range(cam->sensor);
+    }
+
+    return;
+}
+
 WG_PRIVATE wg_boolean
 callibration_color(Gui_progress_dialog_screen *pds, 
         Gui_progress_action action, void *user_data)
 {
     Camera    *cam = NULL;
     Callibration_data *data = NULL;
-    GtkWidget *scale_widget = NULL;
-    GtkWidget *box = NULL;
-    GList *list = NULL;
-    GList *elem = NULL;
 
     data = (Callibration_data*)user_data;
 
@@ -556,35 +614,26 @@ callibration_color(Gui_progress_dialog_screen *pds,
         case GUI_PROGRESS_ENTER:
             cam->dragging = WG_FALSE;
 
-            box = gui_progress_dialog_screen_get_widget(pds);
-
-            gui_display_set_drag_callback(&cam->left_display, 
-                    hist_color_cb, cam);
+            gui_display_set_drag_callback(&cam->left_display,
+            hist_color_cb, cam);
             gui_display_enable_dragging(&cam->left_display);
 
-            list = gtk_container_get_children(GTK_CONTAINER(box));
-            
-            elem = g_list_nth(list, 0);
-
-            scale_widget = (GtkWidget*)elem->data;
-
-            g_list_free(list);
-
-            g_signal_connect(GTK_RANGE(scale_widget), "change-value",
+            g_signal_connect(GTK_RANGE(data->sat_scale), "change-value",
                     G_CALLBACK(color_slider_changed), cam);
 
-            if (data->load_config == 1){
-                sensor_set_color_top(cam->sensor, &data->setup.top);
-                sensor_set_color_bottom(cam->sensor, &data->setup.bottom);
-            }
+            g_signal_connect(GTK_TOGGLE_BUTTON(data->load_check_box),
+                    "toggled", G_CALLBACK(load_previous_color), data);
+
             break;
         case GUI_PROGRESS_LEAVE:
-            scale_widget = gui_progress_dialog_screen_get_widget(pds);
+            g_signal_handlers_disconnect_by_func(data->sat_scale,
+                    G_CALLBACK(color_slider_changed), cam);
+
+            g_signal_handlers_disconnect_by_func(data->load_check_box,
+                    G_CALLBACK(load_previous_color), cam);
 
             gui_display_disable_dragging(&cam->left_display);
 
-            g_signal_handlers_disconnect_by_func(scale_widget,
-                    G_CALLBACK(color_slider_changed), cam);
             break;
         case GUI_PROGRESS_NEXT:
             sensor_get_color_range(cam->sensor,

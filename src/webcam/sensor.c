@@ -252,6 +252,16 @@ sensor_set_color_bottom(Sensor *sensor, const Hsv *color)
     return WG_SUCCESS;
 }
 
+/** 
+* @brief Set color range
+* 
+* @param sensor  sensor instance
+* @param top     top color
+* @param bottom  bottom color
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
 wg_status
 sensor_set_color_range(Sensor *sensor, const Hsv *top, const Hsv *bottom)
 {
@@ -263,6 +273,23 @@ sensor_set_color_range(Sensor *sensor, const Hsv *top, const Hsv *bottom)
     sensor_set_color_bottom(sensor, bottom);
 
     return WG_SUCCESS;
+}
+
+/** 
+* @brief Reset color range
+* 
+* @param sensor sensor instance
+* 
+* @retval WG_SUCCESS
+* @retval WG_FAILURE
+*/
+wg_status
+sensor_reset_color_range(Sensor *sensor)
+{
+    static Hsv top = { 0.0, 0.0, 0.0 };
+    static Hsv bottom = { 1.0, 1.0, 1.0 };
+
+    return sensor_set_color_range(sensor, &top, &bottom);
 }
 
 /** 
@@ -412,12 +439,6 @@ sensor_start(Sensor *sensor)
 
             img_rgb_2_hsv_gtk(&image, &hsv_image);
 
-            img_hsv_normalize(&hsv_image);
-
-            img_cleanup(&image);
-
-            img_hsv_2_rgb(&hsv_image, &image);
-             
             pthread_mutex_lock(&sensor->lock);
             top    = sensor->top;
             bottom = sensor->bottom;
