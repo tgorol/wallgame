@@ -57,6 +57,9 @@
 #define PREV_COLOR_TOP          "color_top"
 #define PREV_COLOR_BOTTOM       "color_bottom"
 
+#define DEFAULT_HEIGHT  300
+#define DEFAULT_WIDTH   500
+
 /** 
 * @brief Previous configuration
 */
@@ -80,6 +83,7 @@ typedef struct Callibration_data{
     /* for color callibration */
     GtkWidget *load_check_box;
     GtkWidget *sat_scale;
+    GtkWidget *val_scale;
 }Callibration_data;
 
 /** 
@@ -142,6 +146,7 @@ gui_callibration_screen(Camera *cam)
     Callibration_data *data = NULL;
     GtkWidget *widget       = NULL;
     GtkWidget *box          = NULL;
+    GtkWidget *box_row      = NULL;
 
     CHECK_FOR_NULL_PARAM(cam);
 
@@ -169,18 +174,35 @@ gui_callibration_screen(Camera *cam)
             );
 
     box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
-    
 
+    /* create check box for Load previous configurtion             */
     widget = gtk_check_button_new_with_label("Load previous configuration");
     data->load_check_box = widget;
     gtk_box_pack_start(GTK_BOX(box), widget, TRUE, TRUE, 0);
 
+    /* create Saturation scale                                     */
+    box_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
+    widget = gtk_label_new("Sat");
+    gtk_box_pack_start(GTK_BOX(box_row), widget, FALSE, FALSE, 0);
+
     widget = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 
             0.0, 1.0, 0.01);
     data->sat_scale = widget;
-    gtk_box_pack_start(GTK_BOX(box), widget, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(box_row), widget, TRUE, TRUE, 0);
 
-        
+    gtk_box_pack_start(GTK_BOX(box), box_row, TRUE, TRUE, 0);
+
+    /* create value scale                                          */
+    box_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
+    widget = gtk_label_new("Val");
+    gtk_box_pack_start(GTK_BOX(box_row), widget, FALSE, FALSE, 0);
+
+    widget = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 
+            0.0, 1.0, 0.01);
+    data->val_scale = widget;
+    gtk_box_pack_start(GTK_BOX(box_row), widget, TRUE, TRUE, 0);
+
+    gtk_box_pack_start(GTK_BOX(box), box_row, TRUE, TRUE, 0);
 
     gui_progress_dialog_add_screen(pd, 
             gui_progress_dialog_screen_new(callibration_color, data, 
@@ -192,7 +214,7 @@ gui_callibration_screen(Camera *cam)
                 "Thank you\n\n\nHave fun", NULL)
             );
 
-    gui_progress_dialog_show(pd);
+    gui_progress_dialog_show(pd, DEFAULT_WIDTH, DEFAULT_HEIGHT);
 
     return WG_SUCCESS;
 }
@@ -240,7 +262,7 @@ hist_color_cb(Gui_display *display, const Wg_rect *rect, void *user_data)
 }
 
 WG_PRIVATE gboolean
-color_slider_changed(GtkRange *range, GtkScrollType scroll, 
+sat_slider_changed(GtkRange *range, GtkScrollType scroll, 
         gdouble value, gpointer user_data)
 {
     Hsv bottom_color;
@@ -250,6 +272,23 @@ color_slider_changed(GtkRange *range, GtkScrollType scroll,
     sensor_get_color_range(cam->sensor, &top_color, &bottom_color);
 
     bottom_color.sat = value * top_color.sat;
+
+    sensor_set_color_bottom(cam->sensor, &bottom_color);
+
+    return FALSE;
+}
+
+WG_PRIVATE gboolean
+val_slider_changed(GtkRange *range, GtkScrollType scroll, 
+        gdouble value, gpointer user_data)
+{
+    Hsv bottom_color;
+    Hsv top_color;
+    Camera *cam = (Camera*) user_data;
+
+    sensor_get_color_range(cam->sensor, &top_color, &bottom_color);
+
+    bottom_color.val = value * top_color.val;
 
     sensor_set_color_bottom(cam->sensor, &bottom_color);
 
@@ -619,7 +658,10 @@ callibration_color(Gui_progress_dialog_screen *pds,
             gui_display_enable_dragging(&cam->left_display);
 
             g_signal_connect(GTK_RANGE(data->sat_scale), "change-value",
-                    G_CALLBACK(color_slider_changed), cam);
+                    G_CALLBACK(sat_slider_changed), cam);
+
+            g_signal_connect(GTK_RANGE(data->val_scale), "change-value",
+                    G_CALLBACK(val_slider_changed), cam);
 
             g_signal_connect(GTK_TOGGLE_BUTTON(data->load_check_box),
                     "toggled", G_CALLBACK(load_previous_color), data);
@@ -627,7 +669,10 @@ callibration_color(Gui_progress_dialog_screen *pds,
             break;
         case GUI_PROGRESS_LEAVE:
             g_signal_handlers_disconnect_by_func(data->sat_scale,
-                    G_CALLBACK(color_slider_changed), cam);
+                    G_CALLBACK(sat_slider_changed), cam);
+
+            g_signal_handlers_disconnect_by_func(data->val_scale,
+                    G_CALLBACK(val_slider_changed), cam);
 
             g_signal_handlers_disconnect_by_func(data->load_check_box,
                     G_CALLBACK(load_previous_color), cam);

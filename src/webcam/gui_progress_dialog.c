@@ -247,7 +247,8 @@ gui_progress_dialog_set_exit_action(Gui_progress_dialog *pd,
 * @param pd progress dialogs instance
 */
 wg_status
-gui_progress_dialog_show(Gui_progress_dialog *pd)
+gui_progress_dialog_show(Gui_progress_dialog *pd, 
+        wg_uint width, wg_uint height)
 {
     GtkBuilder *builder = NULL;
     GtkWidget  *dialog  = NULL; 
@@ -301,6 +302,8 @@ gui_progress_dialog_show(Gui_progress_dialog *pd)
     show_screen(pd, 0);
     show_extra_widget(pd);
     call_action(pd, GUI_PROGRESS_ENTER);
+
+    gtk_window_set_default_size(GTK_WINDOW(dialog), width, height);
 
     gtk_widget_show_all(dialog);
 

@@ -38,7 +38,8 @@ gui_progress_dialog_add_screen(Gui_progress_dialog *pd,
         Gui_progress_dialog_screen *pds);
 
 WG_PUBLIC wg_status
-gui_progress_dialog_show(Gui_progress_dialog *pd);
+gui_progress_dialog_show(Gui_progress_dialog *pd,
+        wg_uint width, wg_uint height);
 
 WG_PUBLIC wg_status
 gui_progress_dialog_set_exit_action(Gui_progress_dialog *pd,

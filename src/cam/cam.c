@@ -211,8 +211,6 @@ cam_open(Wg_camera *cam, CAM_MODE mode, wg_uint flags)
     return status;
 }
 
-
-
 /**
  * @brief Close a webcam
  *
@@ -242,6 +240,38 @@ cam_close(Wg_camera *cam)
     }
 
     return status;
+}
+
+wg_boolean
+cam_is_camera(wg_char *path)
+{
+    int fd_cam = -1;
+    struct stat st; 
+
+    if (NULL == path){
+        return WG_FALSE;
+    } 
+
+    if (-1 == stat (path, &st)) {
+        WG_LOG("Cannot identify '%s': errno(%d), %s\n",
+                path, errno, strerror (errno));
+        return WG_FALSE;
+    }
+
+    if (!S_ISCHR (st.st_mode)) {
+        WG_LOG("%s is no device\n", path);
+        return WG_FALSE;
+    }
+
+    fd_cam = open(path, O_RDWR, 0);
+    if (-1 == fd_cam){
+        WG_ERROR("%s", strerror(errno));
+        return WG_FALSE;
+    }
+
+    close(fd_cam);
+
+    return WG_TRUE;
 }
 
 /**

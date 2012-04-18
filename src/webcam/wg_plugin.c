@@ -318,11 +318,19 @@ button_clicked_color(GtkWidget *widget, gpointer data){
 static void 
 button_clicked_callibrate(GtkWidget *widget, gpointer data)
 {
-    Camera *cam             = NULL;
+    Camera *cam          = NULL;
+    gchar *device        = NULL;
+    wg_boolean is_camera = WG_FALSE;
 
     cam = (Camera*)data;
 
-    gui_callibration_screen(cam);
+    device = gtk_combo_box_text_get_active_text(
+            GTK_COMBO_BOX_TEXT(cam->device_combo));
+
+    is_camera = cam_is_camera(device);
+    if (WG_TRUE == is_camera){
+        gui_callibration_screen(cam);
+    }
 
     return;
 }

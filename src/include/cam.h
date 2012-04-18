@@ -168,6 +168,9 @@ cam_get_resolution(Wg_camera *cam, wg_uint *width, wg_uint *height);
 WG_PUBLIC cam_status
 cam_frame_init(Wg_frame *frame);
 
+WG_PUBLIC wg_boolean
+cam_is_camera(wg_char *path);
+
 #include "../cam/include/cam_cap.h"
 #include "../cam/include/cam_format_selector.h"
 #include "../cam/include/cam_frame.h"
