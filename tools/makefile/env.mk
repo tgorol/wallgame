@@ -1,5 +1,4 @@
 OUT_DIR?=$(CURDIR)/build/lib/
-CPU_ARCH?=i686
 C_STD?=gnu99
 
 DOXYGEN=doxygen
@@ -51,12 +50,12 @@ LIB_PATH+=-L$(OUT_DIR)
 OBJ=$(foreach file, $(SOURCE), $(basename $(file)).o)
 
 # Add archiceture
-CFLAGS+=-march=$(CPU_ARCH) -std=$(C_STD) -D_REENTRANT 
+CFLAGS+= -std=$(C_STD) -D_REENTRANT 
 
 ifeq ($(BUILD_TYPE),  RELEASE)
 	CFLAGS+=-g -Wall -O3 -DRELEASE
 else
-	CFLAGS+=-g -Wall  -DWGDEBUG 
+	CFLAGS+=-g -Wall -pedantic -DWGDEBUG -DMEMLEAK_CHECK
 endif
 
 ifdef PROF
