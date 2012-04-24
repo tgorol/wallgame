@@ -485,6 +485,8 @@ pressed_mouse(GtkWidget *widget, GdkEvent  *event, gpointer user_data)
     Gui_display *display = NULL;
     GdkEventButton *e = NULL;
 
+    WG_LOG("Start dragging\n");
+
     display = user_data;
     e = &event->button;
 
@@ -503,6 +505,8 @@ released_mouse(GtkWidget *widget, GdkEvent  *event, gpointer user_data)
     Gui_display *display = NULL;
     GdkEventButton *e = NULL;
     Wg_rect rect;
+
+    WG_LOG("Stop dragging\n");
 
     display = user_data;
     e = &event->button;

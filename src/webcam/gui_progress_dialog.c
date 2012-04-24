@@ -334,6 +334,8 @@ show_screen(Gui_progress_dialog *pd, wg_int val)
 
     increment_screen_index(pd, val);
 
+    gdk_threads_enter();
+
     if (!is_last_screen(pd)){
         gtk_text_buffer_set_text(pd->buffer, 
                 pd->screens_array[pd->active_index]->text, -1);
@@ -361,6 +363,8 @@ show_screen(Gui_progress_dialog *pd, wg_int val)
             gtk_button_set_label(GTK_BUTTON(widget), "Next");
         }
     }
+
+    gdk_threads_leave();
 
     return;
 }
@@ -438,6 +442,8 @@ response(GtkDialog *dialog, gint response_id, gpointer user_data)
 {
     Gui_progress_dialog *pd = NULL;
     wg_boolean flag = WG_TRUE;
+
+    WG_LOG("Button clicked\n");
 
     pd = (Gui_progress_dialog*)user_data;
 

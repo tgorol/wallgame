@@ -377,14 +377,13 @@ noise_reduction(GtkToggleButton *togglebutton,  gpointer user_data)
 WG_PRIVATE void
 enable_threads(void)
 {
+    g_thread_init(NULL);
     if (!g_thread_supported()){
-        g_thread_init(NULL);
         gdk_threads_init();
         gdk_threads_enter();
         WG_LOG("g_thread supported\n");
     }else{
         WG_LOG("g_thread not supported\n");
-        exit(EXIT_FAILURE);
     }
 
     return;
