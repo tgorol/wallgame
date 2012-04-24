@@ -12,6 +12,10 @@
 #include <wg_linked_list.h>
 #include <wg_iterator.h>
 
+#include <wg_sync_linked_list.h>
+#include <wg_wq.h>
+#include "include/gui_work.h"
+
 
 #include "include/gui_progress_dialog.h"
 
@@ -327,14 +331,32 @@ increment_screen_index(Gui_progress_dialog *pd, wg_int val)
     return pd->active_index;
 }
 
+typedef struct Update_label{
+    wg_char   *text;
+    GtkWidget *widget;
+}Update_label;
+
+void
+update_label_cb(void *data)
+{
+    Update_label *ul = NULL;
+
+    ul = (Update_label*)data;
+
+    gdk_threads_enter();
+    gtk_button_set_label(GTK_BUTTON(ul->widget), ul->text);
+    gdk_threads_leave();
+
+    return;
+}
+
 WG_PRIVATE void
 show_screen(Gui_progress_dialog *pd, wg_int val)
 {
     GtkWidget *widget = NULL;
+    Update_label *label_work = NULL;
 
     increment_screen_index(pd, val);
-
-    gdk_threads_enter();
 
     if (!is_last_screen(pd)){
         gtk_text_buffer_set_text(pd->buffer, 
@@ -345,26 +367,32 @@ show_screen(Gui_progress_dialog *pd, wg_int val)
                     BACK_RESPONSE_ID); 
 
             gtk_widget_set_sensitive(widget, FALSE);
+            widget = gtk_dialog_get_widget_for_response(GTK_DIALOG(pd->dialog), 
+                    NEXT_RESPONSE_ID); 
+
+            label_work = gui_work_create(
+                    sizeof (Update_label), update_label_cb);
+ 
+            label_work->widget = widget;
+            label_work->text = "Next";
+
+            gui_work_add(label_work);
         }else{
             widget = gtk_dialog_get_widget_for_response(GTK_DIALOG(pd->dialog), 
                     BACK_RESPONSE_ID); 
             gtk_widget_set_sensitive(widget, TRUE);
-
-        }
-
-        if (pd->active_index == (pd->size - 1)){
             widget = gtk_dialog_get_widget_for_response(GTK_DIALOG(pd->dialog), 
                     NEXT_RESPONSE_ID); 
 
-            gtk_button_set_label(GTK_BUTTON(widget), "Finish");
-        }else{
-            widget = gtk_dialog_get_widget_for_response(GTK_DIALOG(pd->dialog), 
-                    NEXT_RESPONSE_ID); 
-            gtk_button_set_label(GTK_BUTTON(widget), "Next");
+            label_work = gui_work_create(
+                    sizeof (Update_label), update_label_cb);
+ 
+            label_work->widget = widget;
+            label_work->text = "Next";
+
+            gui_work_add(label_work);
         }
     }
-
-    gdk_threads_leave();
 
     return;
 }

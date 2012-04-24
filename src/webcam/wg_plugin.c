@@ -374,19 +374,19 @@ noise_reduction(GtkToggleButton *togglebutton,  gpointer user_data)
     return;
 }
 
-WG_PRIVATE void
+WG_PRIVATE wg_status
 enable_threads(void)
 {
     g_thread_init(NULL);
-    if (!g_thread_supported()){
+    if (g_thread_supported() == TRUE){
         gdk_threads_init();
-        gdk_threads_enter();
         WG_LOG("g_thread supported\n");
     }else{
         WG_LOG("g_thread not supported\n");
+        return WG_FAILURE;
     }
 
-    return;
+    return WG_SUCCESS;
 }
 
 
@@ -706,7 +706,7 @@ stop_capture(Camera *cam)
     if (cam->sensor != NULL){
         sensor_stop(cam->sensor);
 
-        pthread_cancel(cam->thread);
+//        pthread_cancel(cam->thread);
 
         pthread_join(cam->thread, NULL);
 
@@ -761,7 +761,10 @@ wg_plugin_init(int argc, char *argv[], Camera *camera)
 
     memset(camera, '\0', sizeof (Camera));
 
-    enable_threads();
+    status = enable_threads();
+    if (status != WG_SUCCESS){
+        return WG_FAILURE;
+    }
 
     transport_name = argv[1];
 
@@ -902,7 +905,9 @@ void
 wg_plugin_start(Camera *camera)
 {
     gtk_widget_show (camera->window);                
+    gdk_threads_enter();
     gtk_main ();
+    gdk_threads_leave();
 
     return;
 }
@@ -918,8 +923,6 @@ wg_plugin_cleanup(Camera *camera)
     gui_display_cleanup(&camera->right_display);
 
     wg_msg_transport_cleanup(&camera->msg_transport);
-
-    gdk_threads_leave();
 
     return;
 }

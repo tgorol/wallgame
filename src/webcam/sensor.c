@@ -69,8 +69,6 @@ sensor_init(Sensor *sensor)
 
     sensor->state = SENSOR_STOPED;
 
-    wg_wq_init(&sensor->detection_wq);
-
     sensor->top.val = 0.0;
     sensor->top.sat = 0.0;
     sensor->top.hue = 0.0;
@@ -97,8 +95,6 @@ sensor_cleanup(Sensor *sensor)
 
     pthread_cond_destroy(&sensor->finish);
     pthread_mutex_destroy(&sensor->lock);
-
-    wg_wq_cleanup(&sensor->detection_wq);
 
     return;
 }

@@ -374,9 +374,13 @@ refresh_image_cb(void *data)
 
     work = (Update_image*)data;
 
+    gdk_threads_enter();
+
     gui_display_get_widget(work->display, &widget);
 
     gtk_widget_queue_draw(widget);
+
+    gdk_threads_leave();
 
     return;
 }

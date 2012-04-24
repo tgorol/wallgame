@@ -62,7 +62,7 @@ struct Sensor{
     pthread_cond_t finish;                 /*!< finish condition            */
     wg_boolean complete_request;           /*!< sensor finished             */
 
-    Wg_wq detection_wq;                    /*!< workq detection             */
+//    Wg_wq detection_wq;                    /*!< workq detection             */
 };
 
 WG_PUBLIC wg_status

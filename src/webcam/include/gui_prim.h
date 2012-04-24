@@ -39,4 +39,13 @@ wg_rect_new_from_points(wg_int x1, wg_int y1, wg_int x2,
 WG_PUBLIC wg_status
 wg_rect_move(Wg_rect *rect, wg_int dx, wg_int dy);
 
+WG_PUBLIC wg_status
+wg_rect_get_area(const Wg_rect *rect, wg_int *area);
+
+WG_PUBLIC wg_status
+wg_rect_get_height(const Wg_rect *rect, wg_uint *height);
+
+WG_PUBLIC wg_status
+wg_rect_get_width(const Wg_rect *rect, wg_uint *width);
+
 #endif

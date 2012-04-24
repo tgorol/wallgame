@@ -136,4 +136,42 @@ wg_rect_move(Wg_rect *rect, wg_int dx, wg_int dy)
     return WG_SUCCESS;
 }
 
+wg_status
+wg_rect_get_width(const Wg_rect *rect, wg_uint *width)
+{
+    CHECK_FOR_NULL_PARAM(rect);
+    CHECK_FOR_NULL_PARAM(width);
+
+    *width = rect->width;
+
+    return WG_SUCCESS;
+}
+
+wg_status
+wg_rect_get_height(const Wg_rect *rect, wg_uint *height)
+{
+    CHECK_FOR_NULL_PARAM(rect);
+    CHECK_FOR_NULL_PARAM(height);
+
+    *height = rect->height;
+
+    return WG_SUCCESS;
+}
+
+wg_status
+wg_rect_get_area(const Wg_rect *rect, wg_int *area)
+{
+    wg_uint width  = 0;
+    wg_uint height = 0;
+    CHECK_FOR_NULL_PARAM(rect);
+    CHECK_FOR_NULL_PARAM(area);
+
+    wg_rect_get_height(rect, &height);
+    wg_rect_get_width(rect, &width);
+
+    *area = height * width;
+
+    return WG_SUCCESS;
+}
+
 /*! @{ */

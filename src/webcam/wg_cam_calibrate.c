@@ -250,15 +250,20 @@ hist_color_cb(Gui_display *display, const Wg_rect *rect, void *user_data)
 {
     Camera *cam = NULL;
     Setup_hist *work = NULL;
+    wg_int area = 0;
 
-    cam = (Camera*)user_data;
+    wg_rect_get_area(rect, &area);
 
-    work = gui_work_create(sizeof (Setup_hist), setup_hist);
+    if (0 != area){
+        cam = (Camera*)user_data;
 
-    work->cam = cam;
-    work->rect = *rect;
+        work = gui_work_create(sizeof (Setup_hist), setup_hist);
 
-    gui_work_add(work);
+        work->cam = cam;
+        work->rect = *rect;
+
+        gui_work_add(work);
+    }
 }
 
 WG_PRIVATE gboolean
