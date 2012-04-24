@@ -33,6 +33,8 @@
 */
 #define FREE_NUM_THRESHOLD  512
 
+#define SIGNATURE        'T'
+
 /** 
 * @brief Allocation type
 */
@@ -275,7 +277,7 @@ wg_calloc(size_t num, size_t size, const wg_char *filename, wg_uint line)
     }
 
     /* allocate requestes memory size + header size */
-    s = (size * num) + sizeof (Memleak);
+    s = (size * num) + sizeof (Memleak) + sizeof (SIGNATURE);
     mem_block = malloc(s);
     memset(mem_block, '\0', s);
 
@@ -302,6 +304,7 @@ wg_calloc(size_t num, size_t size, const wg_char *filename, wg_uint line)
         pthread_mutex_unlock(&memleak_lock);
 
         mem_block = ml + 1;
+	((wg_char*)mem_block)[size * num] = SIGNATURE;
     }
     return mem_block;
 }
@@ -320,13 +323,16 @@ wg_malloc(size_t size, const wg_char *filename, wg_uint line)
 {
     void *mem_block = NULL;
     Memleak *ml = NULL;
+    wg_uint real_size = 0;
 
     if (! is_started()){
         return malloc(size);
     }
     
     /* allocate memory size + header size */
-    mem_block = malloc(size + sizeof (Memleak));
+    real_size = size + sizeof (Memleak) + sizeof (SIGNATURE);
+    mem_block = malloc(real_size);
+    memset(mem_block, SIGNATURE, real_size);
 
     if (NULL != mem_block){
         /* fill header */
@@ -369,6 +375,8 @@ wg_free(void *ptr, wg_boolean ff)
 {
     Memleak *ml = NULL;
     wg_uint size = 0;
+    wg_uint signature_index = 0;
+    wg_char *char_ptr = NULL;
     
     if (! is_started()){
          free(ptr);
@@ -377,8 +385,15 @@ wg_free(void *ptr, wg_boolean ff)
 
     if (NULL != ptr){
         ml = ptr;
+        char_ptr = ptr;
         ml -= 1;
 
+	signature_index = ml->size * ml->num;
+        if (char_ptr[signature_index] != SIGNATURE){
+            WG_ERROR("Out of bound access: %s\n", ml->filename);
+            exit(1);
+        }
+ 
         size = ml->size * ml->num;
         pthread_mutex_lock(&memleak_lock);
 

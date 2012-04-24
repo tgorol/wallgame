@@ -477,7 +477,9 @@ print_fps(Camera *obj)
 
     sprintf(text, "%.1f", (float)obj->fps_val);
 
+    gdk_threads_enter();
     gtk_label_set_text(GTK_LABEL(obj->fps_display), text);
+    gdk_threads_leave();
 }
 
 /** 
