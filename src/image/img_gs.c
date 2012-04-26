@@ -91,7 +91,7 @@ img_rgb_2_grayscale(Wg_image *rgb_img, Wg_image *grayscale_img)
 */
 wg_status
 img_gs_histogram(Wg_image* grayscale_img, wg_uint *histogram,
-        wg_uint size)
+        wg_size size)
 {
     wg_uint width = 0;
     wg_uint height = 0;

@@ -84,6 +84,7 @@ wg_sort_uint_insert(wg_uint *d, wg_uint num)
     return;
 }
 
+#ifdef __i386__
 void
 wg_sort_uint(wg_uint *data, wg_uint num)
 {
@@ -131,8 +132,10 @@ wg_sort_uint(wg_uint *data, wg_uint num)
     );
 }
 
+#else
+
 void
-wg_sort_uint_(wg_uint *data, wg_uint num)
+wg_sort_uint(wg_uint *data, wg_uint num)
 {
     register wg_uint *d = NULL;
     register wg_int increment = 0;
@@ -161,3 +164,5 @@ wg_sort_uint_(wg_uint *data, wg_uint num)
 
     return;
 }
+
+#endif

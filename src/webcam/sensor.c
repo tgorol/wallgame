@@ -53,12 +53,13 @@ sensor_init(Sensor *sensor)
 
     CHECK_FOR_NULL_PARAM(sensor);
 
+    /* initialize camera        */
     c_status = cam_init(&sensor->camera, sensor->video_dev);
     if (CAM_SUCCESS != c_status){
         status = WG_FAILURE;
     }
  
-    /* clear callbacks */
+    /* clear callbacks          */
     for (i = 0; i < ELEMNUM(sensor->cb); ++i){
         sensor->cb[i] = NULL;
         sensor->user_data[i] = NULL;
@@ -69,6 +70,7 @@ sensor_init(Sensor *sensor)
 
     sensor->state = SENSOR_STOPED;
 
+    /* initialize color range    */
     sensor->top.val = 0.0;
     sensor->top.sat = 0.0;
     sensor->top.hue = 0.0;
@@ -77,6 +79,7 @@ sensor_init(Sensor *sensor)
     sensor->bottom.sat = 1.0;
     sensor->bottom.hue = 1.0;
 
+    /* disable noise reduction   */
     sensor->noise_reduction = WG_FALSE;
 
     return status;
@@ -371,26 +374,32 @@ sensor_start(Sensor *sensor)
 
     ef_init();
 
+    /* open camera                  */
     status.cam = cam_open(&sensor->camera, 0, ENABLE_DECOMPRESSOR);
     if (CAM_SUCCESS != status.cam){
         return WG_FAILURE;
     }
 
+    /* set camera rsolution   */
     status.cam = cam_set_resolution(&sensor->camera, 
             sensor->width, sensor->height);
     if (CAM_SUCCESS != status.cam){
         return WG_FAILURE;
     }
 
+    /* start capturing frames from camera */
     status.cam = cam_start(&sensor->camera);
     if (CAM_SUCCESS != status.cam){
         return WG_FAILURE;
     }
 
+    /* call user callback     */
     call_user_callback(sensor, CB_SETUP_START, NULL);
 
+    /* call user callback     */
     call_user_callback(sensor, CB_SETUP_STOP, NULL);
 
+    /* initialize frame structurem and decompressor  */
     cam_frame_init(&frame);
     cam_decompressor(&sensor->camera, &decomp);
 
@@ -401,8 +410,9 @@ sensor_start(Sensor *sensor)
     call_user_callback(sensor, CB_ENTER, NULL);
 
     for (;;){
+        /* exit loop if asked through sensor->copplete_request */
         pthread_mutex_lock(&sensor->lock);
-        if (WG_TRUE == ((volatile Sensor *)sensor)->complete_request){
+        if (WG_TRUE == sensor->complete_request){
             sensor->complete_request = WG_FALSE;
             sensor->state = SENSOR_STOPED;
             cam_stop(&sensor->camera);
@@ -413,6 +423,7 @@ sensor_start(Sensor *sensor)
         }
         pthread_mutex_unlock(&sensor->lock);
 
+        /* read and decompress frame           */
         if (cam_read(&sensor->camera, &frame) == CAM_SUCCESS){
             status.cam = invoke_decompressor(&decomp, 
                     frame.start, frame.size, 
@@ -423,6 +434,7 @@ sensor_start(Sensor *sensor)
             img_rgb_2_bgrx(&image, &bgrx_image);
             img_cleanup(&image);
 
+            /* remove noise if asked         */
             if (sensor_get_noise_reduction_state(sensor) == WG_TRUE){
                 img_bgrx_median_filter(&bgrx_image, &tmp_image);
                 img_cleanup(&bgrx_image);
@@ -433,6 +445,7 @@ sensor_start(Sensor *sensor)
             img_bgrx_2_rgb(&bgrx_image, &image);
             img_cleanup(&bgrx_image);
 
+            /* convert RGB to HSV    */
             img_rgb_2_hsv_gtk(&image, &hsv_image);
 
             pthread_mutex_lock(&sensor->lock);
@@ -440,15 +453,18 @@ sensor_start(Sensor *sensor)
             bottom = sensor->bottom;
             pthread_mutex_unlock(&sensor->lock);
 
+            /* filter frame           */
             ef_filter(&hsv_image, &filtered_image, &top, &bottom);
 
             ef_threshold(&filtered_image, 1);
 
+            /* detect edge            */
             ef_detect_edge(&filtered_image, &edge_image);
 
             call_user_callback(sensor, CB_IMG_EDGE, &edge_image);
 
 #ifndef G_GENTER
+            /* detect circle          */
             ef_detect_circle(&edge_image, &acc);
 
             ef_acc_get_max(&acc, &y, &x, &v);
@@ -463,8 +479,10 @@ sensor_start(Sensor *sensor)
            
             call_user_callback(sensor, CB_IMG, &image);
 
+            /* inform user about object position   */
             call_user_xy_callback(sensor, x, y);
 
+            /* release memory         */
             img_cleanup(&image);
             img_cleanup(&hsv_image);
             img_cleanup(&filtered_image);
@@ -513,21 +531,20 @@ sensor_stop(Sensor *sensor)
 
     sensor->complete_request = WG_TRUE;
 
-    while(WG_TRUE == ((volatile Sensor *)sensor)->complete_request){
+    /* aske thread to finish and wait for confirmation */
+    while(WG_TRUE == sensor->complete_request){
         pthread_cond_wait(&sensor->finish, &sensor->lock);
     }
 
     pthread_mutex_unlock(&sensor->lock);
-
-#if 0
-    img_cleanup(&sensor->background);
-#endif
 
     return WG_SUCCESS;
 }
 
 /** 
 * @brief Set default callback
+* 
+*  Redirect all events to this callback
 * 
 * @param sensor    sensor instance
 * @param cb        callback function

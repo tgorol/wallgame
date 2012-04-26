@@ -33,7 +33,7 @@
 */
 #define FREE_NUM_THRESHOLD  512
 
-#define SIGNATURE        'T'
+#define SIGNATURE        ((wg_char)'T')
 
 /** 
 * @brief Allocation type
@@ -121,6 +121,9 @@ WG_PRIVATE wg_uint free_count = 0;
 * @brief Entire size of memory to release in release list
 */
 WG_PRIVATE wg_uint free_size = 0;
+
+WG_PRIVATE void
+add_signature(void *mem, wg_size index);
 
 /** 
 * @brief Release memory thread
@@ -237,11 +240,11 @@ wg_memleak_stop()
     while ((leak = iterator_list_next(&itr))){
         switch (leak->allocation_type){
         case MEMLEAK_MALLOC:
-            WG_DEBUG("memleak: malloc addr=%p size=%u file=%s:%u\n",
+            WG_DEBUG("memleak: malloc addr=%p size=%Zu file=%s:%u\n",
                     (void*)(leak + 1), leak->size, leak->filename, leak->line);
             break;
         case MEMLEAK_CALLOC:
-            WG_DEBUG("memleak: calloc addr=%p num=%u size=%u file=%s:%u\n",
+            WG_DEBUG("memleak: calloc addr=%p num=%Zu size=%Zu file=%s:%u\n",
                     (void*)(leak + 1), leak->num, leak->size, leak->filename, 
                     leak->line);
             break;
@@ -304,7 +307,7 @@ wg_calloc(size_t num, size_t size, const wg_char *filename, wg_uint line)
         pthread_mutex_unlock(&memleak_lock);
 
         mem_block = ml + 1;
-	((wg_char*)mem_block)[size * num] = SIGNATURE;
+        add_signature(mem_block, size * num);
     }
     return mem_block;
 }
@@ -332,7 +335,6 @@ wg_malloc(size_t size, const wg_char *filename, wg_uint line)
     /* allocate memory size + header size */
     real_size = size + sizeof (Memleak) + sizeof (SIGNATURE);
     mem_block = malloc(real_size);
-    memset(mem_block, SIGNATURE, real_size);
 
     if (NULL != mem_block){
         /* fill header */
@@ -357,6 +359,8 @@ wg_malloc(size_t size, const wg_char *filename, wg_uint line)
         pthread_mutex_unlock(&memleak_lock);
 
         mem_block = ml + 1;
+
+        add_signature(mem_block, ml->num * ml->size);
     }
     return mem_block;
 }
@@ -434,6 +438,17 @@ wg_boolean is_started(void)
     pthread_mutex_unlock(&memleak_lock);
 
     return flag;
+}
+
+WG_PRIVATE void
+add_signature(void *mem, wg_size index)
+{
+    wg_char *char_mem = NULL;
+
+    char_mem = mem;
+    char_mem[index] = SIGNATURE;
+
+    return;
 }
 
 /*! @} */

@@ -19,7 +19,7 @@ typedef struct Transport{
 */
 typedef struct  Wg_transport{
     Transport transport;        /*!< common data             */
-    size_t sockaddr_size;       /*!< size of the sockaddr    */
+    socklen_t sockaddr_size;       /*!< size of the sockaddr    */
     union{
         struct sockaddr_un un;  /*!< unix sockaddr           */
         struct sockaddr_in in;  /*!< inet sockaddr           */

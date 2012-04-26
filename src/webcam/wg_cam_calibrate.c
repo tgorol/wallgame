@@ -226,7 +226,7 @@ setup_hist(void *data)
     Hsv *color = NULL;
     Wg_image hsv_image;
     wg_uint i = 0;
-    wg_uint num = 0;
+    wg_size num = 0;
     wg_size size = 0;
 
     work = (Setup_hist*)data;

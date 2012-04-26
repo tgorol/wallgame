@@ -4,7 +4,8 @@
 
 #define GET_CONTAINER(obj, off) ((void*)(((char*)(obj))-(off)))
 
-#define GET_OFFSET(type, field) ((int)(&((type*)0)->field))
+#define GET_OFFSET(type, field) ((size_t)              \
+        (((char*)&((type*)0)->field) - ((char*)0)))
 
 typedef struct List_head List_head;
 

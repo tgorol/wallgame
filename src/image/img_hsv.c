@@ -621,9 +621,9 @@ img_bgrx_2_hsv_fast(Wg_image *bgrx_img, Wg_image *hsv_img)
 
         for (col = 0; col < width; ++col, ++hsv_pixel, ++bgrx_pix){
 
-            r = WG_FLOAT(BGRX_R(bgrx_pix));
-            g = WG_FLOAT(BGRX_G(bgrx_pix));
-            b = WG_FLOAT(BGRX_B(bgrx_pix));
+            r = WG_FLOAT(BGRX_R(*bgrx_pix));
+            g = WG_FLOAT(BGRX_G(*bgrx_pix));
+            b = WG_FLOAT(BGRX_B(*bgrx_pix));
 
             hsv_pixel->val = MAX3(r, g, b);
             if (hsv_pixel->val == WG_FLOAT(0.0)){

@@ -53,9 +53,9 @@ OBJ=$(foreach file, $(SOURCE), $(basename $(file)).o)
 CFLAGS+= -std=$(C_STD) -D_REENTRANT 
 
 ifeq ($(BUILD_TYPE),  RELEASE)
-	CFLAGS+=-g -Wall -O2 -DRELEASE
+	CFLAGS+=-g -Wall -O3 -DRELEASE
 else
-	CFLAGS+=-g -Wall -pedantic -DWGDEBUG -DMEMLEAK_CHECK
+	CFLAGS+=-g -Wall -Werror -DWGDEBUG -DMEMLEAK_CHECK
 endif
 
 ifdef PROF

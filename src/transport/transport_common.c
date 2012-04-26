@@ -343,6 +343,10 @@ transport_print(Wg_transport *transport, const char *format, ...)
         return WG_FAILURE;
     }
 
+    va_end(arg_list);
+
+    va_start(arg_list, format);
+
     vsprintf(text, format, arg_list);
 
     va_end(arg_list);

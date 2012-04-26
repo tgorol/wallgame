@@ -230,6 +230,9 @@ xfree_cb(guchar *pixels, gpointer data)
     WG_FREE(data);
 }
 
+
+#ifdef __i386__
+
 /**
  * @brief Fast memcpy
  *
@@ -258,5 +261,17 @@ fast_memcpy(wg_uchar *restrict dest, wg_uchar *restrict src, const wg_size size)
             );
     return;
 }
+
+#else
+
+void
+fast_memcpy(wg_uchar *restrict dest, wg_uchar *restrict src, const wg_size size)
+{
+    memcpy(dest, src, size);
+    return;
+}
+
+
+#endif
 
 /*! @} */

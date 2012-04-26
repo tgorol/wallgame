@@ -71,7 +71,6 @@ wg_rect_new(wg_int x, wg_int y, wg_uint width, wg_uint height, Wg_rect *rect)
     return;
 }
 
-
 /** 
 * @brief Define a rectangle from four points
 * 
@@ -136,6 +135,14 @@ wg_rect_move(Wg_rect *rect, wg_int dx, wg_int dy)
     return WG_SUCCESS;
 }
 
+/** @brief Get width
+*
+* @param rect rectangle instance
+* @paeam width memory to store width
+*
+* @retval WG_SUCCESS 
+* @retval WG_FAILURE
+*/
 wg_status
 wg_rect_get_width(const Wg_rect *rect, wg_uint *width)
 {
@@ -147,6 +154,14 @@ wg_rect_get_width(const Wg_rect *rect, wg_uint *width)
     return WG_SUCCESS;
 }
 
+/** @brief Get height
+*
+* @param rect rectangle instance
+* @param width memory to store height
+*
+* @retval WG_SUCCESS 
+* @retval WG_FAILURE
+*/
 wg_status
 wg_rect_get_height(const Wg_rect *rect, wg_uint *height)
 {
@@ -158,6 +173,14 @@ wg_rect_get_height(const Wg_rect *rect, wg_uint *height)
     return WG_SUCCESS;
 }
 
+/** @brief Get area
+*
+* @param[in]  rect rectangle instance
+* @param[out] area returned area 
+*
+* @retval WG_SUCCESS 
+* @retval WG_FAILURE
+*/
 wg_status
 wg_rect_get_area(const Wg_rect *rect, wg_int *area)
 {

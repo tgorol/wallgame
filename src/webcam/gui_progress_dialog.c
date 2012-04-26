@@ -471,8 +471,6 @@ response(GtkDialog *dialog, gint response_id, gpointer user_data)
     Gui_progress_dialog *pd = NULL;
     wg_boolean flag = WG_TRUE;
 
-    WG_LOG("Button clicked\n");
-
     pd = (Gui_progress_dialog*)user_data;
 
     switch (response_id){

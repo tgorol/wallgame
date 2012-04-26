@@ -128,10 +128,6 @@ cd_reset_pane(Cd_instance *pane)
 cd_pane_hit_cb
 cd_get_hit_callback(Cd_instance *pane, cd_pane_hit_cb hit_cb)
 {
-#if 0
-    CHECK_FOR_NULL_PARAM(pane);
-#endif
-
     return pane->hit_cb;
 }
 
@@ -510,7 +506,8 @@ fill_horizontal_bar(const Wg_point2d *p0, const Wg_point2d *p1, Cd_bar *bar)
     bar->point_bottom = *p0;
     bar->point_top    = *p1;
     bar->length = wg_point2d_distance(p0, p1);
-    
+
+    /* get the equation of the bar  */    
     dx =  p1->x - p0->x;
     dy =  p1->y - p0->y;
 
