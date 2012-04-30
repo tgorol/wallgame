@@ -220,6 +220,8 @@ transport_connect(Wg_transport *trans)
             SOCK_ADDR_SIZE(trans));
     if (-1 == status){
         WG_LOG("%s\n",strerror(errno));
+        close(trans->transport.out_fd);
+        trans->transport.out_fd = TRANS_UNIX_DISCONNECTED;
         return WG_FAILURE;
     }
 

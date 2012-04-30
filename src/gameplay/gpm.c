@@ -141,6 +141,10 @@ wg_start(int argc, char *argv[])
     wg_int exit_code = WG_EXIT_SUCCESS;
     App_options options;
 
+    char *t = WG_MALLOC(128);
+    strcpy(t, "T");
+    printf("%s\n", t);
+
     set_default_options(&options);
 
     /* parse input command line */

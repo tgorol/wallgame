@@ -169,8 +169,8 @@ gui_callibration_screen(Camera *cam)
 
     gui_progress_dialog_add_screen(pd, 
             gui_progress_dialog_screen_new(callibration_screen, data, 
-                "Show me where is the screen by clicking in each "
-                "corner of the screen", widget)
+                "Outline the game area by clicking on each of the four corners"
+                , widget)
             );
 
     box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
@@ -206,7 +206,9 @@ gui_callibration_screen(Camera *cam)
 
     gui_progress_dialog_add_screen(pd, 
             gui_progress_dialog_screen_new(callibration_color, data, 
-                "Select color range on the object you are using", box)
+                 "Hold the ball in front of the camera and select it by "
+                 "clicking and then dragging the cursor across the ball"  
+                 , box)
             );
 
     gui_progress_dialog_add_screen(pd, 
