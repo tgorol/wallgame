@@ -61,7 +61,9 @@
 /** @brief maximum devixe path size */
 #define DEVICE_PATH_MAX  128
 
-#define LAYOUT_PATH "/home/tgorol/gmit/final_project/src/webcam/layout.xml"
+#define ROOTDIR STR(BINDIR)
+
+#define LAYOUT_PATH ROOTDIR"/src/webcam/layout.xml"
 
 #define DEFAULT_TRANSPORT "unix:/tmp/test.sock"
 

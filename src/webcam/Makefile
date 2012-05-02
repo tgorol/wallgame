@@ -22,8 +22,9 @@ MAIN_C=wg_cam_main.c
 INCLUDE=./include/
 
 EXTRA_CFLAGS+=-D_GNU_SOURCE `pkg-config --cflags gtk+-3.0` \
-			  -DGTK_DISABLE_DEPRECATED=1                   \
-              -Wl,--export-dynamic
+	      -DGTK_DISABLE_DEPRECATED=1                   \
+              -Wl,--export-dynamic                         \
+              -DBINDIR=$(ROOT_DIR)
 
 LIB_LIST=-l${L_LIB_NAME} -lwg -ljpeg -lm -lgthread-2.0 \
          `pkg-config --libs gtk+-3.0`

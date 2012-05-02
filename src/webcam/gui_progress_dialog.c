@@ -40,8 +40,10 @@
 /*! \brief Prievious dialog id */
 #define PREVIUOS_SCREEN -1
 
+#define ROOTDIR STR(BINDIR)
+
 #define LAYOUT_XML                   \
-    "/home/tgorol/gmit/final_project/src/webcam/progress_dialog.xml"
+    ROOTDIR"/src/webcam/progress_dialog.xml"
 
 /** 
 * @brief Dialogs
