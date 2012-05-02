@@ -72,7 +72,6 @@ typedef struct Camera{
     GtkWidget *status_bar;         /*!< status bar                        */
 
     pthread_t  thread;             /*!< capturing thread                  */
-    Wg_video_out vid;              /*!< video stream instance             */
 
     /* used for gathering color from screen                               */
     wg_boolean dragging;           /*!< dragging flag                     */

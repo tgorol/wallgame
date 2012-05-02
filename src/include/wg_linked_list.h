@@ -66,10 +66,10 @@ WG_PUBLIC void dlist_fix_after_copy(List_head *head);
     dlist_get(head, GET_OFFSET(type, field))
 
 #define list_get_last(head, type, field)                           \
-    dlist_get(head, GET_OFFSET(type, field)
+    dlist_get_last(head, GET_OFFSET(type, field))
 
 #define list_get_first(head, type, field)                           \
-    dlist_get(head, GET_OFFSET(type, field)
+    dlist_get_first(head, GET_OFFSET(type, field))
 
 #define list_remove(head)                                          \
             dlist_remove(head)

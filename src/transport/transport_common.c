@@ -353,7 +353,7 @@ transport_print(Wg_transport *transport, const char *format, ...)
 
     va_end(arg_list);
 
-    status = transport_send(transport, text, len - 1);
+    status = transport_send(transport, text, len);
 
     WG_FREE(text);
 

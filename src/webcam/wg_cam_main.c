@@ -26,7 +26,6 @@
 
 #include "include/gui_prim.h"
 #include "include/sensor.h"
-#include "include/vid.h"
 
 #include "include/collision_detect.h"
 #include "include/wg_plugin.h"

@@ -1,8 +1,6 @@
 #ifndef EF_ENGINE_H
 #define EF_ENGINE_H
 
-#include <libavcodec/avcodec.h>
-#include <libavutil/mathematics.h>
 
 typedef wg_uint acc[90];
 

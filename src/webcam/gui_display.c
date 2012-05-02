@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 /* @todo create user space include */
 #include <sys/types.h>
@@ -27,7 +28,6 @@
 
 #include "include/gui_prim.h"
 #include "include/sensor.h"
-#include "include/vid.h"
 #include "include/gui_work.h"
 
 #include "include/collision_detect.h"

@@ -191,7 +191,7 @@ dlist_get(List_head *head, wg_uint n, wg_int offset)
 
     while((head != h) && (--n)) h = h->next;
 
-    return n ? NULL : GET_CONTAINER(h, offset);
+    return (head == h) ? NULL : GET_CONTAINER(h, offset);
 }
 
 /*! \brief Get last element from the list.

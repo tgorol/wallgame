@@ -1,2 +1,22 @@
-* When user close the app must check
-* 
+./include/wgtypes.h:/*! @todo Remove this include */
+./include/wg_fixarith.h:/*! @todo handle negative numbers properly */
+./include/wgmacros.h:/** @todo addRANGE_LT_PARAM */
+./common/wg_slab.c:    /* @todo Add code: wait for all blocks */
+./common/wg_string.c:* @todo add index parameter to be able compare chosen character in a string
+./transport/unix_socket/trans.c:    /* TODO Add input parameter to store an error code */
+./image/include/img_rgb24.h: * @todo change names to RGB_R, RGB_G RGB_B
+./gameplay/gpm_game.c:            /* @todo Add error checking */
+./gameplay/gpm_game.c: * @todo finish this function
+./gameplay/gpm_game.c: * @todo Make it static
+./gameplay/gpm_game.c:        /* @todo Clean a workq */
+./gameplay/gpm_game.c:    /** @todo remove workaraound */
+./gameplay/gpm_game.c:            /* @todo make this more readable */
+./gameplay/gpm_hooks.c:    /* TODO Fix integer parsing */
+./gameplay/gpm_cmdln.c:    printf("TODO : write help\n");
+./cam/cam_streaming.c:        /** @todo handle error properly */
+./cam/cam_output.c:    /** @todo fix: make it reentrant (get rid of static) */
+./webcam/include/wg_plugin.h:/* todo get rid of this from here */
+./webcam/include/wg_plugin.h:/* todo get rid of this from here */
+./webcam/wg_cam_calibrate.c:            /* @todo Handle thsi through MessageBox */
+./webcam/gui_display.c:* @todo return line instance for futher reference
+./webcam/wg_plugin.c: * @todo find a way to get it from the system

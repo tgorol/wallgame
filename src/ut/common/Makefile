@@ -1,10 +1,10 @@
 APP_NAME=unit_test
-SOURCE=wg_common.c
+SOURCE=ut_wg_linked_list.c
 OUT_NAME=libut
 
-INCLUDE=$(ROOT_DIR)/src/ut/include/
+INCLUDE=$(ROOT_DIR)/src/ut/include/ 
 
-LIBLIST+=$(OUT_NAME) wg
+LIBLIST+=$(OUT_NAME) wg cunit ncurses
 
 LIB+=$(OUT_DIR) $(ROOT_DIR)/src/build/
 
