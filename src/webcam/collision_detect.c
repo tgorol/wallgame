@@ -544,7 +544,7 @@ fill_bars(Cd_instance *pane)
 
 
 WG_PRIVATE wg_boolean
-is_hit_on_pane(Cd_instance *pane, const Wg_point2d *in_pos, 
+is_hit_on_pane(Cd_instance *pane, const Wg_point2d *in_position, 
         wg_float *x, wg_float *y)
 {
     Cd_bar *l_bar = NULL;
@@ -554,33 +554,38 @@ is_hit_on_pane(Cd_instance *pane, const Wg_point2d *in_pos,
     wg_float y_pos_bottom = WG_FLOAT(0.0);
     wg_float y_pos_top    = WG_FLOAT(0.0);
     Wg_point2d pt;
+    Wg_point2d in_pos;
+
+    in_pos = *in_position;
 
     l_bar = &pane->left_bar;
-    if (in_pos->x < l_bar->a){
+    if (in_pos.x < l_bar->a){
         return WG_FALSE;
     }
 
     r_bar = &pane->right_bar;
-    if (in_pos->x > r_bar->a){
+    if (in_pos.x > r_bar->a){
         return WG_FALSE;
     }
 
     t_bar = &pane->top_bar;
-    y_pos_top = t_bar->a * in_pos->x + t_bar->b;
-    if (in_pos->y > y_pos_top){
+    y_pos_top = t_bar->a * in_pos.x + t_bar->b;
+    if (in_pos.y > y_pos_top){
        return WG_FALSE;
     }
 
     b_bar = &pane->bottom_bar;
-    y_pos_bottom = b_bar->a * in_pos->x + b_bar->b;
-    if (in_pos->y < y_pos_bottom){
+    y_pos_bottom = b_bar->a * in_pos.x + b_bar->b;
+    if (in_pos.y < y_pos_bottom){
        return WG_FALSE;
     }
 
-    *y = (in_pos->y - y_pos_bottom) / (y_pos_top - y_pos_bottom);
+    *y = (in_pos.y - y_pos_bottom) / (y_pos_top - y_pos_bottom);
 
-    wg_point2d_new(in_pos->x, WG_INT(y_pos_bottom), &pt);
+    wg_point2d_new(in_pos.x, WG_INT(y_pos_bottom), &pt);
     *x = wg_point2d_distance(&pt, &b_bar->point_bottom) / b_bar->length;
+
+    *x += (0.25 - ((*x - 0.5) * (*x - 0.5))) * 4.0 * 0.15; 
 
     return WG_TRUE;
 }

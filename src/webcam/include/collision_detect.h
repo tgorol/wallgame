@@ -2,8 +2,8 @@
 #define _COLLISION_DETECT_H
 
 #define CD_POSITION_NUM  64
-#define CD_PIPELINE_SIZE 5
-#define HIT_COUNT_NUM 4
+#define CD_PIPELINE_SIZE 3
+#define HIT_COUNT_NUM 1
 
 #define CD_INVALID_COORD ((wg_uint)-1)
 

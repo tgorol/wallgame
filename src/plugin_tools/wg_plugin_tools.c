@@ -40,8 +40,8 @@ WG_PRIVATE wg_char hit_format[] =
     "<event>\n"
         "<time>%s</time>\n"
         "<hit>\n"
-            "<x>%.2lf</x>\n"
-            "<y>%.2lf</y>\n"
+            "<x>%.4lf</x>\n"
+            "<y>%.4lf</y>\n"
         "</hit>\n"
     "</event>\n"
     ;
