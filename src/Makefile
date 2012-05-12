@@ -26,43 +26,43 @@ plugins: $(PLUG_INS)
 modules: $(MODULE_NAMES)
 	
 gameplay:
-	make OUT_DIR=$(OUT_DIR) OUT_NAME=$(OUT_NAME) -C $@ lib
+	$(MAKE) OUT_DIR=$(OUT_DIR) OUT_NAME=$(OUT_NAME) -C $@ lib
 
 config:
-	make OUT_DIR=$(OUT_DIR) OUT_NAME=$(OUT_NAME) -C $@ lib
+	$(MAKE) OUT_DIR=$(OUT_DIR) OUT_NAME=$(OUT_NAME) -C $@ lib
 
 common:
-	make OUT_DIR=$(OUT_DIR) OUT_NAME=$(OUT_NAME) -C $@ lib
+	$(MAKE) OUT_DIR=$(OUT_DIR) OUT_NAME=$(OUT_NAME) -C $@ lib
 
 transport:
-	make OUT_DIR=$(OUT_DIR) OUT_NAME=$(OUT_NAME) -C $@ lib
+	$(MAKE) OUT_DIR=$(OUT_DIR) OUT_NAME=$(OUT_NAME) -C $@ lib
 
 sensor:
-	make OUT_DIR=$(OUT_DIR) OUT_NAME=$(OUT_NAME) -C $@ lib
+	$(MAKE) OUT_DIR=$(OUT_DIR) OUT_NAME=$(OUT_NAME) -C $@ lib
 
 tools:
-	make OUT_DIR=$(OUT_DIR) OUT_NAME=$(OUT_NAME) -C $@ lib
+	$(MAKE) OUT_DIR=$(OUT_DIR) OUT_NAME=$(OUT_NAME) -C $@ lib
 
 image:
-	make OUT_DIR=$(OUT_DIR) OUT_NAME=$(OUT_NAME) -C $@ lib
+	$(MAKE) OUT_DIR=$(OUT_DIR) OUT_NAME=$(OUT_NAME) -C $@ lib
 
 cam:
-	make OUT_DIR=$(OUT_DIR) OUT_NAME=$(OUT_NAME) -C $@ lib
+	$(MAKE) OUT_DIR=$(OUT_DIR) OUT_NAME=$(OUT_NAME) -C $@ lib
 
 plugin_tools:
-	make OUT_DIR=$(OUT_DIR) OUT_NAME=$(OUT_NAME) -C $@ lib
+	$(MAKE) OUT_DIR=$(OUT_DIR) OUT_NAME=$(OUT_NAME) -C $@ lib
 
 plugins:
-	make OUT_DIR=$(OUT_DIR) -C $@
+	$(MAKE) OUT_DIR=$(OUT_DIR) -C $@
 
 webcam:
-	make OUT_DIR=$(OUT_DIR) -C $@
+	$(MAKE) OUT_DIR=$(OUT_DIR) -C $@
 
 clean: cleanall
 
 cleanall:
 	for i in $(MODULE_NAMES) ;do        \
-		make -C $$i clean;              \
+		$(MAKE) -C $$i clean;              \
 	done
 
 
